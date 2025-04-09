@@ -1,0 +1,11 @@
+{
+  "editor.guides.indentation": false,
+  "editor.hideCursorInOverviewRuler": true,
+  "editor.scrollbar.vertical": "hidden",
+  "editor.overviewRulerBorder": false,
+  "editor.formatOnSave": true,
+  "editor.suggest.showReferences": true,
+  "editor.fontSize": 15,
+  "editor.tabSize": 2,
+  "typescript.referencesCodeLens.enabled": true
+}

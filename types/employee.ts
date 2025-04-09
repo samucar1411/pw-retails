@@ -1,0 +1,53 @@
+export interface Employee {
+  id: number;
+  syncVersion: string | null;
+  Closed: boolean | null;
+  Address: string;
+  City: number;
+  ZipCode: string;
+  Province: string;
+  Phone: string;
+  Mobile: string;
+  Company: number;
+  Country: number;
+  User: number;
+  Name: string;
+  LastName: string;
+  LastName2: string;
+  EmplCat: string;
+  Comment: string | null;
+  Email: string;
+  BirthDate: string;
+  IDnr: string;
+  PassportNr: string | null;
+  TaxRegNr: string | null;
+  BloodGroup: string | null;
+  Sex: string;
+  MarStatus: string;
+  EmrPhone: string | null;
+  EmrCont: string | null;
+  Nationality: number;
+  SocialCard: string | null;
+  ContractNr: string;
+  WorkDate: string;
+  StartDate: string;
+  EndDate: string | null;
+  WorkTeam: number;
+  Status: string;
+  Inactive: boolean;
+  Section: number;
+  Area: string;
+  HierarchyCode: string;
+  Office: number;
+  WeeklyWorkHrs: number;
+  Locality: string;
+  LocalityCode: string;
+  Clock: boolean;
+  DaysWorked: number;
+}
+
+export type EmployeeCreateInput = Omit<Employee, 'id' | 'syncVersion'>;
+export type EmployeeUpdateInput = Partial<EmployeeCreateInput>;
+
+export type CreateEmployeeDTO = Omit<Employee, 'id'>;
+export type UpdateEmployeeDTO = Partial<CreateEmployeeDTO>; 
