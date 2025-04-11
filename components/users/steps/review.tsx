@@ -1,13 +1,19 @@
-import * as React from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { ClipboardCheck } from "lucide-react"
-import type { UserCreateInput } from "@/types/user"
+import * as React from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { ClipboardCheck } from "lucide-react";
+import type { UserCreateInput } from "@/types/user";
 
 interface ReviewFormProps {
-  data: Partial<UserCreateInput>
-  onSubmit: () => void
-  onBack: () => void
+  data: Partial<UserCreateInput>;
+  onSubmit: () => void;
+  onBack: () => void;
 }
 
 export function ReviewForm({ data, onSubmit, onBack }: ReviewFormProps) {
@@ -34,7 +40,7 @@ export function ReviewForm({ data, onSubmit, onBack }: ReviewFormProps) {
         { label: "Superusuario", value: data.is_superuser ? "Sí" : "No" },
       ],
     },
-  ]
+  ];
 
   return (
     <Card>
@@ -76,12 +82,10 @@ export function ReviewForm({ data, onSubmit, onBack }: ReviewFormProps) {
             <Button type="button" variant="outline" onClick={onBack}>
               Anterior
             </Button>
-            <Button onClick={onSubmit}>
-              Crear usuario
-            </Button>
+            <Button onClick={onSubmit}>Crear usuario</Button>
           </div>
         </div>
       </CardContent>
     </Card>
-  )
-} 
+  );
+}

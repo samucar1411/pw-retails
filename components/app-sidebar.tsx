@@ -107,7 +107,6 @@ const projectItems: NavItem[] = [
   },
 ];
 
-
 export function AppSidebar() {
   const pathname = usePathname();
   const { logout } = useAuth();
@@ -199,7 +198,7 @@ export function AppSidebar() {
         <SidebarFooter className="mt-auto p-4">
           <div className="flex flex-col gap-2">
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+              <DropdownMenuTrigger>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -250,8 +249,8 @@ export function AppSidebar() {
 
                   <DropdownMenuSeparator />
                   <DropdownMenuItem>
-                    <button 
-                      onClick={handleLogout} 
+                    <button
+                      onClick={handleLogout}
                       className="flex items-center w-full text-destructive"
                     >
                       <LogOut className="mr-2 h-4 w-4" />

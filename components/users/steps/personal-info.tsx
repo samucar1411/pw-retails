@@ -1,8 +1,8 @@
-import * as React from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -10,31 +10,41 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Contact } from "lucide-react"
-import type { UserCreateInput } from "@/types/user"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Contact } from "lucide-react";
+import type { UserCreateInput } from "@/types/user";
 
 const formSchema = z.object({
   first_name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
   last_name: z.string().min(2, "El apellido debe tener al menos 2 caracteres"),
-})
+});
 
 interface PersonalInfoFormProps {
-  defaultValues: Partial<UserCreateInput>
-  onSubmit: (data: Partial<UserCreateInput>) => void
-  onBack: () => void
+  defaultValues: Partial<UserCreateInput>;
+  onSubmit: (data: Partial<UserCreateInput>) => void;
+  onBack: () => void;
 }
 
-export function PersonalInfoForm({ defaultValues, onSubmit, onBack }: PersonalInfoFormProps) {
+export function PersonalInfoForm({
+  defaultValues,
+  onSubmit,
+  onBack,
+}: PersonalInfoFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       first_name: defaultValues.first_name || "",
       last_name: defaultValues.last_name || "",
     },
-  })
+  });
 
   return (
     <Card>
@@ -86,13 +96,11 @@ export function PersonalInfoForm({ defaultValues, onSubmit, onBack }: PersonalIn
               <Button type="button" variant="outline" onClick={onBack}>
                 Anterior
               </Button>
-              <Button type="submit">
-                Siguiente
-              </Button>
+              <Button type="submit">Siguiente</Button>
             </div>
           </form>
         </Form>
       </CardContent>
     </Card>
-  )
-} 
+  );
+}

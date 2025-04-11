@@ -1,8 +1,8 @@
-import * as React from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -10,28 +10,36 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { CompanyCreateInput } from "@/types/company"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { CompanyCreateInput } from "@/types/company";
 
 const formSchema = z.object({
-  contact: z.string().min(2, "El nombre del contacto debe tener al menos 2 caracteres"),
+  contact: z
+    .string()
+    .min(2, "El nombre del contacto debe tener al menos 2 caracteres"),
   email: z.string().email("Debe ser un email válido"),
   emp_qty: z.coerce.number().min(1, "Debe tener al menos 1 empleado"),
-  economy_activity: z.string().min(2, "La actividad económica debe tener al menos 2 caracteres"),
-})
+  economy_activity: z
+    .string()
+    .min(2, "La actividad económica debe tener al menos 2 caracteres"),
+});
 
 interface ContactInfoFormProps {
-  defaultValues: Partial<CompanyCreateInput>
-  onSubmit: (data: Partial<CompanyCreateInput>) => void
-  onBack: () => void
+  defaultValues: Partial<CompanyCreateInput>;
+  onSubmit: (data: Partial<CompanyCreateInput>) => void;
+  onBack: () => void;
 }
 
-export function ContactInfoForm({ defaultValues, onSubmit, onBack }: ContactInfoFormProps) {
+export function ContactInfoForm({
+  defaultValues,
+  onSubmit,
+  onBack,
+}: ContactInfoFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues,
-  })
+  });
 
   return (
     <Form {...form}>
@@ -43,7 +51,10 @@ export function ContactInfoForm({ defaultValues, onSubmit, onBack }: ContactInfo
             <FormItem>
               <FormLabel>Nombre del contacto</FormLabel>
               <FormControl>
-                <Input placeholder="Ingrese el nombre del contacto" {...field} />
+                <Input
+                  placeholder="Ingrese el nombre del contacto"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -71,9 +82,9 @@ export function ContactInfoForm({ defaultValues, onSubmit, onBack }: ContactInfo
             <FormItem>
               <FormLabel>Cantidad de empleados</FormLabel>
               <FormControl>
-                <Input 
-                  type="number" 
-                  placeholder="Ingrese la cantidad de empleados" 
+                <Input
+                  type="number"
+                  placeholder="Ingrese la cantidad de empleados"
                   {...field}
                 />
               </FormControl>
@@ -89,8 +100,8 @@ export function ContactInfoForm({ defaultValues, onSubmit, onBack }: ContactInfo
             <FormItem>
               <FormLabel>Actividad económica</FormLabel>
               <FormControl>
-                <Input 
-                  placeholder="Ingrese la actividad económica" 
+                <Input
+                  placeholder="Ingrese la actividad económica"
                   {...field}
                 />
               </FormControl>
@@ -103,11 +114,9 @@ export function ContactInfoForm({ defaultValues, onSubmit, onBack }: ContactInfo
           <Button type="button" variant="outline" onClick={onBack}>
             Anterior
           </Button>
-          <Button type="submit">
-            Siguiente
-          </Button>
+          <Button type="submit">Siguiente</Button>
         </div>
       </form>
     </Form>
-  )
-} 
+  );
+}

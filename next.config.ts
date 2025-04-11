@@ -41,11 +41,11 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "https://sys.adminpy.com:18001/api/:path*/",
+        destination: "http://sys.adminpy.com:18001/api/:path*/",
       },
       {
         source: "/api-token-auth",
-        destination: "https://sys.adminpy.com:18001/api-token-auth/",
+        destination: "http://sys.adminpy.com:18001/api-token-auth/",
       },
     ];
   },

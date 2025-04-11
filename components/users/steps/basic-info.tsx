@@ -1,8 +1,8 @@
-import * as React from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -10,21 +10,29 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { User } from "lucide-react"
-import type { UserCreateInput } from "@/types/user"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { User } from "lucide-react";
+import type { UserCreateInput } from "@/types/user";
 
 const formSchema = z.object({
-  username: z.string().min(2, "El nombre de usuario debe tener al menos 2 caracteres"),
+  username: z
+    .string()
+    .min(2, "El nombre de usuario debe tener al menos 2 caracteres"),
   email: z.string().email("Debe ser un email válido"),
   password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
-})
+});
 
 interface BasicInfoFormProps {
-  defaultValues: Partial<UserCreateInput>
-  onSubmit: (data: Partial<UserCreateInput>) => void
+  defaultValues: Partial<UserCreateInput>;
+  onSubmit: (data: Partial<UserCreateInput>) => void;
 }
 
 export function BasicInfoForm({ defaultValues, onSubmit }: BasicInfoFormProps) {
@@ -35,7 +43,7 @@ export function BasicInfoForm({ defaultValues, onSubmit }: BasicInfoFormProps) {
       email: defaultValues.email || "",
       password: defaultValues.password || "",
     },
-  })
+  });
 
   return (
     <Card>
@@ -62,7 +70,10 @@ export function BasicInfoForm({ defaultValues, onSubmit }: BasicInfoFormProps) {
                 <FormItem>
                   <FormLabel>Nombre de usuario</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ingrese el nombre de usuario" {...field} />
+                    <Input
+                      placeholder="Ingrese el nombre de usuario"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -76,7 +87,11 @@ export function BasicInfoForm({ defaultValues, onSubmit }: BasicInfoFormProps) {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="Ingrese el email" {...field} />
+                    <Input
+                      type="email"
+                      placeholder="Ingrese el email"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -90,7 +105,11 @@ export function BasicInfoForm({ defaultValues, onSubmit }: BasicInfoFormProps) {
                 <FormItem>
                   <FormLabel>Contraseña</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Ingrese la contraseña" {...field} />
+                    <Input
+                      type="password"
+                      placeholder="Ingrese la contraseña"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -98,13 +117,11 @@ export function BasicInfoForm({ defaultValues, onSubmit }: BasicInfoFormProps) {
             />
 
             <div className="flex justify-end">
-              <Button type="submit">
-                Siguiente
-              </Button>
+              <Button type="submit">Siguiente</Button>
             </div>
           </form>
         </Form>
       </CardContent>
     </Card>
-  )
-} 
+  );
+}

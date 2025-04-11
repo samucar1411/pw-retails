@@ -1,8 +1,8 @@
-import * as React from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -10,20 +10,24 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { CompanyCreateInput } from "@/types/company"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { CompanyCreateInput } from "@/types/company";
 
 const formSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
-  business_name: z.string().min(2, "La razón social debe tener al menos 2 caracteres"),
-  identification_number: z.string().min(5, "El RUC debe tener al menos 5 caracteres"),
+  business_name: z
+    .string()
+    .min(2, "La razón social debe tener al menos 2 caracteres"),
+  identification_number: z
+    .string()
+    .min(5, "El RUC debe tener al menos 5 caracteres"),
   country: z.string().min(2, "El país es requerido"),
-})
+});
 
 interface BasicInfoFormProps {
-  defaultValues: Partial<CompanyCreateInput>
-  onSubmit: (data: Partial<CompanyCreateInput>) => void
+  defaultValues: Partial<CompanyCreateInput>;
+  onSubmit: (data: Partial<CompanyCreateInput>) => void;
 }
 
 export function BasicInfoForm({ defaultValues, onSubmit }: BasicInfoFormProps) {
@@ -35,7 +39,7 @@ export function BasicInfoForm({ defaultValues, onSubmit }: BasicInfoFormProps) {
       identification_number: defaultValues.identification_number || "",
       country: defaultValues.country || "",
     },
-  })
+  });
 
   const handleSubmit = (data: z.infer<typeof formSchema>) => {
     onSubmit({
@@ -43,8 +47,8 @@ export function BasicInfoForm({ defaultValues, onSubmit }: BasicInfoFormProps) {
       business_name: data.business_name,
       identification_number: data.identification_number,
       country: data.country,
-    })
-  }
+    });
+  };
 
   return (
     <Form {...form}>
@@ -106,11 +110,9 @@ export function BasicInfoForm({ defaultValues, onSubmit }: BasicInfoFormProps) {
         />
 
         <div className="flex justify-end">
-          <Button type="submit">
-            Siguiente
-          </Button>
+          <Button type="submit">Siguiente</Button>
         </div>
       </form>
     </Form>
-  )
-} 
+  );
+}

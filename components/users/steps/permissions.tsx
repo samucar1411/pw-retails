@@ -1,8 +1,8 @@
-import * as React from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -10,25 +10,35 @@ import {
   FormItem,
   FormLabel,
   FormDescription,
-} from "@/components/ui/form"
-import { Switch } from "@/components/ui/switch"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Shield } from "lucide-react"
-import type { UserCreateInput } from "@/types/user"
+} from "@/components/ui/form";
+import { Switch } from "@/components/ui/switch";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Shield } from "lucide-react";
+import type { UserCreateInput } from "@/types/user";
 
 const formSchema = z.object({
   is_active: z.boolean(),
   is_staff: z.boolean(),
   is_superuser: z.boolean(),
-})
+});
 
 interface PermissionsFormProps {
-  defaultValues: Partial<UserCreateInput>
-  onSubmit: (data: Partial<UserCreateInput>) => void
-  onBack: () => void
+  defaultValues: Partial<UserCreateInput>;
+  onSubmit: (data: Partial<UserCreateInput>) => void;
+  onBack: () => void;
 }
 
-export function PermissionsForm({ defaultValues, onSubmit, onBack }: PermissionsFormProps) {
+export function PermissionsForm({
+  defaultValues,
+  onSubmit,
+  onBack,
+}: PermissionsFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -36,7 +46,7 @@ export function PermissionsForm({ defaultValues, onSubmit, onBack }: Permissions
       is_staff: defaultValues.is_staff ?? false,
       is_superuser: defaultValues.is_superuser ?? false,
     },
-  })
+  });
 
   return (
     <Card>
@@ -105,9 +115,7 @@ export function PermissionsForm({ defaultValues, onSubmit, onBack }: Permissions
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">Superusuario</FormLabel>
-                    <FormDescription>
-                      Acceso total al sistema
-                    </FormDescription>
+                    <FormDescription>Acceso total al sistema</FormDescription>
                   </div>
                   <FormControl>
                     <Switch
@@ -123,13 +131,11 @@ export function PermissionsForm({ defaultValues, onSubmit, onBack }: Permissions
               <Button type="button" variant="outline" onClick={onBack}>
                 Anterior
               </Button>
-              <Button type="submit">
-                Siguiente
-              </Button>
+              <Button type="submit">Siguiente</Button>
             </div>
           </form>
         </Form>
       </CardContent>
     </Card>
-  )
-} 
+  );
+}

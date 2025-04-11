@@ -1,12 +1,12 @@
-import * as React from "react"
-import { Button } from "@/components/ui/button"
-import { CompanyCreateInput } from "@/types/company"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import * as React from "react";
+import { Button } from "@/components/ui/button";
+import { CompanyCreateInput } from "@/types/company";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ReviewFormProps {
-  data: Partial<CompanyCreateInput>
-  onSubmit: () => void
-  onBack: () => void
+  data: Partial<CompanyCreateInput>;
+  onSubmit: () => void;
+  onBack: () => void;
 }
 
 export function ReviewForm({ data, onSubmit, onBack }: ReviewFormProps) {
@@ -37,7 +37,7 @@ export function ReviewForm({ data, onSubmit, onBack }: ReviewFormProps) {
         { label: "Actividad económica", value: data.economy_activity },
       ],
     },
-  ]
+  ];
 
   return (
     <div className="space-y-6">
@@ -49,7 +49,9 @@ export function ReviewForm({ data, onSubmit, onBack }: ReviewFormProps) {
           <CardContent className="space-y-2">
             {section.fields.map((field) => (
               <div key={field.label} className="flex justify-between">
-                <span className="text-sm text-muted-foreground">{field.label}</span>
+                <span className="text-sm text-muted-foreground">
+                  {field.label}
+                </span>
                 <span className="text-sm font-medium">{field.value}</span>
               </div>
             ))}
@@ -61,10 +63,8 @@ export function ReviewForm({ data, onSubmit, onBack }: ReviewFormProps) {
         <Button type="button" variant="outline" onClick={onBack}>
           Anterior
         </Button>
-        <Button onClick={onSubmit}>
-          Crear empresa
-        </Button>
+        <Button onClick={onSubmit}>Crear empresa</Button>
       </div>
     </div>
-  )
-} 
+  );
+}

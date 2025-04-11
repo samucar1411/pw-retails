@@ -1,23 +1,20 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import * as z from "zod"
-import axios from "axios"
+import * as React from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, Controller } from "react-hook-form";
+import * as z from "zod";
+import axios from "axios";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
-  Form,
-  FormControl,
-  FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { toast } from "sonner"
-import { useAuth } from "@/context/auth-context"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { useAuth } from "@/context/auth-context";
 
 const formSchema = z.object({
   username: z.string().min(2, {
@@ -26,67 +23,72 @@ const formSchema = z.object({
   password: z.string().min(6, {
     message: "La contraseña debe tener al menos 6 caracteres.",
   }),
-})
+});
 
 export function LoginForm() {
-    const { loginWithUserInfo } = useAuth()
-    const form = useForm<z.infer<typeof formSchema>>({
-      resolver: zodResolver(formSchema),
-      defaultValues: {
-        username: "",
-        password: "",
-      },
-    })
-  
-    async function onSubmit(values: z.infer<typeof formSchema>) {
-      try {
-        await loginWithUserInfo(values.username, values.password);
-        toast.success("¡Inicio de sesión exitoso!");
-      } catch (err) {
-        console.error('Error de inicio de sesión:', err);
-        let errorMessage = "Error al iniciar sesión. Por favor, verifica tus credenciales.";
-        
-        if (axios.isAxiosError(err)) {
-          errorMessage = err.response?.data?.detail || err.message;
-        } else if (err instanceof Error) {
-          errorMessage = err.message;
-        }
-        
-        toast.error(errorMessage);
+  const { loginWithUserInfo } = useAuth();
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+    },
+  });
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      await loginWithUserInfo(values.username, values.password);
+      toast.success("¡Inicio de sesión exitoso!");
+    } catch (err) {
+      console.error("Error de inicio de sesión:", err);
+      let errorMessage =
+        "Error al iniciar sesión. Por favor, verifica tus credenciales.";
+
+      if (axios.isAxiosError(err)) {
+        errorMessage = err.response?.data?.detail || err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
       }
+
+      toast.error(errorMessage);
     }
+  }
 
   return (
-    <Form {...form}>
+    <div>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
+        <Controller
           control={form.control}
           name="username"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Nombre de usuario</FormLabel>
-              <FormControl>
-                <Input placeholder="Ingrese su nombre de usuario" {...field} />
-              </FormControl>
-              <FormMessage />
+              <Input placeholder="Ingrese su nombre de usuario" {...field} />
+              {fieldState.error && (
+                <FormMessage error={fieldState.error.message} />
+              )}
             </FormItem>
           )}
         />
-        <FormField
+        <Controller
           control={form.control}
           name="password"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Contraseña</FormLabel>
-              <FormControl>
-                <Input type="password" placeholder="Ingrese su contraseña" {...field} />
-              </FormControl>
-              <FormMessage />
+              <Input
+                type="password"
+                placeholder="Ingrese su contraseña"
+                {...field}
+              />
+              {fieldState.error && (
+                <FormMessage error={fieldState.error.message} />
+              )}
             </FormItem>
           )}
         />
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           className="w-full"
           disabled={form.formState.isSubmitting}
         >
@@ -100,6 +102,6 @@ export function LoginForm() {
           )}
         </Button>
       </form>
-    </Form>
-  )
+    </div>
+  );
 }
