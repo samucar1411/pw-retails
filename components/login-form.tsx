@@ -2,16 +2,19 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import * as z from "zod";
 import axios from "axios";
 
 import { Button } from "@/components/ui/button";
 import {
+  Form,
+  FormControl,
+  FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from "visor-ui";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/context/auth-context";
@@ -55,35 +58,35 @@ export function LoginForm() {
   }
 
   return (
-    <div>
+    <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Controller
+        <FormField
           control={form.control}
           name="username"
-          render={({ field, fieldState }) => (
+          render={({ field }) => (
             <FormItem>
               <FormLabel>Nombre de usuario</FormLabel>
-              <Input placeholder="Ingrese su nombre de usuario" {...field} />
-              {fieldState.error && (
-                <FormMessage error={fieldState.error.message} />
-              )}
+              <FormControl>
+                <Input placeholder="Ingrese su nombre de usuario" {...field} />
+              </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
-        <Controller
+        <FormField
           control={form.control}
           name="password"
-          render={({ field, fieldState }) => (
+          render={({ field }) => (
             <FormItem>
               <FormLabel>Contraseña</FormLabel>
-              <Input
-                type="password"
-                placeholder="Ingrese su contraseña"
-                {...field}
-              />
-              {fieldState.error && (
-                <FormMessage error={fieldState.error.message} />
-              )}
+              <FormControl>
+                <Input
+                  type="password"
+                  placeholder="Ingrese su contraseña"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -102,6 +105,6 @@ export function LoginForm() {
           )}
         </Button>
       </form>
-    </div>
+    </Form>
   );
 }

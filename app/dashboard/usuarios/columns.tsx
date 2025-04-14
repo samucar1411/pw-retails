@@ -12,7 +12,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "visor-ui";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { DeleteUserModal } from "./delete-user-modal";

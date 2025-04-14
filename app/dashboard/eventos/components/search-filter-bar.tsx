@@ -7,7 +7,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "visor-ui";
 
 interface SearchFilterBarProps {
   searchQuery: string;

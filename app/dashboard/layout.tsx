@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
+import { SidebarProvider, SidebarInset } from "visor-ui"
 import { AppSidebar } from "@/components/app-sidebar"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { EventProvider } from '@/context/event-context'

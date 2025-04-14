@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo, useEffect } from 'react';
 import { Event, EventsResponse } from '@/types/event';
 import { eventService } from '@/services/event-service';
-// Eliminamos la importación de sonner temporalmente
-// import { toast } from 'sonner';
+import { toast } from 'sonner';
 import { Building2, User, Smartphone } from 'lucide-react';
 
 interface EventContextType {
@@ -52,11 +51,8 @@ export function EventProvider({ children }: { children: ReactNode }) {
       setError(null);
       const response = await eventService.getEvents();
       
-      // Verificar que response.data sea un array antes de ordenarlo
-      const eventsArray = Array.isArray(response.data) ? response.data : [];
-      
       // Sort events by created_at in descending order (newest first)
-      const sortedEvents = eventsArray.sort((a, b) => 
+      const sortedEvents = response.data.sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
@@ -71,9 +67,21 @@ export function EventProvider({ children }: { children: ReactNode }) {
             new Date(event.created_at).getTime() > (lastEventTimestamp ?? 0)
           );
 
-          // Reemplazamos las notificaciones con console.log
+          // Show toast for each new event
           newEvents.forEach(event => {
-            console.log(`Nuevo evento: ${event.staff_name} - ${event.device_name} - ${event.office_name}`);
+            toast.message(
+              <EventToast event={event} />,
+              {
+                duration: 5000,
+                position: "top-right",
+                icon: "🔔",
+                style: {
+                  background: "var(--background)",
+                  border: "1px solid var(--border)",
+                  color: "var(--foreground)",
+                },
+              }
+            );
           });
         }
       }

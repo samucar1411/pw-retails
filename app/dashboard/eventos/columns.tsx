@@ -18,7 +18,7 @@ import {
   DialogTitle,
   DialogFooter,
   DialogClose,
-} from "@/components/ui/dialog";
+} from "visor-ui";
 
 console.log("Component render start");
 

@@ -31,7 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuGroup,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "visor-ui";
 import {
   Sidebar,
   SidebarContent,
@@ -46,7 +46,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
-} from "@/components/ui/sidebar";
+} from "visor-ui";
 import { useAuth } from "@/context/auth-context";
 
 interface NavItem {
@@ -61,6 +61,11 @@ const platformItems: NavItem[] = [
     icon: LayoutDashboard,
     title: "Tablero",
     url: "/dashboard",
+  },
+  {
+    icon: AlertCircle,
+    title: "Monitoreo",
+    url: "/dashboard/monitoreo",
   },
   {
     icon: Building2,
@@ -198,7 +203,7 @@ export function AppSidebar() {
         <SidebarFooter className="mt-auto p-4">
           <div className="flex flex-col gap-2">
             <DropdownMenu>
-              <DropdownMenuTrigger>
+              <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"

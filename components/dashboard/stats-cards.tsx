@@ -2,41 +2,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Building2, Users, Building, UserMinus } from "lucide-react"
 import Link from "next/link"
 
-interface Stats {
+interface StatsCardsProps {
   facturacion: number
   clientesActivos: number
   sucursalesActivas: number
   clientesInactivos: number
 }
 
-interface StatsCardsProps {
-  stats: Stats
-  loading?: boolean
-}
-
-export function StatsCards({ stats, loading = false }: StatsCardsProps) {
-  const { facturacion, clientesActivos, sucursalesActivas, clientesInactivos } = stats;
-  
-  // Si está cargando, mostrar un estado de carga
-  if (loading) {
-    return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="animate-pulse">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="h-4 bg-gray-200 rounded w-1/3"></CardTitle>
-              <div className="h-8 w-8 rounded-full bg-gray-200"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="h-6 bg-gray-200 rounded w-1/2 mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-  
+export function StatsCards({ 
+  facturacion, 
+  clientesActivos, 
+  sucursalesActivas, 
+  clientesInactivos 
+}: StatsCardsProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
@@ -98,4 +76,4 @@ export function StatsCards({ stats, loading = false }: StatsCardsProps) {
       </Card>
     </div>
   )
-}
+} 

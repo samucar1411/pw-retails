@@ -6,7 +6,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "visor-ui"
 
 interface SalesChartFilterProps {
   period: '7d' | '30d' | '90d';
@@ -14,19 +14,8 @@ interface SalesChartFilterProps {
 }
 
 export function SalesChartFilter({ period, onPeriodChange }: SalesChartFilterProps) {
-  // Función helper para asegurar el tipo correcto
-  const handleValueChange = (value: string) => {
-    // Verificamos que el valor sea uno de los esperados
-    if (value === '7d' || value === '30d' || value === '90d') {
-      onPeriodChange(value);
-    }
-  };
-
   return (
-    <Select
-      value={period}
-      onValueChange={handleValueChange}
-    >
+    <Select value={period} onValueChange={onPeriodChange}>
       <SelectTrigger className="w-[180px]">
         <SelectValue placeholder="Seleccionar período" />
       </SelectTrigger>
@@ -37,4 +26,4 @@ export function SalesChartFilter({ period, onPeriodChange }: SalesChartFilterPro
       </SelectContent>
     </Select>
   )
-}
+} 

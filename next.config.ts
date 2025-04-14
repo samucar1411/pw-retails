@@ -4,10 +4,10 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'sys.adminpy.com',
-        port: '18001',
-        pathname: '/media/**',
+        protocol: "https",
+        hostname: "sys.adminpy.com",
+        port: "18001",
+        pathname: "/media/**",
       },
     ],
   },
@@ -41,28 +41,38 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://sys.adminpy.com:18001/api/:path*/",
+        destination: "https://sys.adminpy.com:18001/api/:path*/",
+        // Configuración para manejar problemas de SSL
+        basePath: false,
       },
       {
         source: "/api-token-auth",
-        destination: "http://sys.adminpy.com:18001/api-token-auth/",
+        destination: "https://sys.adminpy.com:18001/api-token-auth/",
+        // Configuración para manejar problemas de SSL
+        basePath: false,
       },
     ];
   },
+  // Configuración para manejar problemas de SSL tanto en cliente como en servidor
   serverRuntimeConfig: {
     https: {
-      rejectUnauthorized: false
-    }
+      rejectUnauthorized: false,
+    },
+  },
+  publicRuntimeConfig: {
+    https: {
+      rejectUnauthorized: false,
+    },
   },
   webpack: (config, { dev }) => {
     if (dev) {
       config.ignoreWarnings = [
         { module: /node_modules\/axios/ },
-        { module: /node_modules\/https-proxy-agent/ }
+        { module: /node_modules\/https-proxy-agent/ },
       ];
     }
     return config;
-  }
+  },
 };
 
 export default nextConfig;
