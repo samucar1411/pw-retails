@@ -51,6 +51,11 @@ export function EventProvider({ children }: { children: ReactNode }) {
       setError(null);
       const response = await eventService.getEvents();
       
+      if (!response || !response.data || !Array.isArray(response.data)) {
+        console.warn('Unexpected response format from eventService.getEvents()');
+        return;
+      }
+      
       // Sort events by created_at in descending order (newest first)
       const sortedEvents = response.data.sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -67,8 +72,8 @@ export function EventProvider({ children }: { children: ReactNode }) {
             new Date(event.created_at).getTime() > (lastEventTimestamp ?? 0)
           );
 
-          // Show toast for each new event
-          newEvents.forEach(event => {
+          // Show toast for each new event, but limit to 3 to avoid overwhelming the UI
+          newEvents.slice(0, 3).forEach(event => {
             toast.message(
               <EventToast event={event} />,
               {
@@ -83,6 +88,18 @@ export function EventProvider({ children }: { children: ReactNode }) {
               }
             );
           });
+          
+          // If more than 3 new events, show a summary toast
+          if (newEvents.length > 3) {
+            toast.message(
+              `${newEvents.length - 3} events more...`,
+              {
+                duration: 3000,
+                position: "top-right",
+                icon: "🔔",
+              }
+            );
+          }
         }
       }
 
@@ -95,19 +112,40 @@ export function EventProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error('Error fetching events:', err);
       setError('Failed to fetch events');
+      // No establecemos eventos a vacío en caso de error,
+      // mantenemos el último estado válido
     }
   }, [lastEventTimestamp]);
 
   // Initial fetch
   useEffect(() => {
+    let isMounted = true;
+    
     setLoading(true);
-    fetchEvents().finally(() => setLoading(false));
+    fetchEvents()
+      .catch(err => {
+        console.error('Error in initial event fetch:', err);
+        if (isMounted) {
+          setError('Failed to fetch events');
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false);
+        }
+      });
+      
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Set up polling
   useEffect(() => {
     const pollInterval = setInterval(() => {
-      fetchEvents();
+      fetchEvents().catch(err => {
+        console.error('Error in polling event fetch:', err);
+      });
     }, POLLING_INTERVAL);
 
     return () => clearInterval(pollInterval);

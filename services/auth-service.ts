@@ -1,6 +1,6 @@
 import { fetchApi } from './api';
 
-const ENDPOINT = '/api-token-auth';
+const ENDPOINT = '/api-token-auth2';
 
 interface AuthResponse {
   token: string;
@@ -22,7 +22,6 @@ const setToken = (token: string) => {
   if (typeof window !== 'undefined') {
     localStorage.setItem('auth_token', token);
     document.cookie = `auth_token=${token}; path=/; secure; samesite=strict`;
-    const storedToken = localStorage.getItem('auth_token');
   }
 };
 

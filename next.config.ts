@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
         port: "18001",
         pathname: "/media/**",
       },
+      {
+        protocol: "https",
+        hostname: "randomuser.me",
+        pathname: "/api/portraits/**",
+      },
     ],
   },
   async headers() {

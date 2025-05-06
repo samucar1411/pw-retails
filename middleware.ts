@@ -7,15 +7,15 @@ export function middleware(request: NextRequest) {
   const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path));
   const isRootPath = request.nextUrl.pathname === '/';
 
-  if (isRootPath && token) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
-  if (!token && !isPublicPath) {
+  if (!token && !isPublicPath && !isRootPath) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
   if (token && isPublicPath) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
+  if (isRootPath && token) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 

@@ -5,6 +5,8 @@ import { AuthProvider } from "@/context/auth-context";
 import { ThemeProvider } from "next-themes";
 import { Archivo } from "next/font/google";
 import { Toaster } from 'sonner';
+import { IncidentProvider } from "@/context/incident-context";
+import { SuspectProvider } from "@/context/suspect-context";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -32,7 +34,11 @@ export default function RootLayout({
         >
           <AuthProvider>
             <UserProvider>
-              {children}
+              <IncidentProvider>
+                <SuspectProvider>
+                  {children}
+                </SuspectProvider>
+              </IncidentProvider>
             </UserProvider>
           </AuthProvider>
         </ThemeProvider>
