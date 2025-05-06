@@ -19,22 +19,26 @@ export const OfficeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [error, setError] = useState<Error | null>(null);
 
   const fetchOfficesData = useCallback(async () => {
+    console.log("[OfficeContext] Starting fetch...");
     setIsLoading(true);
     setError(null);
     try {
       const data = await getOffices();
+      console.log("[OfficeContext] Fetched data:", data);
       setOffices(data);
     } catch (err) {
-      console.error("Failed to fetch offices:", err);
+      console.error("[OfficeContext] Failed to fetch offices:", err);
       // Ensure the error is an Error object
       setError(err instanceof Error ? err : new Error('An unknown error occurred while fetching offices'));
       setOffices([]); // Clear offices on error
     } finally {
       setIsLoading(false);
+      console.log("[OfficeContext] Fetch finished.");
     }
   }, []); // Empty dependency array means this function is created once
 
   useEffect(() => {
+    console.log("[OfficeContext] Provider mounted, triggering fetch.");
     // Fetch offices when the provider mounts
     fetchOfficesData();
   }, [fetchOfficesData]); // fetchOfficesData is stable due to useCallback with empty deps

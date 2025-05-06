@@ -7,12 +7,13 @@ import { CalendarDateRangePicker } from "@/components/ui/date-range-picker"
 import { PlusCircle } from "lucide-react"
 import { HourlyIncidentsChart } from "@/components/dashboard/hourly-incidents-chart"
 import { RecentIncidentsTable } from "@/components/dashboard/recent-incidents-table"
-import { IncidentMap } from "@/components/dashboard/incident-map"
+import { OfficeMap } from "@/components/dashboard/incident-map"
 import { IncidentDistributionChart } from "@/components/dashboard/incident-distribution-chart"
 import { BranchComparisonChart } from "@/components/dashboard/branch-comparison-chart"
 import Link from "next/link"
 import { useIncident } from "@/context/incident-context"
 import { useSuspects } from "@/context/suspect-context"
+import { useOffice } from "@/context/office-context"
 
 export default function DashboardPage() {
   const { incidents } = useIncident();
@@ -23,6 +24,9 @@ export default function DashboardPage() {
   const identifiedSuspects = suspects.filter(s => s.statusId === 1).length; // Assuming statusId 1 is for identified suspects
   const unidentifiedSuspects = suspects.filter(s => s.statusId === 2).length; // Assuming statusId 2 is for unidentified suspects
   const affectedOffices = new Set(incidents.map(incident => incident.officeId)).size;
+
+  // Get offices from context
+  const { offices, isLoading: isLoadingOffices, error: officeError } = useOffice();
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
@@ -108,7 +112,17 @@ export default function DashboardPage() {
 
       {/* Row 3: Map and Pie Chart */}
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
-          <IncidentMap data={incidents} />
+          {isLoadingOffices ? (
+            <Card className="lg:col-span-4 flex items-center justify-center h-[300px]">
+              <p>Cargando mapa de oficinas...</p>
+            </Card>
+          ) : officeError ? (
+            <Card className="lg:col-span-4 flex items-center justify-center h-[300px]">
+              <p>Error al cargar oficinas: {officeError.message}</p>
+            </Card>
+          ) : (
+            <OfficeMap data={offices} />
+          )}
           <IncidentDistributionChart data={incidents} />
       </div>
       

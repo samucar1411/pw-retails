@@ -54,11 +54,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const authPages = ['/login', '/forgot-password', '/register'];
       const isAuthPage = authPages.includes(pathname);
 
-      // TEMPORALMENTE DESHABILITADO
-      // if (!isAuthenticated && pathname.startsWith('/dashboard')) {
-      //   router.replace('/login');
-      // } else 
-      if (isAuthenticated && isAuthPage) {
+      if (!isAuthenticated && pathname.startsWith('/dashboard')) {
+        router.replace('/login');
+      } else if (isAuthenticated && isAuthPage) {
         router.replace('/dashboard');
       }
     }
