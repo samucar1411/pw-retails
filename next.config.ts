@@ -50,12 +50,16 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Access-Control-Allow-Methods",
-            value: "GET,DELETE,PATCH,POST,PUT",
+            value: "GET,DELETE,PATCH,POST,PUT,OPTIONS", // Added OPTIONS for preflight requests
           },
           {
             key: "Access-Control-Allow-Headers",
             value:
               "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization",
+          },
+          {
+            key: "Access-Control-Max-Age",
+            value: "86400", // Cache CORS preflight requests for 24 hours
           },
         ],
       },
@@ -63,20 +67,28 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return [
-      // Redirecciones específicas para endpoints de API
-      {
-        source: "/api/:path*",
-        destination: "https://sys.adminpy.com:18001/api/:path*", // Sin slash final
-        basePath: false,
-      },
+      // Redirección para autenticación
       {
         source: "/api-token-auth",
-        destination: "https://sys.adminpy.com:18001/api-token-auth/", // Con slash final
+        destination: "https://sys.adminpy.com:18001/api-token-auth/",
         basePath: false,
       },
+      // Redirección específica para oficinas con soporte para CORS preflight
       {
-        source: "/api-token-auth/",
-        destination: "https://sys.adminpy.com:18001/api-token-auth/", // Con slash final
+        source: "/api/offices/:path*",
+        destination: "https://sys.adminpy.com:18001/api/offices/:path*",
+        basePath: false,
+      },
+      // Redirección específica para oficinas (endpoint principal)
+      {
+        source: "/api/offices",
+        destination: "https://sys.adminpy.com:18001/api/offices",
+        basePath: false,
+      },
+      // Redirección genérica para todos los endpoints de API
+      {
+        source: "/api/:path*",
+        destination: "https://sys.adminpy.com:18001/api/:path*",
         basePath: false,
       }
     ];

@@ -4,7 +4,7 @@ import * as React from "react"
 import { SidebarProvider, SidebarInset } from "visor-ui"
 import { AppSidebar } from "@/components/app-sidebar"
 import { DashboardHeader } from "@/components/dashboard-header"
-import { EventProvider } from '@/context/event-context'
+// Event provider removed
 import { CompanyProvider } from '@/context/company-context'
 import { OfficeProvider } from "@/context/office-context"
 
@@ -15,7 +15,6 @@ export default function DashboardLayout({
 }) {
   return (
     <OfficeProvider>
-      <EventProvider>
         <CompanyProvider>
           <SidebarProvider defaultOpen={true}>
             <AppSidebar />
@@ -27,7 +26,6 @@ export default function DashboardLayout({
             </SidebarInset>
           </SidebarProvider>
         </CompanyProvider>
-      </EventProvider>
     </OfficeProvider>
   )
 } 

@@ -2,16 +2,9 @@ import axios, {
   AxiosError,
   AxiosResponse,
   RawAxiosRequestHeaders,
-  AxiosRequestHeaders,
-  InternalAxiosRequestConfig,
 } from "axios";
 import qs from "qs";
 import https from "https";
-
-// Extend AxiosRequestConfig to include our custom property
-interface CustomRequestConfig extends InternalAxiosRequestConfig {
-  _requestStack?: string;
-}
 
 // Remove BASE_URL as we're using proxy
 export interface ApiResponse<T> {
@@ -24,8 +17,8 @@ type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
 interface FetchOptions {
   method?: HttpMethod;
-  data?: any;
-  params?: Record<string, any>;
+  data?: unknown;
+  params?: Record<string, unknown>;
   headers?: RawAxiosRequestHeaders;
 }
 
@@ -34,15 +27,14 @@ interface DefaultHeaders {
   "Content-Type"?: string;
 }
 
-// Log SSL verification status
-console.log("[API] SSL certificate verification is DISABLED");
-
+// Utilizar el proxy configurado en Next.js
 export const api = axios.create({
-  baseURL: "", // Empty as we're using Next.js proxy
+  baseURL: "", // Usar ruta relativa para aprovechar el proxy de Next.js
   headers: {
     Accept: "application/json",
+    "Content-Type": "application/json",
   },
-  withCredentials: true, // This is important for auth
+  withCredentials: true,
   paramsSerializer: {
     serialize: (params) => qs.stringify(params, { arrayFormat: "repeat" }),
   },
@@ -50,26 +42,21 @@ export const api = axios.create({
   httpsAgent: new https.Agent({
     rejectUnauthorized: false, // Allow self-signed certificates
   }),
-  timeout: 10000, // Aumentado para dar más tiempo
+  timeout: 15000, // Increased timeout to 15 seconds
 });
 
-// Configurar el agente HTTPS para todos los entornos
+// Configure HTTPS agent for all environments
 api.defaults.httpsAgent = new https.Agent({
   rejectUnauthorized: false,
 });
 
 // Configurar proxy para desarrollo local
 if (process.env.NODE_ENV === "development") {
-  console.log("[API] Running in development mode with SSL verification disabled");
+  console.log("Running in development mode with SSL verification disabled");
 }
 
 api.interceptors.request.use(
   (config) => {
-    // Debug log para verificar URLs
-    console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
-    
-    const stack = new Error().stack?.split("\n").slice(2, 5);
-
     const defaultHeaders: DefaultHeaders = {
       Accept: "application/json",
     };
@@ -107,22 +94,18 @@ api.interceptors.request.use(
 // Response interceptor with enhanced error handling
 api.interceptors.response.use(
   (response) => {
-    console.log(`[API Response] Success: ${response.status}`);
     return response;
   },
   (error: AxiosError) => {
     const stack = new Error().stack?.split("\n").slice(2, 5);
-    
-    // Logging detallado para errores 
-    console.error(`[API Error] ${error.response?.status || 'Network Error'} - ${error.message}`, error.response?.data);
 
     if (error.code === "ERR_NETWORK") {
       // Handle network errors
       console.error("Network error:", error);
 
-      // For dashboard and event endpoints, return mock data instead of rejecting
+      // For dashboard endpoints, return mock data instead of rejecting
       const url = error.config?.url || "";
-      if (url.includes("/api/dashboard") || url.includes("/api/events")) {
+      if (url.includes("/api/dashboard")) {
         console.warn("Returning mock data for failed request to:", url);
         return Promise.resolve({
           data: {},

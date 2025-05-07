@@ -7,7 +7,7 @@ import { es } from "date-fns/locale";
 import { formatDistanceToNow } from "date-fns";
 import { Bell, Settings, User } from "lucide-react";
 
-import { useEvents } from "@/context/event-context";
+// Event context removed
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ interface Notification {
 }
 
 export function DashboardHeader() {
-  const { events } = useEvents();
+  // Events functionality removed
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
   const readStatusMapRef = React.useRef<Record<string, boolean>>({});
@@ -50,22 +50,31 @@ export function DashboardHeader() {
     }
   }, []);
 
-  // Update notifications when events change
+  // Initialize with sample notifications instead of event-based ones
   React.useEffect(() => {
-    const newNotifications = events.slice(0, 3).map((event) => ({
-      id: event.id.toString(),
-      title: `Alerta de ${event.device_name}`,
-      description: `${event.staff_name} detectado en ${event.office_name}`,
-      timestamp: formatDistanceToNow(new Date(event.created_at), {
-        addSuffix: true,
-        locale: es,
-      }),
-      read: readStatusMapRef.current[event.id.toString()] ?? false,
-    }));
+    // If we already have notifications in localStorage, use those
+    const saved = localStorage.getItem("notifications");
+    if (saved && JSON.parse(saved).length > 0) {
+      return; // We already loaded notifications in the first useEffect
+    }
+    
+    // Otherwise, create some sample notifications
+    const sampleNotifications = [
+      {
+        id: "1",
+        title: "Bienvenido a PW Retails",
+        description: "Sistema de gestión de oficinas",
+        timestamp: formatDistanceToNow(new Date(), {
+          addSuffix: true,
+          locale: es,
+        }),
+        read: false,
+      },
+    ];
 
-    setNotifications(newNotifications);
-    localStorage.setItem("notifications", JSON.stringify(newNotifications));
-  }, [events]);
+    setNotifications(sampleNotifications);
+    localStorage.setItem("notifications", JSON.stringify(sampleNotifications));
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
