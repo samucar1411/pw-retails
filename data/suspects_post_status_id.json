@@ -1,0 +1,320 @@
+[
+  {
+    "Alias": "ABRIGO BORDO",
+    "Status": 2,
+    "PhysicalDescription": "ABRIGO BORDO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "ABRIGO GRIS CON GORRO",
+    "Status": 2,
+    "PhysicalDescription": "ABRIGO GRIS CON GORRO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "ABRIGO NEGRO, TAPAB. BLANCA, RIÑONERA",
+    "Status": 2,
+    "PhysicalDescription": "ABRIGO NEGRO, TAPAB. BLANCA, RIÑONERA",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "AUTO BLANCO",
+    "Status": 1,
+    "PhysicalDescription": "AUTO BLANCO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "CAMISA BORDO, SACO GRIS",
+    "Status": 2,
+    "PhysicalDescription": "CAMISA BORDO, SACO GRIS",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "CAMPERA AZUL,, GORRO BLANCO",
+    "Status": 2,
+    "PhysicalDescription": "CAMPERA AZUL,, GORRO BLANCO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "CAPUCHA NEGRA",
+    "Status": 2,
+    "PhysicalDescription": "CAPUCHA NEGRA",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "CASCO NEGRO",
+    "Status": 2,
+    "PhysicalDescription": "CASCO NEGRO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "CASCO NEGRO, REMERA ROJO",
+    "Status": 2,
+    "PhysicalDescription": "CASCO NEGRO, REMERA ROJO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "CASCO ROJO",
+    "Status": 2,
+    "PhysicalDescription": "CASCO ROJO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "CASCO ROJO, CAMPERA DE CUERINA NEGRO",
+    "Status": 2,
+    "PhysicalDescription": "CASCO ROJO, CAMPERA DE CUERINA NEGRO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "CASCO ROJO, REMERA BLANCA",
+    "Status": 2,
+    "PhysicalDescription": "CASCO ROJO, REMERA BLANCA",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "DOS HOMBRES A BORDO DE UNA MOTO NEGRA CON TAPABOCAS",
+    "Status": 2,
+    "PhysicalDescription": "DOS HOMBRES A BORDO DE UNA MOTO NEGRA CON TAPABOCAS",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "DOS HOMBRES A BORDO DE UNA MOTO ROJA",
+    "Status": 2,
+    "PhysicalDescription": "DOS HOMBRES A BORDO DE UNA MOTO ROJA",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "DOS HOMBRES A BORDO DE UNA MOTO ROJA CON LA CARA CUBIERTA",
+    "Status": 2,
+    "PhysicalDescription": "DOS HOMBRES A BORDO DE UNA MOTO ROJA CON LA CARA CUBIERTA",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "DOS SUJETOS A BORDO DE UNA MOTOCIBLETA",
+    "Status": 2,
+    "PhysicalDescription": "DOS SUJETOS A BORDO DE UNA MOTOCIBLETA",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "EL DE LENTES",
+    "Status": 2,
+    "PhysicalDescription": "EL DE LENTES",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "EL DE LOS ANILLOS",
+    "Status": 1,
+    "PhysicalDescription": "EL DE LOS ANILLOS",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "EL RENGO",
+    "Status": 1,
+    "PhysicalDescription": "EL RENGO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "GORDO, CASCO NEGRO",
+    "Status": 2,
+    "PhysicalDescription": "GORDO, CASCO NEGRO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "GORRO TIPO PESCADOR, SACO GRIS",
+    "Status": 3,
+    "PhysicalDescription": "GORRO TIPO PESCADOR, SACO GRIS",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "HOMBRE CON KEPIS",
+    "Status": 2,
+    "PhysicalDescription": "HOMBRE CON KEPIS",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "HOMBRE CON MOCHILA Y KEPIS",
+    "Status": 2,
+    "PhysicalDescription": "HOMBRE CON MOCHILA Y KEPIS",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "LENTES NEGROS. BERMUDA Y CAMISILLA",
+    "Status": 2,
+    "PhysicalDescription": "LENTES NEGROS. BERMUDA Y CAMISILLA",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "MOCHILA NGRA Y SACO NEGRO",
+    "Status": 2,
+    "PhysicalDescription": "MOCHILA NGRA Y SACO NEGRO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "MOROCHO, CASCO NEGRO",
+    "Status": 2,
+    "PhysicalDescription": "MOROCHO, CASCO NEGRO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "MOROCHO, CON KEPPI Y CAMISILLA NEGRA",
+    "Status": 2,
+    "PhysicalDescription": "MOROCHO, CON KEPPI Y CAMISILLA NEGRA",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "MOTO CON CASCO BLANCO",
+    "Status": 2,
+    "PhysicalDescription": "MOTO CON CASCO BLANCO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "NUEVO",
+    "Status": 1,
+    "PhysicalDescription": "NUEVO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "QUEPI  NEGRO RIÑONERA",
+    "Status": 2,
+    "PhysicalDescription": "QUEPI  NEGRO RIÑONERA",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "QUEPI AMARILLA TAPABOCA BLANCO",
+    "Status": 2,
+    "PhysicalDescription": "QUEPI AMARILLA TAPABOCA BLANCO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "QUEPI CON LENTES OSCUROS",
+    "Status": 2,
+    "PhysicalDescription": "QUEPI CON LENTES OSCUROS",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "QUEPIS Y TAPABOCA NEGRO",
+    "Status": 2,
+    "PhysicalDescription": "QUEPIS Y TAPABOCA NEGRO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "REMERA ARGENTINA",
+    "Status": 1,
+    "PhysicalDescription": "REMERA ARGENTINA",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "REMERA BLANCA QUEPIS MARRÓN",
+    "Status": 2,
+    "PhysicalDescription": "REMERA BLANCA QUEPIS MARRÓN",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "REMERA GRIS PANTALON PRELAVADA",
+    "Status": 2,
+    "PhysicalDescription": "REMERA GRIS PANTALON PRELAVADA",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "REMERA NEGRA Y GORRO NEGRO",
+    "Status": 2,
+    "PhysicalDescription": "REMERA NEGRA Y GORRO NEGRO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "REMERA NEGRO TAPABOCA BLANCA",
+    "Status": 2,
+    "PhysicalDescription": "REMERA NEGRO TAPABOCA BLANCA",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "REMERA ROJA",
+    "Status": 2,
+    "PhysicalDescription": "REMERA ROJA",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "REMERA ROJO CON QUEPI NEGRO",
+    "Status": 2,
+    "PhysicalDescription": "REMERA ROJO CON QUEPI NEGRO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "REMERA Y KEPI BLANCA CON ARMA DE FUEGO",
+    "Status": 2,
+    "PhysicalDescription": "REMERA Y KEPI BLANCA CON ARMA DE FUEGO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "SACO A RAYOS TAPABOCA BLANCA Y QUEPIS",
+    "Status": 2,
+    "PhysicalDescription": "SACO A RAYOS TAPABOCA BLANCA Y QUEPIS",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "SEÑOR CON CAPUCHA",
+    "Status": 1,
+    "PhysicalDescription": "SEÑOR CON CAPUCHA",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "SIN ALIAS",
+    "Status": 2,
+    "PhysicalDescription": "SIN ALIAS",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "SUJETO CON REMERA GRIS ARMA DE FUEGO",
+    "Status": 2,
+    "PhysicalDescription": "SUJETO CON REMERA GRIS ARMA DE FUEGO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "TAPABOCA BLANCA CAMPERA EL AHORRAZO",
+    "Status": 2,
+    "PhysicalDescription": "TAPABOCA BLANCA CAMPERA EL AHORRAZO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "TAPABOCA BLANCA, ABRIGO NEGRO CON GORRO",
+    "Status": 2,
+    "PhysicalDescription": "TAPABOCA BLANCA, ABRIGO NEGRO CON GORRO",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "TAPABOCA NEGRA",
+    "Status": 2,
+    "PhysicalDescription": "TAPABOCA NEGRA",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "TAPABOCA NEGRA CON QUEPI MARRON",
+    "Status": 2,
+    "PhysicalDescription": "TAPABOCA NEGRA CON QUEPI MARRON",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "TAPABOCAS CON QUEPI",
+    "Status": 2,
+    "PhysicalDescription": "TAPABOCAS CON QUEPI",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "TAPABOCAS EN MOTO ROJA",
+    "Status": 2,
+    "PhysicalDescription": "TAPABOCAS EN MOTO ROJA",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "TAPABOCAS TOYOTA VITZ",
+    "Status": 2,
+    "PhysicalDescription": "TAPABOCAS TOYOTA VITZ",
+    "PhotoUrl": ""
+  },
+  {
+    "Alias": "UN JOVEN CON REMERA Y BUZO NEGRO",
+    "Status": 2,
+    "PhysicalDescription": "UN JOVEN CON REMERA Y BUZO NEGRO",
+    "PhotoUrl": ""
+  }
+]

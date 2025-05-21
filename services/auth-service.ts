@@ -1,6 +1,5 @@
 // Importamos axios directamente para evitar problemas con el proxy
 import axios from 'axios';
-import qs from 'qs';
 import https from 'https';
 
 interface AuthResponse {
@@ -28,9 +27,8 @@ const setToken = (token: string) => {
 
 const authenticateUser = async (username: string, password: string): Promise<AuthResponse> => {
   try {
-    // Usar directamente la URL de la API de Django
-    const API_URL = 'https://sys.adminpy.com:18001';
-    const endpoint = `${API_URL}/api-token-auth/`;
+    // Usar el proxy de Next.js en lugar de llamar directamente a la API
+    const endpoint = `/api/api-token-auth2/`;
     
     console.log(`[Auth] Intentando autenticar al usuario: ${username} en endpoint: ${endpoint}`);
     
@@ -39,12 +37,12 @@ const authenticateUser = async (username: string, password: string): Promise<Aut
       httpsAgent: new https.Agent({ rejectUnauthorized: false })
     });
     
-    // Usamos axios para hacer la petición directamente al backend de Django
+    // Usamos axios para hacer la petición al proxy de Next.js
     const response = await axiosInstance.post(endpoint, 
-      qs.stringify({ username, password }),
+      { username, password }, // Enviamos como JSON, el proxy lo convertirá a form-urlencoded
       {
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         timeout: 15000

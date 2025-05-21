@@ -12,12 +12,13 @@ import {
 } from "@/components/ui/card";
 import { Office } from "@/types/office";
 import { MapPin } from "lucide-react";
+import { PaginatedResponse } from "@/types/api";
 
 // Initialize Mapbox
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
 
 interface OfficeMapProps {
-  data: Office[];
+  data: Office[] | PaginatedResponse<Office>;
 }
 
 export function OfficeMap({ data }: OfficeMapProps) {
@@ -26,8 +27,17 @@ export function OfficeMap({ data }: OfficeMapProps) {
   const markers = React.useRef<mapboxgl.Marker[]>([]);
 
   const officesWithCoordinates = React.useMemo(() => {
-    return data.filter(office => {
-      if (!office.Geo) return false;
+    if (!data) return [];
+    
+    // Handle both paginated response and direct array
+    const officesArray: Office[] = 'results' in data 
+      ? data.results 
+      : Array.isArray(data) 
+        ? data 
+        : [];
+    
+    return officesArray.filter((office: Office) => {
+      if (!office?.Geo) return false;
       const parts = office.Geo.split(",");
       if (parts.length !== 2) return false;
       const lat = parseFloat(parts[0].trim());
@@ -88,7 +98,15 @@ export function OfficeMap({ data }: OfficeMapProps) {
         </div>
       `);
 
-      const marker = new mapboxgl.Marker()
+      // Create custom marker element
+      const el = document.createElement('div');
+      el.style.backgroundImage = 'url(https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT1XsoVtjaQs2k4pJeWnvcmnrxWCkci0HUfoQ&s'; // ensure office-marker.png exists in public folder
+      el.style.width = '32px';
+      el.style.height = '32px';
+      el.style.backgroundSize = 'contain';
+      el.style.backgroundRepeat = 'no-repeat';
+      el.style.cursor = 'pointer';
+      const marker = new mapboxgl.Marker({ element: el })
         .setLngLat([lon, lat])
         .setPopup(popup)
         .addTo(currentMap);

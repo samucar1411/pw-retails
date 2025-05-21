@@ -11,7 +11,7 @@ import React, {
 import { Incident, IncidentType } from "@/types/incident";
 import { File } from "@/types/common";
 import {
-  getAllIncidents,
+  getIncidents,
   getIncidentsByOffice,
   createIncident,
   updateIncident,
@@ -21,6 +21,14 @@ import {
 } from "@/services/incident-service";
 
 interface IncidentContextType {
+  loadIncidentsWithFilters: (filters: {
+    created_at_after?: string;
+    created_at_before?: string;
+    ordering?: string;
+    page?: number;
+    page_size?: number;
+    [key: string]: string | number | boolean | undefined;
+  }) => Promise<void>;
   incidents: Incident[];
   incidentTypes: IncidentType[];
   selectedIncident: Incident | null;
@@ -49,8 +57,8 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
   const loadIncidents = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getAllIncidents();
-      setIncidents(data);
+      const data = await getIncidents();
+      setIncidents(data.results);
       setError(null);
     } catch (error) {
       console.error("Error loading incidents:", error);
@@ -77,12 +85,15 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
   const loadIncident = useCallback(async (id: number) => {
     setLoading(true);
     try {
-      const incident = await getIncidentsByOffice(id);
-      setSelectedIncident(incident[0] || null);
+      const response = await getIncidentsByOffice(id);
+      // Handle both paginated and non-paginated responses
+      const incidents = 'results' in response ? response.results : Array.isArray(response) ? response : [];
+      setSelectedIncident(incidents[0] || null);
       setError(null);
     } catch (error) {
       console.error("Error loading incident:", error);
       setError("Failed to load incident");
+      setSelectedIncident(null);
     } finally {
       setLoading(false);
     }
@@ -179,27 +190,35 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
   const getByOffice = useCallback(async (officeId: number) => {
     setLoading(true);
     try {
-      const data = await getIncidentsByOffice(officeId);
-      setIncidents(data);
+      const response = await getIncidentsByOffice(officeId);
+      // Handle both paginated and non-paginated responses
+      const incidents = 'results' in response ? response.results : Array.isArray(response) ? response : [];
+      setIncidents(incidents);
       setError(null);
     } catch (error) {
       console.error("Error loading office incidents:", error);
       setError("Failed to load office incidents");
+      setIncidents([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const getByDateRange = useCallback(async (_startDate: string, _endDate: string) => {
+  const getByDateRange = useCallback(async (startDate: string, endDate: string) => {
     setLoading(true);
     try {
-      // Note: This function is not implemented in the service yet
-      const data = await getAllIncidents(); // Temporary fallback
-      setIncidents(data);
+      const data = await getIncidents({
+        created_at_after: startDate,
+        created_at_before: endDate
+      });
+      // Handle both paginated and non-paginated responses
+      const incidents = 'results' in data ? data.results : Array.isArray(data) ? data : [];
+      setIncidents(incidents);
       setError(null);
     } catch (error) {
       console.error("Error loading incidents by date range:", error);
       setError("Failed to load incidents by date range");
+      setIncidents([]);
     } finally {
       setLoading(false);
     }
@@ -210,7 +229,33 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
     loadIncidentTypes();
   }, [loadIncidents, loadIncidentTypes]);
 
+  // Nueva función para cargar incidentes con filtros
+  const loadIncidentsWithFilters = useCallback(async (filters: {
+    created_at_after?: string;
+    created_at_before?: string;
+    ordering?: string;
+    page?: number;
+    page_size?: number;
+    [key: string]: string | number | boolean | undefined;
+  }) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getIncidents(filters);
+      // Handle both paginated and non-paginated responses
+      const incidents = 'results' in response ? response.results : Array.isArray(response) ? response : [];
+      setIncidents(incidents);
+    } catch (error) {
+      console.error("Error loading filtered incidents:", error);
+      setError("Failed to load filtered incidents");
+      setIncidents([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const value: IncidentContextType = {
+    loadIncidentsWithFilters,
     incidents,
     incidentTypes,
     selectedIncident,

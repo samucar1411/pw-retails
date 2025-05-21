@@ -5,23 +5,32 @@ export type IncidentType = BaseEntity & {
 };
 
 export type Incident = BaseEntity & {
-  officeId: number; // FK to Office
-  date: string; // ISO string
-  time: string; // ISO string
-  incidentTypeId: number; // FK to IncidentType
+  // API field names match the actual response
+  Office: number; // Office ID
+  Date: string; // Date in YYYY-MM-DD format
+  Time: string; // Time in HH:MM:SS format
+  IncidentType: number; // FK to IncidentType
+  Description: string;
+  CashLoss: string; // Monetary values come as strings
+  MerchandiseLoss: string;
+  OtherLosses: string;
+  TotalLoss: string;
+  Notes: string;
+  Attachments: any[]; // Array of attachment IDs or objects
+  Report: any | null; // Report data or null
+  Suspects: string[]; // Array of suspect IDs
+  
+  // For backward compatibility with existing code
+  officeId?: number;
+  date?: string;
+  time?: string;
+  incidentTypeId?: number;
   description?: string;
-  cashLoss?: number;
-  merchandiseLoss?: number;
-  otherLosses?: number;
-  totalLoss?: number;
+  cashLoss?: number | string;
+  merchandiseLoss?: number | string;
+  otherLosses?: number | string;
+  totalLoss?: number | string;
   notes?: string;
   attachments?: File[];
-  latitude?: number; // Latitude coordinate
-  longitude?: number; // Longitude coordinate
-  suspects?: {
-    alias?: string;
-    status?: string;
-    description?: string;
-    image?: File;
-  }[];
+  suspects?: any[];
 };

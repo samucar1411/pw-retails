@@ -1,4 +1,3 @@
-// app/(dashboard)/components/app-sidebar.tsx
 "use client";
 
 import * as React from "react";
@@ -15,12 +14,8 @@ import {
   User,
   Settings,
   LogOut,
-  FileText,
   PlusCircle,
   List,
-  Shield,
-  FileWarning,
-  ClipboardList,
   FileCheck,
 } from "lucide-react";
 
@@ -52,28 +47,10 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 import { useAuth } from "@/context/auth-context";
-import { BranchProvider, Branch } from "@/hooks/use-branch";
-import { BranchSelectorCompact } from "@/components/branch-selector";
-import { cn } from "@/lib/utils";
+import { OfficeSelectorCompact } from "@/components/office-selector";
+import { OfficeProvider } from "@/context/office-context";
 
-const branches: Branch[] = [
-  {
-    id: "560",
-    name: "PUNTO 560",
-    address: "Gral. Máximo Santos 555, Asunción",
-    logoUrl: "/logos/pf.svg",
-  },
-  {
-    id: "142",
-    name: "PUNTO 142",
-    address: "Av. Quesada 450, Asunción",
-    logoUrl: "/logos/pf.svg",
-  },
-];
-
-// ─────────────────────────────────────────────────────────
-// Navegación
-// ─────────────────────────────────────────────────────────
+// Restore NavItem interface
 interface NavItem {
   icon: React.ElementType;
   title: string;
@@ -192,38 +169,44 @@ export function AppSidebar() {
           <CollapsibleTrigger asChild>
             <SidebarMenuButton
               isActive={isItemActive}
-              className="flex items-center justify-between w-full"
+              className="flex items-center justify-between w-full hover:bg-muted/80 transition-colors duration-200 rounded-md px-3 py-2"
             >
-              <div className="flex items-center gap-2 flex-1">
-                <item.icon className="h-4 w-4" />
-                {item.title}
+              <div className="flex items-center gap-3 flex-1">
+                <div className={`p-1.5 rounded-md ${isItemActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground group-hover:bg-muted group-hover:text-foreground'} transition-colors duration-200`}>
+                  <item.icon className="h-4 w-4" />
+                </div>
+                <span className="font-medium">{item.title}</span>
               </div>
               {item.children && (
                 <ChevronDown
-                  className={cn(
-                    "h-4 w-4 transition-transform",
-                    isExpanded && "transform rotate-180"
-                  )}
+                  className={`h-4 w-4 transition-all duration-200 text-muted-foreground group-hover:text-foreground/80 ${
+                    isExpanded ? 'rotate-180' : ''
+                  }`}
                 />
               )}
             </SidebarMenuButton>
           </CollapsibleTrigger>
           {item.children && (
-            <CollapsibleContent>
-              <div className="pl-6 space-y-1">
-                {item.children.map(child => (
-                  <SidebarMenuButton
+            <CollapsibleContent className="mt-1 ml-2 pl-4 border-l-2 border-border/30 space-y-1">
+              {item.children.map((child: NavItem) => {
+                const isChildActive = isActive(child.url);
+                return (
+                  <Link
                     key={child.url}
-                    isActive={isActive(child.url)}
-                    asChild
+                    href={child.url}
+                    className={`flex items-center gap-2 py-1.5 px-3 text-sm rounded-md transition-all duration-200 ${
+                      isChildActive
+                        ? 'bg-primary/10 text-primary font-medium shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    } group/child`}
                   >
-                    <Link href={child.url} className="flex items-center gap-2">
-                      <child.icon className="h-4 w-4" />
-                      {child.title}
-                    </Link>
-                  </SidebarMenuButton>
-                ))}
-              </div>
+                    <span className={`w-1 h-1 rounded-full ${
+                      isChildActive ? 'bg-primary' : 'bg-muted-foreground/40 group-hover/child:bg-foreground/60'
+                    } transition-colors duration-200`}></span>
+                    <span>{child.title}</span>
+                  </Link>
+                );
+              })}
             </CollapsibleContent>
           )}
         </Collapsible>
@@ -232,11 +215,11 @@ export function AppSidebar() {
   };
 
   return (
-    <BranchProvider initial={branches[0]}>
+    <OfficeProvider>
       <Sidebar>
         {/* ── HEADER ─────────────────────────────────────── */}
         <SidebarHeader className="flex flex-col">
-          <BranchSelectorCompact branches={branches} />
+          <OfficeSelectorCompact />
         </SidebarHeader>
 
         {/* ── CONTENIDO ──────────────────────────────────── */}
@@ -316,6 +299,6 @@ export function AppSidebar() {
         {/* ── RAIL (versión colapsada) ───────────────────── */}
         <SidebarRail />
       </Sidebar>
-    </BranchProvider>
+    </OfficeProvider>
   );
 }

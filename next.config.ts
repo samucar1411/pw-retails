@@ -29,6 +29,16 @@ const nextConfig: NextConfig = {
         hostname: "randomuser.me",
         pathname: "/api/portraits/**",
       },
+      {
+        protocol: "https",
+        hostname: "asset.cloudinary.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/**",
+      },
     ],
   },
   env: {
@@ -69,8 +79,8 @@ const nextConfig: NextConfig = {
     return [
       // Redirección para autenticación
       {
-        source: "/api-token-auth",
-        destination: "https://sys.adminpy.com:18001/api-token-auth/",
+        source: "/api-token-auth2/",
+        destination: "https://sys.adminpy.com:18001/api-token-auth2/",
         basePath: false,
       },
       // Redirección específica para oficinas con soporte para CORS preflight
@@ -83,6 +93,30 @@ const nextConfig: NextConfig = {
       {
         source: "/api/offices",
         destination: "https://sys.adminpy.com:18001/api/offices",
+        basePath: false,
+      },
+      // Redirección específica para incidentes con soporte para CORS preflight
+      {
+        source: "/api/incidents/:path*",
+        destination: "https://sys.adminpy.com:18001/api/incidents/:path*",
+        basePath: false,
+      },
+      // Redirección específica para incidentes (endpoint principal)
+      {
+        source: "/api/incidents",
+        destination: "https://sys.adminpy.com:18001/api/incidents",
+        basePath: false,
+      },
+      // Redirección específica para tipos de incidentes con soporte para CORS preflight
+      {
+        source: "/api/incidenttypes/:path*",
+        destination: "https://sys.adminpy.com:18001/api/incidenttypes/:path*",
+        basePath: false,
+      },
+      // Redirección específica para tipos de incidentes (endpoint principal)
+      {
+        source: "/api/incidenttypes",
+        destination: "https://sys.adminpy.com:18001/api/incidenttypes",
         basePath: false,
       },
       // Redirección genérica para todos los endpoints de API

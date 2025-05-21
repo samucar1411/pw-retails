@@ -1,12 +1,13 @@
-import { BaseEntity } from './common';
 
-export type SuspectStatus = BaseEntity & {
-  name: string;
+
+export type Suspect =  {
+  // Basic Information
+  id: string;
+  Alias: string;
+  PhysicalDescription: string;
+  PhotoUrl: string;
+  Status: number;
 };
 
-export type Suspect = BaseEntity & {
-  alias: string;
-  statusId: number; // FK to SuspectStatus
-  physicalDescription?: string;
-  photoUrl?: string;
-}; 
+// For table display
+export type SuspectTableItem = Suspect; 

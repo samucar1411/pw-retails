@@ -1,65 +1,119 @@
-import { Suspect, SuspectStatus } from '../types/suspect';
+import { Suspect, SuspectTableItem } from '../types/suspect';
+import { PaginatedResponse, ListParams } from '../types/api';
 import { api } from './api';
 
 // SUSPECT FUNCTIONS
-export async function getAllSuspects(): Promise<Suspect[]> {
-  const { data } = await api.get<Suspect[]>('/suspects');
-  return data;
-}
+const SUSPECTS_ENDPOINT = '/api/suspects/';
 
-export async function createSuspect(suspect: Partial<Suspect>): Promise<Suspect> {
-  const { data } = await api.post<Suspect>('/suspects', suspect);
-  return data;
-}
-
-export async function updateSuspect(id: number, suspect: Partial<Suspect>): Promise<Suspect> {
-  const { data } = await api.put<Suspect>(`/suspects/${id}`, suspect);
-  return data;
-}
-
-export async function deleteSuspect(id: number): Promise<void> {
-  await api.delete(`/suspects/${id}`);
-}
-
-export async function uploadSuspectPhoto(id: number, file: File): Promise<{ photoUrl: string }> {
-  const formData = new FormData();
-  formData.append('photo', file);
-  const { data } = await api.post<{ photoUrl: string }>(`/suspects/${id}/photo`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+export async function getAllSuspects(params?: ListParams): Promise<PaginatedResponse<Suspect>> {
+  const { data } = await api.get<PaginatedResponse<Suspect>>('/api/suspects/', { 
+    params: { ...params, format: 'json' } 
   });
+
+  console.log("sospechosos", data)
   return data;
 }
 
-// SUSPECT STATUS FUNCTIONS
-export async function getAllSuspectStatuses(): Promise<SuspectStatus[]> {
-  const { data } = await api.get<SuspectStatus[]>('/suspect-statuses');
-  return data;
-}
 
-export async function createSuspectStatus(status: Partial<SuspectStatus>): Promise<SuspectStatus> {
-  const { data } = await api.post<SuspectStatus>('/suspect-statuses', status);
-  return data;
-}
-
-export async function updateSuspectStatus(id: number, status: Partial<SuspectStatus>): Promise<SuspectStatus> {
-  const { data } = await api.put<SuspectStatus>(`/suspect-statuses/${id}`, status);
-  return data;
-}
-
-export async function deleteSuspectStatus(id: number): Promise<void> {
-  await api.delete(`/suspect-statuses/${id}`);
-}
-
-// New function to search suspects
-export async function searchSuspects(query: string): Promise<Suspect[]> {
-  if (!query) {
-    return []; // Return empty if query is empty
+export async function createSuspect(suspect: Partial<Suspect>): Promise<Suspect | null> {
+  try {
+    const { data } = await api.post<Suspect>(SUSPECTS_ENDPOINT, suspect);
+    return data;
+  } catch (error) {
+    console.error('Error creating suspect:', error);
+    return null;
   }
-  // Adjust the endpoint and query parameter based on your API
-  const { data } = await api.get<Suspect[]>(`/suspects/search`, {
-    params: { q: query } 
+}
+
+export async function updateSuspect(id: string, suspect: Partial<Suspect>): Promise<Suspect | null> {
+  try {
+    const { data } = await api.put<Suspect>(`${SUSPECTS_ENDPOINT}${id}/`, suspect);
+    return data;
+  } catch (error) {
+    console.error(`Error updating suspect ${id}:`, error);
+    return null;
+  }
+}
+
+export async function deleteSuspect(id: string): Promise<boolean> {
+  try {
+    await api.delete(`${SUSPECTS_ENDPOINT}${id}/`);
+    return true;
+  } catch (error) {
+    console.error(`Error deleting suspect ${id}:`, error);
+    return false;
+  }
+}
+
+export async function uploadSuspectPhoto(id: string, file: File): Promise<{ PhotoUrl: string } | null> {
+  try {
+    const formData = new FormData();
+    formData.append('photo', file);
+    
+    const { data } = await api.post<{ PhotoUrl: string }>(
+      `${SUSPECTS_ENDPOINT}${id}/upload_photo/`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    
+    // Update the suspect with the new photo URL
+    if (data.PhotoUrl) {
+      await updateSuspect(id, { PhotoUrl: data.PhotoUrl });
+    }
+    
+    return { PhotoUrl: data.PhotoUrl };
+  } catch (error) {
+    console.error(`Error uploading photo for suspect ${id}:`, error);
+    throw error; // Re-throw to handle in the component
+  }
+}
+
+export async function deleteSuspectPhoto(id: string): Promise<boolean> {
+  try {
+    await api.delete(`${SUSPECTS_ENDPOINT}${id}/delete_photo/`);
+    // Update the suspect to remove the photo URL
+    await updateSuspect(id, { PhotoUrl: '' });
+    return true;
+  } catch (error) {
+    console.error(`Error deleting photo for suspect ${id}:`, error);
+    return false;
+  }
+}
+
+// Get a single suspect by ID
+export async function getSuspectById(id: string): Promise<Suspect | null> {
+  try {
+    const { data } = await api.get<Suspect>(`${SUSPECTS_ENDPOINT}${id}/`);
+    return data;
+  } catch (error) {
+    console.error(`Error fetching suspect ${id}:`, error);
+    return null;
+  }
+}
+
+export async function getSuspectTableItemById(id: string): Promise<SuspectTableItem | null> {
+  try {
+    return await getSuspectById(id);
+  } catch (error) {
+    console.error(`Error fetching suspect table item ${id}:`, error);
+    return null;
+  }
+}
+
+// Search suspects with pagination
+export async function searchSuspects(query: string, params?: ListParams): Promise<PaginatedResponse<Suspect>> {
+  const searchParams = {
+    ...params,
+    search: query,
+  };
+  
+  const { data } = await api.get<PaginatedResponse<Suspect>>(SUSPECTS_ENDPOINT, { 
+    params: searchParams 
   });
+  
   return data;
 }

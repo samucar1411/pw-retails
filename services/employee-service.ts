@@ -1,8 +1,9 @@
-import { getResource, createResource, updateResource, deleteResource, getResourceWithParams } from './api';
+import { PaginatedResponse, ListParams } from '../types/api';
+import { api } from './api';
 
 const ENDPOINT = '/api/employees';
 
-interface Employee {
+export interface Employee {
   id: number;
   first_name: string;
   last_name: string;
@@ -13,21 +14,26 @@ interface Employee {
   status: 'active' | 'inactive';
 }
 
-type EmployeeCreateInput = Omit<Employee, 'id'>;
+export type EmployeeCreateInput = Omit<Employee, 'id'>;
 
-export const getEmployees = async (): Promise<Employee[]> => {
+export const getEmployees = async (params?: ListParams): Promise<PaginatedResponse<Employee>> => {
   try {
-    const response = await getResource<Employee[]>(ENDPOINT);
+    const response = await api.get<PaginatedResponse<Employee>>(ENDPOINT, { 
+      params: { ...params, format: 'json' } 
+    });
     return response.data;
   } catch (error) {
     console.error('Error fetching employees:', error);
-    return [];
+    return { count: 0, next: null, previous: null, results: [] };
   }
 };
 
-export const getEmployeeById = async (id: string): Promise<Employee | null> => {
+/**
+ * @deprecated Use getEmployees with filters instead
+ */
+export const getEmployeeById = async (id: string | number): Promise<Employee | null> => {
   try {
-    const response = await getResource<Employee>(ENDPOINT, id);
+    const response = await api.get<Employee>(`${ENDPOINT}${id}/`);
     return response.data;
   } catch (error) {
     console.error('Error fetching employee:', error);
@@ -37,7 +43,7 @@ export const getEmployeeById = async (id: string): Promise<Employee | null> => {
 
 export const createEmployee = async (data: EmployeeCreateInput): Promise<Employee | null> => {
   try {
-    const response = await createResource<Employee>(ENDPOINT, data);
+    const response = await api.post<Employee>(ENDPOINT, data);
     return response.data;
   } catch (error) {
     console.error('Error creating employee:', error);
@@ -45,9 +51,9 @@ export const createEmployee = async (data: EmployeeCreateInput): Promise<Employe
   }
 };
 
-export const updateEmployee = async (id: string, data: Partial<Employee>): Promise<Employee | null> => {
+export const updateEmployee = async (id: string | number, data: Partial<Employee>): Promise<Employee | null> => {
   try {
-    const response = await updateResource<Employee>(ENDPOINT, id, data);
+    const response = await api.put<Employee>(`${ENDPOINT}${id}/`, data);
     return response.data;
   } catch (error) {
     console.error('Error updating employee:', error);
@@ -55,9 +61,9 @@ export const updateEmployee = async (id: string, data: Partial<Employee>): Promi
   }
 };
 
-export const deleteEmployee = async (id: string): Promise<boolean> => {
+export const deleteEmployee = async (id: string | number): Promise<boolean> => {
   try {
-    await deleteResource(ENDPOINT, id);
+    await api.delete(`${ENDPOINT}${id}/`);
     return true;
   } catch (error) {
     console.error('Error deleting employee:', error);
@@ -66,22 +72,35 @@ export const deleteEmployee = async (id: string): Promise<boolean> => {
 };
 
 // Funciones específicas del servicio de empleados
-export const getActiveEmployees = async (): Promise<Employee[]> => {
+/**
+ * Get active employees with pagination
+ */
+export const getActiveEmployees = async (params?: ListParams): Promise<PaginatedResponse<Employee>> => {
   try {
-    const response = await getResourceWithParams<Employee[]>(ENDPOINT, { status: 'active' });
+    const response = await api.get<PaginatedResponse<Employee>>(`${ENDPOINT}active/`, { 
+      params: { ...params, format: 'json' } 
+    });
     return response.data;
   } catch (error) {
     console.error('Error fetching active employees:', error);
-    return [];
+    return { count: 0, next: null, previous: null, results: [] };
   }
 };
 
-export const getEmployeesByDepartment = async (department: string): Promise<Employee[]> => {
+/**
+ * Get employees by department with pagination
+ */
+export const getEmployeesByDepartment = async (
+  department: string, 
+  params?: ListParams
+): Promise<PaginatedResponse<Employee>> => {
   try {
-    const response = await getResourceWithParams<Employee[]>(ENDPOINT, { department });
+    const response = await api.get<PaginatedResponse<Employee>>(ENDPOINT, { 
+      params: { department, ...params, format: 'json' } 
+    });
     return response.data;
   } catch (error) {
     console.error('Error fetching employees by department:', error);
-    return [];
+    return { count: 0, next: null, previous: null, results: [] };
   }
 }; 

@@ -62,13 +62,6 @@ export interface Incident {
   selectedSuspects?: SelectedSuspectFormValues[];
 }
 
-// Office options for the form
-export const officeOptions = [
-  { value: 1, label: 'Sucursal Central' },
-  { value: 2, label: 'Sucursal Norte' },
-  { value: 3, label: 'Sucursal Sur' },
-];
-
 // Tipos de incidentes
 export const incidentTypes = [
   { value: 1, label: 'Hurto' },

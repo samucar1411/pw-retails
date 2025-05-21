@@ -16,8 +16,25 @@ import { useSuspects } from "@/context/suspect-context"
 import { useOffice } from "@/context/office-context"
 
 export default function DashboardPage() {
-  const { incidents } = useIncident();
+  const { incidents, loadIncidentsWithFilters } = useIncident();
   const { suspects } = useSuspects();
+
+  // Filtros locales
+  const [dateRange, setDateRange] = React.useState<{ from?: Date; to?: Date }>({});
+  const [ordering, setOrdering] = React.useState<string>("-created_at");
+  const [page, setPage] = React.useState<number>(1);
+
+  // Actualizar incidentes al cambiar filtros
+  React.useEffect(() => {
+    const filters: any = { ordering, page };
+    if (dateRange.from) {
+      filters.created_at_after = dateRange.from.toISOString().slice(0, 10);
+    }
+    if (dateRange.to) {
+      filters.created_at_before = dateRange.to.toISOString().slice(0, 10);
+    }
+    loadIncidentsWithFilters(filters);
+  }, [dateRange, ordering, page, loadIncidentsWithFilters]);
 
   // Calculate dashboard statistics
   const totalIncidents = incidents.length;
@@ -39,7 +56,18 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <CalendarDateRangePicker />
+          <CalendarDateRangePicker
+  initialDate={dateRange.from && dateRange.to ? { from: dateRange.from, to: dateRange.to } : undefined}
+  onDateChange={(range) => setDateRange({ from: range?.from, to: range?.to })}
+/>
+<select
+  className="ml-2 border rounded px-2 py-1"
+  value={ordering}
+  onChange={e => setOrdering(e.target.value)}
+>
+  <option value="-created_at">Más recientes</option>
+  <option value="created_at">Más antiguos</option>
+</select>
           <Link href="/dashboard/incidentes/nuevo">
             <Button>
               <PlusCircle className="mr-2 h-4 w-4" />

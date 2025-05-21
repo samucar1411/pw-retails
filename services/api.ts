@@ -61,7 +61,7 @@ api.interceptors.request.use(
       Accept: "application/json",
     };
 
-    if (config.url?.includes("api-token-auth")) {
+    if (config.url?.includes("api-token-auth2")) {
       defaultHeaders["Content-Type"] = "application/x-www-form-urlencoded";
       if (config.data && typeof config.data === "object") {
         config.data = qs.stringify(config.data);
@@ -83,6 +83,15 @@ api.interceptors.request.use(
       const authHeader = `Token ${cleanToken}`;
       config.headers.set("Authorization", authHeader);
     }
+
+    let fullUrl = config.url || '';
+    if (config.params) {
+      const serializedParams = qs.stringify(config.params, { arrayFormat: "repeat" });
+      if (serializedParams) {
+        fullUrl += (fullUrl.includes('?') ? '&' : '?') + serializedParams;
+      }
+    }
+    console.log(`[Axios Request Interceptor] Attempting to hit URL: ${config.baseURL || ''}${fullUrl}`);
 
     return config;
   },
@@ -117,19 +126,6 @@ api.interceptors.response.use(
       }
     }
 
-    const errorResponse = {
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      headers: error.response?.headers,
-      data: error.response?.data,
-      config: {
-        url: error.config?.url,
-        method: error.config?.method,
-        headers: error.config?.headers,
-        data: error.config?.data,
-        params: error.config?.params,
-      },
-    };
 
     // Handle 401 Unauthorized errors
     if (error.response?.status === 401) {

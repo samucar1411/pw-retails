@@ -1,24 +1,24 @@
 import { BaseEntity } from './common';
 
 export type Office = BaseEntity & {
-  Name: string;
-  Code: string;
-  ShortCode: string;
-  Address: string;
+  syncVersion: string | null;
+  Closed: boolean | null;
   ZipCode: string;
   Province: string;
   Phone: string;
   Mobile: string;
-  Fax?: string | null;
+  Code: string;
+  Name: string;
+  ShortCode: string;
+  Fax: string | null;
   Email: string;
-  City: number;
-  Company: number;
-  Country: number;
   CameraCount: number;
   NumberOfAccessDoors: number;
-  Geo?: string | null;
-  Closed?: boolean | null;
-  syncVersion?: string | null;
+  Address: string;
+  Geo: string | null;
+  Country: number;
+  City: number;
+  Company: number;
 };
 
 // Area type is kept here since it's a core entity and not defined elsewhere

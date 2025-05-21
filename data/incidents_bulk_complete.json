@@ -1,0 +1,2629 @@
+[
+  {
+    "Date": "2023-11-20",
+    "Time": "20:05:00",
+    "Description": "ASALTO",
+    "CashLoss": 1274869.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1274869.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 478,
+    "IncidentType": 3,
+    "Suspects": []
+  },
+  {
+    "Date": "2023-11-30",
+    "Time": "11:30:00",
+    "Description": "ASALTO",
+    "CashLoss": 542107.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 542107.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 566,
+    "IncidentType": 3,
+    "Suspects": [
+      "83389eed-7605-4c39-95ae-f4fa08597773"
+    ]
+  },
+  {
+    "Date": "2023-12-02",
+    "Time": "14:21:00",
+    "Description": "ASALTO",
+    "CashLoss": 149160.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 149160.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 332,
+    "IncidentType": 3,
+    "Suspects": [
+      "1324a860-a17b-4c8d-aa31-b0a6828913bd"
+    ]
+  },
+  {
+    "Date": "2023-12-11",
+    "Time": "12:56:00",
+    "Description": "ASALTO",
+    "CashLoss": 635759.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 635759.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 536,
+    "IncidentType": 3,
+    "Suspects": [
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2023-12-14",
+    "Time": "10:57:00",
+    "Description": "ASALTO",
+    "CashLoss": 660950.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 660950.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 173,
+    "IncidentType": 3,
+    "Suspects": [
+      "2493ecba-bbf9-4ec6-8f55-80679e90bcd3"
+    ]
+  },
+  {
+    "Date": "2023-12-18",
+    "Time": "12:47:00",
+    "Description": "ASALTO",
+    "CashLoss": 550811.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 550811.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 485,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0"
+    ]
+  },
+  {
+    "Date": "2023-12-24",
+    "Time": "16:50:00",
+    "Description": "ASALTO",
+    "CashLoss": 679156.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 679156.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 105,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0"
+    ]
+  },
+  {
+    "Date": "2023-12-26",
+    "Time": "14:09:00",
+    "Description": "ASALTO",
+    "CashLoss": 599384.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 599384.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 329,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0"
+    ]
+  },
+  {
+    "Date": "2023-12-27",
+    "Time": "13:00:00",
+    "Description": "ASALTO",
+    "CashLoss": 382226.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 382226.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 403,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0"
+    ]
+  },
+  {
+    "Date": "2023-12-27",
+    "Time": "13:10:00",
+    "Description": "ASALTO",
+    "CashLoss": 164033.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 164033.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 525,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0"
+    ]
+  },
+  {
+    "Date": "2023-12-28",
+    "Time": "19:03:00",
+    "Description": "ASALTO",
+    "CashLoss": 1016250.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1016250.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 423,
+    "IncidentType": 3,
+    "Suspects": []
+  },
+  {
+    "Date": "2023-12-31",
+    "Time": "18:00:00",
+    "Description": "ASALTO",
+    "CashLoss": 665800.0,
+    "MerchandiseLoss": 401605.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1067405.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 490,
+    "IncidentType": 3,
+    "Suspects": [
+      "6f5e6c93-fc3a-46e0-80d9-1fbf1196377e"
+    ]
+  },
+  {
+    "Date": "2024-01-05",
+    "Time": "11:32:00",
+    "Description": "ASALTO",
+    "CashLoss": 1376215.0,
+    "MerchandiseLoss": 1399564.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 2775779.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 469,
+    "IncidentType": 3,
+    "Suspects": [
+      "787e0a08-f67a-4996-bc81-8c42dbe93f83"
+    ]
+  },
+  {
+    "Date": "2024-01-07",
+    "Time": "05:52:00",
+    "Description": "ROBO",
+    "CashLoss": null,
+    "MerchandiseLoss": 159572.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 159572.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 489,
+    "IncidentType": 2,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-01-07",
+    "Time": "20:33:00",
+    "Description": "ASALTO",
+    "CashLoss": 516047.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 516047.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 65,
+    "IncidentType": 3,
+    "Suspects": [
+      "6f5e6c93-fc3a-46e0-80d9-1fbf1196377e"
+    ]
+  },
+  {
+    "Date": "2024-01-07",
+    "Time": "20:48:00",
+    "Description": "ASALTO",
+    "CashLoss": 1177350.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1177350.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 94,
+    "IncidentType": 3,
+    "Suspects": [
+      "6f5e6c93-fc3a-46e0-80d9-1fbf1196377e"
+    ]
+  },
+  {
+    "Date": "2024-01-08",
+    "Time": "11:27:00",
+    "Description": "ASALTO",
+    "CashLoss": 1039784.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1039784.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 315,
+    "IncidentType": 3,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-01-11",
+    "Time": "01:04:00",
+    "Description": "ROBO",
+    "CashLoss": null,
+    "MerchandiseLoss": 242603.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 242603.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 567,
+    "IncidentType": 2,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-01-18",
+    "Time": "14:31:00",
+    "Description": "ASALTO",
+    "CashLoss": 790000.0,
+    "MerchandiseLoss": 3029478.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 3819478.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 50,
+    "IncidentType": 3,
+    "Suspects": [
+      "2493ecba-bbf9-4ec6-8f55-80679e90bcd3"
+    ]
+  },
+  {
+    "Date": "2024-01-19",
+    "Time": "09:54:00",
+    "Description": "ASALTO",
+    "CashLoss": 717944.0,
+    "MerchandiseLoss": 4227862.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 4945806.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 516,
+    "IncidentType": 3,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-01-20",
+    "Time": "10:52:00",
+    "Description": "ASALTO",
+    "CashLoss": 915368.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 915368.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 299,
+    "IncidentType": 3,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-01-24",
+    "Time": "04:13:00",
+    "Description": "ROBO",
+    "CashLoss": null,
+    "MerchandiseLoss": 1545024.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1545024.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 231,
+    "IncidentType": 2,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-01-24",
+    "Time": "21:05:00",
+    "Description": "ASALTO",
+    "CashLoss": 342789.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 342789.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 190,
+    "IncidentType": 3,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-02-09",
+    "Time": "22:15:00",
+    "Description": "ASALTO",
+    "CashLoss": 725535.0,
+    "MerchandiseLoss": 766423.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1491958.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 235,
+    "IncidentType": 3,
+    "Suspects": [
+      "c9598b35-f10c-4818-969e-8bf043c7a614"
+    ]
+  },
+  {
+    "Date": "2024-02-13",
+    "Time": "12:09:00",
+    "Description": "ASALTO",
+    "CashLoss": 109150.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 109150.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 347,
+    "IncidentType": 3,
+    "Suspects": [
+      "2493ecba-bbf9-4ec6-8f55-80679e90bcd3"
+    ]
+  },
+  {
+    "Date": "2024-02-13",
+    "Time": "20:35:00",
+    "Description": "ASALTO",
+    "CashLoss": 421784.0,
+    "MerchandiseLoss": 792244.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1214028.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 525,
+    "IncidentType": 3,
+    "Suspects": [
+      "c9598b35-f10c-4818-969e-8bf043c7a614"
+    ]
+  },
+  {
+    "Date": "2024-02-14",
+    "Time": "19:54:00",
+    "Description": "ASALTO",
+    "CashLoss": 908550.0,
+    "MerchandiseLoss": 1157349.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 2065899.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 587,
+    "IncidentType": 3,
+    "Suspects": [
+      "2493ecba-bbf9-4ec6-8f55-80679e90bcd3"
+    ]
+  },
+  {
+    "Date": "2024-02-16",
+    "Time": "16:11:00",
+    "Description": "ASALTO",
+    "CashLoss": 912771.0,
+    "MerchandiseLoss": 180793.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1093564.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 244,
+    "IncidentType": 3,
+    "Suspects": [
+      "c9598b35-f10c-4818-969e-8bf043c7a614"
+    ]
+  },
+  {
+    "Date": "2024-02-16",
+    "Time": "17:02:00",
+    "Description": "ASALTO",
+    "CashLoss": 587990.0,
+    "MerchandiseLoss": 1248265.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1836255.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 600,
+    "IncidentType": 3,
+    "Suspects": [
+      "c9598b35-f10c-4818-969e-8bf043c7a614"
+    ]
+  },
+  {
+    "Date": "2024-02-16",
+    "Time": "17:37:00",
+    "Description": "ASALTO",
+    "CashLoss": 1938511.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1938511.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 440,
+    "IncidentType": 3,
+    "Suspects": [
+      "c9598b35-f10c-4818-969e-8bf043c7a614"
+    ]
+  },
+  {
+    "Date": "2024-02-18",
+    "Time": "08:26:00",
+    "Description": "ASALTO",
+    "CashLoss": 424300.0,
+    "MerchandiseLoss": 81806.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 506106.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 461,
+    "IncidentType": 3,
+    "Suspects": [
+      "2493ecba-bbf9-4ec6-8f55-80679e90bcd3"
+    ]
+  },
+  {
+    "Date": "2024-02-20",
+    "Time": "02:16:00",
+    "Description": "ROBO",
+    "CashLoss": null,
+    "MerchandiseLoss": 2487316.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 2487316.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 15,
+    "IncidentType": 2,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-02-20",
+    "Time": "17:04:00",
+    "Description": "ASALTO",
+    "CashLoss": 643799.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 643799.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 109,
+    "IncidentType": 3,
+    "Suspects": [
+      "c9598b35-f10c-4818-969e-8bf043c7a614"
+    ]
+  },
+  {
+    "Date": "2024-02-20",
+    "Time": "17:58:00",
+    "Description": "ASALTO",
+    "CashLoss": 429441.0,
+    "MerchandiseLoss": 174595.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 604036.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 552,
+    "IncidentType": 3,
+    "Suspects": [
+      "c9598b35-f10c-4818-969e-8bf043c7a614"
+    ]
+  },
+  {
+    "Date": "2024-02-20",
+    "Time": "18:54:00",
+    "Description": "ASALTO",
+    "CashLoss": 815884.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 815884.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 271,
+    "IncidentType": 3,
+    "Suspects": [
+      "c9598b35-f10c-4818-969e-8bf043c7a614"
+    ]
+  },
+  {
+    "Date": "2024-02-22",
+    "Time": "15:22:00",
+    "Description": "ASALTO",
+    "CashLoss": 244758.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 244758.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 155,
+    "IncidentType": 3,
+    "Suspects": [
+      "c9598b35-f10c-4818-969e-8bf043c7a614"
+    ]
+  },
+  {
+    "Date": "2024-02-22",
+    "Time": "15:46:00",
+    "Description": "ASALTO",
+    "CashLoss": 616524.0,
+    "MerchandiseLoss": 275719.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 892243.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 58,
+    "IncidentType": 3,
+    "Suspects": [
+      "c9598b35-f10c-4818-969e-8bf043c7a614"
+    ]
+  },
+  {
+    "Date": "2024-02-22",
+    "Time": "16:13:00",
+    "Description": "ASALTO",
+    "CashLoss": 533731.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 533731.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 43,
+    "IncidentType": 3,
+    "Suspects": [
+      "c9598b35-f10c-4818-969e-8bf043c7a614"
+    ]
+  },
+  {
+    "Date": "2024-02-22",
+    "Time": "16:48:00",
+    "Description": "ASALTO",
+    "CashLoss": 500000.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 500000.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 351,
+    "IncidentType": 3,
+    "Suspects": [
+      "c9598b35-f10c-4818-969e-8bf043c7a614"
+    ]
+  },
+  {
+    "Date": "2024-03-03",
+    "Time": "13:36:00",
+    "Description": "ASALTO",
+    "CashLoss": 479683.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 479683.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 231,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2024-03-12",
+    "Time": "19:46:00",
+    "Description": "ASALTO",
+    "CashLoss": 667600.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 667600.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 393,
+    "IncidentType": 3,
+    "Suspects": [
+      "618ef517-7201-4165-b194-2d8bad25448d",
+      "a05aa584-835b-471f-a00c-7197e76a9c03"
+    ]
+  },
+  {
+    "Date": "2024-03-22",
+    "Time": "17:48:00",
+    "Description": "ASALTO",
+    "CashLoss": 1203700.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1203700.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 175,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2024-03-23",
+    "Time": "13:34:00",
+    "Description": "ASALTO",
+    "CashLoss": 712280.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 712280.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 442,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2024-03-25",
+    "Time": "19:06:00",
+    "Description": "ASALTO",
+    "CashLoss": 248748.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 248748.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 403,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-03-27",
+    "Time": "07:33:00",
+    "Description": "ASALTO",
+    "CashLoss": 412000.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 412000.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 286,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2024-03-29",
+    "Time": "17:00:00",
+    "Description": "ASALTO",
+    "CashLoss": 250000.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 250000.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 576,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2024-03-29",
+    "Time": "19:56:00",
+    "Description": "ASALTO",
+    "CashLoss": 634200.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 634200.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 111,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-03-30",
+    "Time": "22:10:00",
+    "Description": "ASALTO",
+    "CashLoss": 1098665.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1098665.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 207,
+    "IncidentType": 3,
+    "Suspects": [
+      "3060d249-a37c-4bfb-b788-72203778958c",
+      "a05aa584-835b-471f-a00c-7197e76a9c03"
+    ]
+  },
+  {
+    "Date": "2024-03-31",
+    "Time": "17:42:00",
+    "Description": "ASALTO",
+    "CashLoss": 509341.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 509341.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 436,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-01",
+    "Time": "16:18:00",
+    "Description": "ASALTO",
+    "CashLoss": 139900.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 139900.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 442,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-02",
+    "Time": "14:18:00",
+    "Description": "ASALTO",
+    "CashLoss": 812312.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 812312.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 111,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-04",
+    "Time": "21:57:00",
+    "Description": "ASALTO",
+    "CashLoss": 415000.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 415000.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 309,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-05",
+    "Time": "15:36:00",
+    "Description": "ASALTO",
+    "CashLoss": 330710.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 330710.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 525,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-06",
+    "Time": "18:41:00",
+    "Description": "ASALTO",
+    "CashLoss": 1225639.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1225639.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 447,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-09",
+    "Time": "20:03:00",
+    "Description": "ASALTO",
+    "CashLoss": 906219.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 906219.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 333,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-12",
+    "Time": "20:35:00",
+    "Description": "ASALTO",
+    "CashLoss": 503900.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 503900.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 210,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-13",
+    "Time": "19:22:00",
+    "Description": "ASALTO",
+    "CashLoss": 436553.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 436553.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 436,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-14",
+    "Time": "09:15:00",
+    "Description": "ASALTO",
+    "CashLoss": 197593.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 197593.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 310,
+    "IncidentType": 3,
+    "Suspects": [
+      "3b4b0b2a-e434-450c-92f1-fddff3dcd763"
+    ]
+  },
+  {
+    "Date": "2024-04-14",
+    "Time": "15:31:00",
+    "Description": "ASALTO",
+    "CashLoss": 1469479.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1469479.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 332,
+    "IncidentType": 3,
+    "Suspects": [
+      "3060d249-a37c-4bfb-b788-72203778958c",
+      "a05aa584-835b-471f-a00c-7197e76a9c03"
+    ]
+  },
+  {
+    "Date": "2024-04-14",
+    "Time": "16:56:00",
+    "Description": "ASALTO",
+    "CashLoss": 451000.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 451000.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 528,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-14",
+    "Time": "18:31:00",
+    "Description": "ASALTO",
+    "CashLoss": 846236.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 846236.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 84,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-16",
+    "Time": "13:59:00",
+    "Description": "ASALTO",
+    "CashLoss": 690469.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 690469.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 407,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-18",
+    "Time": "12:59:00",
+    "Description": "INTENTO DE ASALTO",
+    "CashLoss": null,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 0.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 38,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-18",
+    "Time": "14:22:00",
+    "Description": "ASALTO",
+    "CashLoss": 798760.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 798760.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 471,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-19",
+    "Time": "19:20:00",
+    "Description": "INTENTO DE ASALTO",
+    "CashLoss": null,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 0.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 15,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-19",
+    "Time": "20:15:00",
+    "Description": "INTENTO DE ASALTO",
+    "CashLoss": null,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 0.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 400,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-20",
+    "Time": "22:21:00",
+    "Description": "ASALTO",
+    "CashLoss": 449998.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 449998.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 378,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-21",
+    "Time": "17:48:00",
+    "Description": "ASALTO",
+    "CashLoss": 551950.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 551950.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 244,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-23",
+    "Time": "08:23:00",
+    "Description": "ASALTO",
+    "CashLoss": 561900.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 561900.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 583,
+    "IncidentType": 3,
+    "Suspects": [
+      "3b4b0b2a-e434-450c-92f1-fddff3dcd763"
+    ]
+  },
+  {
+    "Date": "2024-04-23",
+    "Time": "19:06:00",
+    "Description": "ASALTO",
+    "CashLoss": 504680.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 504680.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 88,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-26",
+    "Time": "18:20:00",
+    "Description": "ASALTO",
+    "CashLoss": 283733.0,
+    "MerchandiseLoss": 130088.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 413821.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 173,
+    "IncidentType": 3,
+    "Suspects": [
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0",
+      "e83a1c21-3e07-430a-8a72-5828b483530e"
+    ]
+  },
+  {
+    "Date": "2024-04-27",
+    "Time": "11:27:00",
+    "Description": "ASALTO",
+    "CashLoss": 590200.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 590200.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 50,
+    "IncidentType": 3,
+    "Suspects": [
+      "3b4b0b2a-e434-450c-92f1-fddff3dcd763"
+    ]
+  },
+  {
+    "Date": "2024-05-01",
+    "Time": "06:54:00",
+    "Description": "ASALTO",
+    "CashLoss": 348950.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 348950.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 406,
+    "IncidentType": 3,
+    "Suspects": [
+      "618ef517-7201-4165-b194-2d8bad25448d",
+      "fc847889-15c2-4930-8080-cadcd4611007"
+    ]
+  },
+  {
+    "Date": "2024-05-05",
+    "Time": "09:35:00",
+    "Description": "ASALTO",
+    "CashLoss": 957704.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 957704.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 567,
+    "IncidentType": 3,
+    "Suspects": [
+      "33613eed-1c5e-4b43-86ec-c3b3b6a5235f",
+      "d7d2b845-d7c3-4460-b4a2-5da1d03833e7"
+    ]
+  },
+  {
+    "Date": "2024-05-23",
+    "Time": "15:55:00",
+    "Description": "ASALTO",
+    "CashLoss": 675560.0,
+    "MerchandiseLoss": 109598.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 785158.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 423,
+    "IncidentType": 3,
+    "Suspects": [
+      "8ff1a882-1d71-4eb8-ac94-329fbe944457"
+    ]
+  },
+  {
+    "Date": "2024-05-25",
+    "Time": "19:08:00",
+    "Description": "ASALTO",
+    "CashLoss": 609596.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 609596.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 325,
+    "IncidentType": 3,
+    "Suspects": [
+      "2e3d9dab-a852-4c79-9347-098813d62244"
+    ]
+  },
+  {
+    "Date": "2024-05-28",
+    "Time": "14:24:00",
+    "Description": "ASALTO",
+    "CashLoss": 385875.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 385875.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 447,
+    "IncidentType": 3,
+    "Suspects": [
+      "0cf6929e-094e-40ce-8964-accadc57a67a",
+      "91dc474d-8e69-4e76-99c0-4f650cc1ad60"
+    ]
+  },
+  {
+    "Date": "2024-05-30",
+    "Time": "16:14:00",
+    "Description": "ASALTO",
+    "CashLoss": 727993.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 727993.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 190,
+    "IncidentType": 3,
+    "Suspects": [
+      "d3ffff47-9282-4093-89ef-4b0c44424bed"
+    ]
+  },
+  {
+    "Date": "2024-05-30",
+    "Time": "18:20:00",
+    "Description": "ASALTO",
+    "CashLoss": 867676.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 867676.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 444,
+    "IncidentType": 3,
+    "Suspects": [
+      "4f61fe0a-12fd-4731-a941-1acca7e2c35f"
+    ]
+  },
+  {
+    "Date": "2024-06-02",
+    "Time": "16:19:00",
+    "Description": "ASALTO",
+    "CashLoss": 1134765.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1134765.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 310,
+    "IncidentType": 3,
+    "Suspects": [
+      "e2881fa7-1605-4669-8017-964df5ea3663"
+    ]
+  },
+  {
+    "Date": "2024-06-03",
+    "Time": "19:07:00",
+    "Description": "ASALTO",
+    "CashLoss": 650101.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 650101.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 586,
+    "IncidentType": 3,
+    "Suspects": [
+      "a05aa584-835b-471f-a00c-7197e76a9c03",
+      "3874ab7a-f3db-47cb-9fe3-53a18d60b095"
+    ]
+  },
+  {
+    "Date": "2024-06-11",
+    "Time": "15:38:00",
+    "Description": "ASALTO",
+    "CashLoss": 182800.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 182800.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 15,
+    "IncidentType": 3,
+    "Suspects": [
+      "e98c578b-c9e6-4a8c-a74e-5552f8161c2d",
+      "2e3d9dab-a852-4c79-9347-098813d62244"
+    ]
+  },
+  {
+    "Date": "2024-06-16",
+    "Time": "12:38:00",
+    "Description": "ASALTO",
+    "CashLoss": 500000.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 500000.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 197,
+    "IncidentType": 3,
+    "Suspects": [
+      "afb6d8dd-87f5-41da-a412-2dd69f3130f4",
+      "d3ffff47-9282-4093-89ef-4b0c44424bed"
+    ]
+  },
+  {
+    "Date": "2024-06-20",
+    "Time": "20:58:00",
+    "Description": "ASALTO",
+    "CashLoss": 534938.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 534938.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 286,
+    "IncidentType": 3,
+    "Suspects": [
+      "d3ffff47-9282-4093-89ef-4b0c44424bed",
+      "b535478d-23eb-4f78-bde9-a2bb715f3048"
+    ]
+  },
+  {
+    "Date": "2024-06-26",
+    "Time": "08:14:00",
+    "Description": "ASALTO",
+    "CashLoss": 219150.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 219150.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 461,
+    "IncidentType": 3,
+    "Suspects": [
+      "012d5869-6b29-4aed-942b-5b049a626fa8"
+    ]
+  },
+  {
+    "Date": "2024-07-05",
+    "Time": "17:01:00",
+    "Description": "ASALTO",
+    "CashLoss": 149540.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 149540.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 286,
+    "IncidentType": 3,
+    "Suspects": [
+      "3a12697d-09e9-43e6-860f-a924bae4edff"
+    ]
+  },
+  {
+    "Date": "2024-07-05",
+    "Time": "17:53:00",
+    "Description": "ASALTO",
+    "CashLoss": 696200.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 696200.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 288,
+    "IncidentType": 3,
+    "Suspects": [
+      "3a12697d-09e9-43e6-860f-a924bae4edff"
+    ]
+  },
+  {
+    "Date": "2024-07-13",
+    "Time": "20:19:00",
+    "Description": "ASALTO",
+    "CashLoss": 548757.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 548757.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 344,
+    "IncidentType": 3,
+    "Suspects": [
+      "a05aa584-835b-471f-a00c-7197e76a9c03"
+    ]
+  },
+  {
+    "Date": "2024-07-18",
+    "Time": "15:10:00",
+    "Description": "ASALTO",
+    "CashLoss": 618164.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 618164.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 212,
+    "IncidentType": 3,
+    "Suspects": [
+      "4b7eb3eb-338e-448a-9fdd-e452d2034204",
+      "4f61fe0a-12fd-4731-a941-1acca7e2c35f"
+    ]
+  },
+  {
+    "Date": "2024-07-27",
+    "Time": "14:30:00",
+    "Description": "ASALTO",
+    "CashLoss": 707377.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 707377.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 231,
+    "IncidentType": 3,
+    "Suspects": [
+      "91779bb6-3b46-4359-b016-4cfd896ea0a8"
+    ]
+  },
+  {
+    "Date": "2024-08-03",
+    "Time": "10:35:00",
+    "Description": "ASALTO",
+    "CashLoss": 660823.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 660823.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 412,
+    "IncidentType": 3,
+    "Suspects": [
+      "3874ab7a-f3db-47cb-9fe3-53a18d60b095",
+      "3c23f03b-1aa7-4a5c-9d9c-84ab75bfbc46"
+    ]
+  },
+  {
+    "Date": "2024-08-04",
+    "Time": "14:00:00",
+    "Description": "ASALTO",
+    "CashLoss": 961716.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 961716.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 448,
+    "IncidentType": 3,
+    "Suspects": [
+      "6dd2457d-dc5a-4c7b-ade5-e9db089cfe51"
+    ]
+  },
+  {
+    "Date": "2024-08-06",
+    "Time": "19:18:00",
+    "Description": "ASALTO",
+    "CashLoss": 273750.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 273750.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 478,
+    "IncidentType": 3,
+    "Suspects": [
+      "7eeccf33-f90f-4e4b-bf45-dcfd85528bde"
+    ]
+  },
+  {
+    "Date": "2024-08-09",
+    "Time": "11:48:00",
+    "Description": "ASALTO",
+    "CashLoss": 364800.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 364800.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 598,
+    "IncidentType": 3,
+    "Suspects": [
+      "33613eed-1c5e-4b43-86ec-c3b3b6a5235f"
+    ]
+  },
+  {
+    "Date": "2024-08-11",
+    "Time": "09:59:00",
+    "Description": "ASALTO",
+    "CashLoss": 840050.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 840050.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 60,
+    "IncidentType": 3,
+    "Suspects": [
+      "8ff1a882-1d71-4eb8-ac94-329fbe944457",
+      "3a12697d-09e9-43e6-860f-a924bae4edff",
+      "4f61fe0a-12fd-4731-a941-1acca7e2c35f"
+    ]
+  },
+  {
+    "Date": "2024-08-09",
+    "Time": "17:41:00",
+    "Description": "ASALTO",
+    "CashLoss": 605850.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 605850.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 267,
+    "IncidentType": 3,
+    "Suspects": [
+      "5c10d58b-c231-4029-a720-8a368d29027f"
+    ]
+  },
+  {
+    "Date": "2024-08-15",
+    "Time": "10:07:00",
+    "Description": "ASALTO",
+    "CashLoss": 252942.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 252942.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 310,
+    "IncidentType": 3,
+    "Suspects": [
+      "e61e3061-254e-425e-b337-92cdb8458263"
+    ]
+  },
+  {
+    "Date": "2024-08-19",
+    "Time": "10:19:00",
+    "Description": "ASALTO",
+    "CashLoss": 674200.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 674200.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 315,
+    "IncidentType": 3,
+    "Suspects": [
+      "0cf6929e-094e-40ce-8964-accadc57a67a",
+      "d3ffff47-9282-4093-89ef-4b0c44424bed"
+    ]
+  },
+  {
+    "Date": "2024-08-19",
+    "Time": "22:48:00",
+    "Description": "ASALTO",
+    "CashLoss": 471550.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 471550.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 649,
+    "IncidentType": 3,
+    "Suspects": [
+      "0cf6929e-094e-40ce-8964-accadc57a67a"
+    ]
+  },
+  {
+    "Date": "2024-08-26",
+    "Time": "21:52:00",
+    "Description": "ASALTO",
+    "CashLoss": 522777.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 522777.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 40,
+    "IncidentType": 3,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-08-27",
+    "Time": "08:50:00",
+    "Description": "ASALTO",
+    "CashLoss": 513596.0,
+    "MerchandiseLoss": 1491385.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 2004981.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 536,
+    "IncidentType": 3,
+    "Suspects": [
+      "b4d800c0-00cc-4b7d-87ed-34ce46a49cce"
+    ]
+  },
+  {
+    "Date": "2024-09-13",
+    "Time": "15:36:00",
+    "Description": "ASALTO",
+    "CashLoss": 958500.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 958500.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 635,
+    "IncidentType": 3,
+    "Suspects": [
+      "f30f34d3-286e-4b1e-b29f-c208a6e232cf"
+    ]
+  },
+  {
+    "Date": "2024-09-21",
+    "Time": "21:36:00",
+    "Description": "ASALTO",
+    "CashLoss": 0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 0.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 9,
+    "IncidentType": 3,
+    "Suspects": [
+      "787c0c86-5ed9-429f-b731-61fdccd1aa5b"
+    ]
+  },
+  {
+    "Date": "2024-10-04",
+    "Time": "14:24:00",
+    "Description": "ASALTO",
+    "CashLoss": 17581.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 17581.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 384,
+    "IncidentType": 3,
+    "Suspects": [
+      "29943ec8-87ed-4f6d-8db1-1de031f78fa6",
+      "787e0a08-f67a-4996-bc81-8c42dbe93f83"
+    ]
+  },
+  {
+    "Date": "2024-10-05",
+    "Time": "19:11:00",
+    "Description": "ASALTO",
+    "CashLoss": 767560.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 767560.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 239,
+    "IncidentType": 3,
+    "Suspects": [
+      "4d2309ea-c451-4564-b100-3b8a74d73ad0",
+      "84a9b890-0c16-4786-af6b-88a10f1d4a62"
+    ]
+  },
+  {
+    "Date": "2024-10-17",
+    "Time": "19:09:00",
+    "Description": "ASALTO",
+    "CashLoss": 1398936.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1398936.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 286,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2024-10-18",
+    "Time": "10:29:00",
+    "Description": "ASALTO",
+    "CashLoss": 678650.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 678650.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 442,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2024-10-30",
+    "Time": "16:53:00",
+    "Description": "ASALTO",
+    "CashLoss": 532046.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 532046.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 233,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2024-11-08",
+    "Time": "20:20:00",
+    "Description": "ASALTO",
+    "CashLoss": 408750.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 408750.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 207,
+    "IncidentType": 3,
+    "Suspects": [
+      "5c10d58b-c231-4029-a720-8a368d29027f"
+    ]
+  },
+  {
+    "Date": "2024-11-15",
+    "Time": "20:34:00",
+    "Description": "ASALTO",
+    "CashLoss": 1108691.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1108691.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 245,
+    "IncidentType": 3,
+    "Suspects": [
+      "787e0a08-f67a-4996-bc81-8c42dbe93f83",
+      "94120070-5866-4657-bd4e-83bd4e7b692b",
+      "84a9b890-0c16-4786-af6b-88a10f1d4a62"
+    ]
+  },
+  {
+    "Date": "2024-11-19",
+    "Time": "13:43:00",
+    "Description": "ASALTO",
+    "CashLoss": 551389.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 551389.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 497,
+    "IncidentType": 3,
+    "Suspects": [
+      "d6464b25-605b-43ce-8a80-56f8aee55b1a",
+      "fc847889-15c2-4930-8080-cadcd4611007"
+    ]
+  },
+  {
+    "Date": "2024-11-23",
+    "Time": "15:32:00",
+    "Description": "ASALTO",
+    "CashLoss": 572600.0,
+    "MerchandiseLoss": 119084.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 691684.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 310,
+    "IncidentType": 3,
+    "Suspects": [
+      "f30f34d3-286e-4b1e-b29f-c208a6e232cf"
+    ]
+  },
+  {
+    "Date": "2024-12-05",
+    "Time": "16:25:00",
+    "Description": "ASALTO",
+    "CashLoss": 698150.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 698150.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 288,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2024-12-12",
+    "Time": "12:22:00",
+    "Description": "ASALTO",
+    "CashLoss": 192494.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 192494.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 286,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2024-12-16",
+    "Time": "14:13:00",
+    "Description": "ASALTO",
+    "CashLoss": 499978.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 499978.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 175,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2024-12-16",
+    "Time": "19:59:00",
+    "Description": "ASALTO",
+    "CashLoss": 500100.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 500100.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 231,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2024-12-18",
+    "Time": "18:31:00",
+    "Description": "ASALTO",
+    "CashLoss": 369150.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 369150.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 65,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2024-12-24",
+    "Time": "10:46:00",
+    "Description": "ASALTO",
+    "CashLoss": 944750.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 944750.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 487,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2024-12-30",
+    "Time": "11:15:00",
+    "Description": "ASALTO",
+    "CashLoss": 349200.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 349200.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 50,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2024-12-31",
+    "Time": "15:45:00",
+    "Description": "ASALTO",
+    "CashLoss": 264900.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 264900.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 46,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2025-01-05",
+    "Time": "11:30:00",
+    "Description": "ASALTO",
+    "CashLoss": 360645.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 360645.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 94,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2025-01-08",
+    "Time": "16:19:00",
+    "Description": "ASALTO",
+    "CashLoss": 363900.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 363900.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 491,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2025-01-19",
+    "Time": "11:18:00",
+    "Description": "ASALTO",
+    "CashLoss": 617183.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 617183.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 282,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2025-01-27",
+    "Time": "15:45:00",
+    "Description": "ASALTO",
+    "CashLoss": 125300.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 125300.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 50,
+    "IncidentType": 3,
+    "Suspects": [
+      "1897745e-d2df-49aa-899f-5055c694c311"
+    ]
+  },
+  {
+    "Date": "2025-02-15",
+    "Time": "13:16:00",
+    "Description": "ASALTO",
+    "CashLoss": 840400.0,
+    "MerchandiseLoss": 34216.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 874616.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 578,
+    "IncidentType": 3,
+    "Suspects": [
+      "ce4de660-22d8-4113-8c82-c0dda4d452af",
+      "ff8687d0-9bf8-489f-bffe-c00b0d0c41b0"
+    ]
+  },
+  {
+    "Date": "2025-03-03",
+    "Time": "08:48:00",
+    "Description": "ROBO",
+    "CashLoss": null,
+    "MerchandiseLoss": 1633246.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1633246.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 386,
+    "IncidentType": 2,
+    "Suspects": [
+      "f30f34d3-286e-4b1e-b29f-c208a6e232cf",
+      "b4d800c0-00cc-4b7d-87ed-34ce46a49cce",
+      "7dd175a3-44a9-4065-8e42-6ada294ea972"
+    ]
+  },
+  {
+    "Date": "2025-03-14",
+    "Time": "09:04:00",
+    "Description": "ROBO",
+    "CashLoss": null,
+    "MerchandiseLoss": 1535447.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 1535447.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 576,
+    "IncidentType": 2,
+    "Suspects": [
+      "f30f34d3-286e-4b1e-b29f-c208a6e232cf",
+      "b4d800c0-00cc-4b7d-87ed-34ce46a49cce",
+      "7dd175a3-44a9-4065-8e42-6ada294ea972"
+    ]
+  },
+  {
+    "Date": "2025-03-18",
+    "Time": "22:05:00",
+    "Description": "ASALTO",
+    "CashLoss": 558625.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 558625.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 10,
+    "IncidentType": 3,
+    "Suspects": [
+      "f30f34d3-286e-4b1e-b29f-c208a6e232cf",
+      "a8b58f4f-7587-46bf-964f-4070240abbbd"
+    ]
+  },
+  {
+    "Date": "2025-03-27",
+    "Time": "22:00:00",
+    "Description": "ASALTO",
+    "CashLoss": 626038.0,
+    "MerchandiseLoss": 84504.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 710542.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 307,
+    "IncidentType": 3,
+    "Suspects": [
+      "2493ecba-bbf9-4ec6-8f55-80679e90bcd3"
+    ]
+  },
+  {
+    "Date": "2025-03-04",
+    "Time": "14:22:00",
+    "Description": "ASALTO",
+    "CashLoss": 748696.0,
+    "MerchandiseLoss": 0.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 748696.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 524,
+    "IncidentType": 3,
+    "Suspects": [
+      "f30f34d3-286e-4b1e-b29f-c208a6e232cf",
+      "7dd175a3-44a9-4065-8e42-6ada294ea972"
+    ]
+  },
+  {
+    "Date": "2023-09-04",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 118844.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 118844.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2023-09-05",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 10500.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 10500.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-01-08",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 130780.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 130780.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-01-09",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 162267.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 162267.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-01-10",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 98175.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 98175.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-01-10",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 52148.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 52148.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-01-13",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 208521.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 208521.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-03-30",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 180244.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 180244.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-04-01",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 234982.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 234982.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-04-02",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 157133.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 157133.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-04-02",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 10009.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 10009.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-04-04",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 150492.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 150492.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-04-05",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 88998.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 88998.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-04-09",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 122342.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 122342.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-04-14",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 87178.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 87178.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-05-31",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 71875.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 71875.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-06-10",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 56080.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 56080.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-06-10",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 166554.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 166554.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-06-13",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 54898.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 54898.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-07-22",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 29110.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 29110.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-07-29",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 63201.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 63201.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-07-31",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 26620.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 26620.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-08-03",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 339908.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 339908.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2024-10-21",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 179568.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 179568.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2025-01-09",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 149523.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 149523.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  },
+  {
+    "Date": "2025-01-20",
+    "Time": "00:00:00",
+    "Description": "HURTO DE MERCADERÍAS",
+    "CashLoss": null,
+    "MerchandiseLoss": 65174.0,
+    "OtherLosses": 0.0,
+    "TotalLoss": 65174.0,
+    "Notes": "",
+    "Attachments": [],
+    "Report": "",
+    "Office": 555,
+    "IncidentType": 1,
+    "Suspects": []
+  }
+]
