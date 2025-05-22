@@ -101,6 +101,12 @@ const nextConfig: NextConfig = {
         destination: "https://sys.adminpy.com:18001/api/incidents/:path*",
         basePath: false,
       },
+      // Redirección específica para incidentes por ID
+      {
+        source: "/api/incidents/:id",
+        destination: "https://sys.adminpy.com:18001/api/incidents/:id",
+        basePath: false,
+      },
       // Redirección específica para incidentes (endpoint principal)
       {
         source: "/api/incidents",

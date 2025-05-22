@@ -91,7 +91,7 @@ export function RecentIncidentsTable({ data }: RecentIncidentsTableProps) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getIncidentTypeVariant(incident.incidentTypeId.toString())} className="text-xs">
+                    <Badge variant={getIncidentTypeVariant(incident.incidentTypeId?.toString() || '')} className="text-xs">
                       {incident.incidentTypeId}
                     </Badge>
                   </TableCell>

@@ -52,6 +52,22 @@ export async function deleteIncident(id: number): Promise<void> {
   await api.delete(`/incidents/${id}`);
 }
 
+/**
+ * Get a single incident by ID
+ */
+export async function getIncidentById(id: string | number): Promise<Incident> {
+  try {
+    console.log(`Fetching incident with ID: ${id}`);
+    const { data } = await api.get<Incident>(`/api/incidents/${id}/`, {
+      params: { format: 'json' }
+    });
+    return data;
+  } catch (error) {
+    console.error(`Error fetching incident ${id}:`, error);
+    throw error;
+  }
+}
+
 export async function uploadIncidentAttachments(id: number, files: File[]): Promise<{ attachments: { url: string }[] }> {
   const formData = new FormData();
   files.forEach((file) => {
@@ -110,5 +126,5 @@ export async function updateIncidentType(id: number, type: Partial<IncidentType>
 }
 
 export async function deleteIncidentType(id: number): Promise<void> {
-  await api.delete(`/incident-types/${id}`);
+  await api.delete(`/incidenttypes/${id}`);
 }

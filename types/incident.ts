@@ -1,4 +1,7 @@
 import { BaseEntity, File } from './common';
+import { Suspect } from './suspect';
+
+
 
 export type IncidentType = BaseEntity & {
   name: string;
@@ -16,15 +19,20 @@ export type Incident = BaseEntity & {
   OtherLosses: string;
   TotalLoss: string;
   Notes: string;
-  Attachments: any[]; // Array of attachment IDs or objects
-  Report: any | null; // Report data or null
+  Attachments: File[]; // Array of attachment objects
+  Report: Record<string, unknown> | null; // Report data or null
   Suspects: string[]; // Array of suspect IDs
+  Latitude?: number; // Latitude for map location
+  Longitude?: number; // Longitude for map location
+  Address?: string; // Physical address
   
   // For backward compatibility with existing code
   officeId?: number;
+  branchId?: number; // Same as Office
   date?: string;
   time?: string;
   incidentTypeId?: number;
+  type?: string; // Type name (e.g., 'hurto', 'robo')
   description?: string;
   cashLoss?: number | string;
   merchandiseLoss?: number | string;
@@ -32,5 +40,8 @@ export type Incident = BaseEntity & {
   totalLoss?: number | string;
   notes?: string;
   attachments?: File[];
-  suspects?: any[];
+  suspects?: Suspect[];
+  latitude?: number; // Lowercase version for consistency
+  longitude?: number; // Lowercase version for consistency
+  address?: string; // Lowercase version for consistency
 };
