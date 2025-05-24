@@ -7,7 +7,18 @@ const API_URL = "https://sys.adminpy.com:18001/api/suspects/";
 // List all suspects with pagination
 export async function GET(request: Request) {
   try {
-    console.log("Proxying request to:", API_URL);
+    // Get the URL from the request to extract query parameters
+    const url = new URL(request.url);
+    const searchParams = url.searchParams;
+    
+    // Construct the API URL with query parameters
+    let apiUrlWithParams = API_URL;
+    if (searchParams.toString()) {
+      apiUrlWithParams += `?${searchParams.toString()}`;
+    }
+    
+    console.log("Proxying request to:", apiUrlWithParams);
+    console.log("Query parameters:", Object.fromEntries(searchParams.entries()));
     
     // Get authorization header from the incoming request
     const authHeader = request.headers.get('authorization');
@@ -27,7 +38,7 @@ export async function GET(request: Request) {
       headers["Authorization"] = authHeader;
     }
     
-    const response = await fetch(API_URL, {
+    const response = await fetch(apiUrlWithParams, {
       method: "GET",
       headers,
       // @ts-expect-error - Required to ignore SSL in Next.js

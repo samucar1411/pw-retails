@@ -1,17 +1,47 @@
-import { Suspect, SuspectTableItem } from '../types/suspect';
+import { Suspect, SuspectTableItem, SuspectStatus } from '../types/suspect';
 import { PaginatedResponse, ListParams } from '../types/api';
 import { api } from './api';
 
-// SUSPECT FUNCTIONS
+// API ENDPOINTS
 const SUSPECTS_ENDPOINT = '/api/suspects/';
+const SUSPECT_STATUS_ENDPOINT = '/api/suspectstatus/';
 
-export async function getAllSuspects(params?: ListParams): Promise<PaginatedResponse<Suspect>> {
-  const { data } = await api.get<PaginatedResponse<Suspect>>('/api/suspects/', { 
-    params: { ...params, format: 'json' } 
-  });
+// SUSPECT STATUS FUNCTIONS
+export async function getSuspectStatuses(): Promise<SuspectStatus[]> {
+  try {
+    const { data } = await api.get<{ results: SuspectStatus[] }>(SUSPECT_STATUS_ENDPOINT);
+    return data.results;
+  } catch (error) {
+    console.error('Error fetching suspect statuses:', error);
+    return [];
+  }
+}
 
-  console.log("sospechosos", data)
-  return data;
+// SUSPECT FUNCTIONS
+
+export async function getAllSuspects(
+  filters: ListParams & {
+    created_at_after?: string;
+    created_at_before?: string;
+    ordering?: string;
+    page?: number;
+    page_size?: number;
+    search?: string;
+  } = {}
+): Promise<PaginatedResponse<Suspect>> {
+  console.log("Fetching suspects with page:", filters.page);
+  
+  // Only pass parameters in the params object, not in the URL
+  const params = { ...filters, format: 'json' };
+  
+  try {
+    const { data } = await api.get<PaginatedResponse<Suspect>>('/api/suspects/', { params });
+    console.log("Fetched suspects:", data.results.length);
+    return data;
+  } catch (error) {
+    console.error("Error fetching suspects:", error);
+    throw error;
+  }
 }
 
 
@@ -21,6 +51,34 @@ export async function createSuspect(suspect: Partial<Suspect>): Promise<Suspect 
     return data;
   } catch (error) {
     console.error('Error creating suspect:', error);
+    return null;
+  }
+}
+
+export async function getSuspect(id: string): Promise<Suspect | null> {
+  try {
+    console.log(`Fetching suspect with ID: ${id}`);
+    
+    // Make a direct API call to the backend instead of using the Next.js API route
+    // This avoids potential issues with the API route implementation
+    const response = await fetch(`https://sys.adminpy.com:18001/api/suspects/${id}/?format=json`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+    });
+    
+    if (!response.ok) {
+      console.error(`Backend API error for suspect ${id}:`, response.status, response.statusText);
+      return null;
+    }
+    
+    const data = await response.json();
+    console.log(`Successfully fetched suspect:`, data);
+    return data;
+  } catch (error) {
+    console.error(`Error fetching suspect ${id}:`, error);
     return null;
   }
 }

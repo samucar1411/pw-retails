@@ -45,6 +45,7 @@
     "@types/qs": "^6.9.18",
     "axios": "^1.7.9",
     "class-variance-authority": "^0.7.1",
+    "cloudinary": "^2.6.1",
     "clsx": "^2.1.1",
     "cmdk": "1.0.0",
     "cors": "^2.8.5",

@@ -129,7 +129,7 @@ const navigationItems: NavItem[] = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { logout } = useAuth();
+  const { logout, userInfo } = useAuth();
   const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
 
   // helper para marcar item activo
@@ -158,34 +158,51 @@ export function AppSidebar() {
   const renderNavItem = (item: NavItem) => {
     const isItemActive = isActive(item.url);
     const isExpanded = expandedItems.has(item.url);
+    const hasChildren = item.children && item.children.length > 0;
 
     return (
       <React.Fragment key={item.url}>
         <Collapsible
           open={isExpanded}
-          onOpenChange={() => item.children && toggleItem(item.url)}
+          onOpenChange={() => hasChildren && toggleItem(item.url)}
           className="group/collapsible"
         >
-          <CollapsibleTrigger asChild>
-            <SidebarMenuButton
-              isActive={isItemActive}
-              className="flex items-center justify-between w-full hover:bg-muted/80 transition-colors duration-200 rounded-md px-3 py-2"
-            >
-              <div className="flex items-center gap-3 flex-1">
-                <div className={`p-1.5 rounded-md ${isItemActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground group-hover:bg-muted group-hover:text-foreground'} transition-colors duration-200`}>
-                  <item.icon className="h-4 w-4" />
+          {hasChildren ? (
+            // For items with children, use CollapsibleTrigger
+            <CollapsibleTrigger asChild>
+              <SidebarMenuButton
+                isActive={isItemActive}
+                className="flex items-center justify-between w-full hover:bg-muted/80 transition-colors duration-200 rounded-md px-3 py-2"
+              >
+                <div className="flex items-center gap-3 flex-1">
+                  <div className={`p-1.5 rounded-md ${isItemActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground group-hover:bg-muted group-hover:text-foreground'} transition-colors duration-200`}>
+                    <item.icon className="h-4 w-4" />
+                  </div>
+                  <span className="font-medium">{item.title}</span>
                 </div>
-                <span className="font-medium">{item.title}</span>
-              </div>
-              {item.children && (
                 <ChevronDown
                   className={`h-4 w-4 transition-all duration-200 text-muted-foreground group-hover:text-foreground/80 ${
                     isExpanded ? 'rotate-180' : ''
                   }`}
                 />
-              )}
-            </SidebarMenuButton>
-          </CollapsibleTrigger>
+              </SidebarMenuButton>
+            </CollapsibleTrigger>
+          ) : (
+            // For items without children, use a direct Link
+            <Link href={item.url} className="block w-full">
+              <SidebarMenuButton
+                isActive={isItemActive}
+                className="flex items-center justify-between w-full hover:bg-muted/80 transition-colors duration-200 rounded-md px-3 py-2"
+              >
+                <div className="flex items-center gap-3 flex-1">
+                  <div className={`p-1.5 rounded-md ${isItemActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground group-hover:bg-muted group-hover:text-foreground'} transition-colors duration-200`}>
+                    <item.icon className="h-4 w-4" />
+                  </div>
+                  <span className="font-medium">{item.title}</span>
+                </div>
+              </SidebarMenuButton>
+            </Link>
+          )}
           {item.children && (
             <CollapsibleContent className="mt-1 ml-2 pl-4 border-l-2 border-border/30 space-y-1">
               {item.children.map((child: NavItem) => {
@@ -248,9 +265,14 @@ export function AppSidebar() {
                 <div className="flex items-center gap-2">
                   <Avatar className="h-6 w-6">
                     <AvatarImage src="/avatars/user.png" alt="Usuario" />
-                    <AvatarFallback>CC</AvatarFallback>
+                    <AvatarFallback>
+                    {userInfo?.first_name?.[0]}
+                    {userInfo?.last_name?.[0]}
+                  </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm">Christian Courget</span>
+                  <span className="text-sm">
+                    {userInfo?.first_name} {userInfo?.last_name}
+                  </span>
                 </div>
                 <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-70" />
               </Button>
@@ -260,10 +282,10 @@ export function AppSidebar() {
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">
-                    Christian Courget
+                    {userInfo?.first_name} {userInfo?.last_name}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    c.courget@powervision.ai
+                    {userInfo?.email}
                   </p>
                 </div>
               </DropdownMenuLabel>

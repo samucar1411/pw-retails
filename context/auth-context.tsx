@@ -7,7 +7,8 @@ import { authService } from '@/services/auth-service';
 interface UserInfo {
   user_id?: number;
   email?: string;
-  first_name?: string;
+  first_name?: string; // This is the normalized field name we use in the app
+  firts_name?: string; // This is the actual field name from the API with typo
   last_name?: string;
 }
 
@@ -82,7 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userInfo = {
         user_id: response.user_id,
         email: response.email,
-        first_name: response.first_name,
+        first_name: response.firts_name, // Using the correct field name with the typo
         last_name: response.last_name,
       };
       localStorage.setItem('user_info', JSON.stringify(userInfo));

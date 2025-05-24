@@ -87,7 +87,7 @@ export async function uploadIncidentAttachments(id: number, files: File[]): Prom
 
 // INCIDENT TYPE FUNCTIONS
 export async function getIncidentTypes(params?: ListParams): Promise<PaginatedResponse<IncidentType>> {
-  const { data } = await api.get<PaginatedResponse<IncidentType>>('/incidenttypes/', { 
+  const { data } = await api.get<PaginatedResponse<IncidentType>>('/api/incidenttypes', { 
     params: { ...params, format: 'json' } 
   });
   return data;
@@ -97,22 +97,15 @@ export async function getIncidentTypes(params?: ListParams): Promise<PaginatedRe
  * @deprecated Use getIncidentTypes with pagination instead
  */
 export async function getAllIncidentTypes(): Promise<IncidentType[]> {
-  const allTypes: IncidentType[] = [];
-  let page = 1;
-  const pageSize = 100;
-  
-  while (true) {
-    const response = await getIncidentTypes({ page, pageSize });
-    allTypes.push(...response.results);
-    
-    if (!response.next) {
-      break;
-    }
-    
-    page++;
+  try {
+    const { data } = await api.get<PaginatedResponse<IncidentType>>('/api/incidenttypes', { 
+      params: { format: 'json' } 
+    });
+    return data.results || [];
+  } catch (error) {
+    console.error('Error in getAllIncidentTypes:', error);
+    return [];
   }
-  
-  return allTypes;
 }
 
 export async function createIncidentType(type: Partial<IncidentType>): Promise<IncidentType> {

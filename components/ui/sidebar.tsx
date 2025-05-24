@@ -5,6 +5,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useAuth } from "@/context/auth-context";
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -228,6 +229,9 @@ const Sidebar = React.forwardRef<
             data-sidebar="sidebar"
             className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
           >
+            <div className="p-4 border-b border-sidebar-border">
+              <UserProfile />
+            </div>
             {children}
           </div>
         </div>
@@ -236,5 +240,31 @@ const Sidebar = React.forwardRef<
   }
 );
 Sidebar.displayName = "Sidebar";
+
+const UserProfile = () => {
+  const { userInfo } = useAuth();
+  
+  return (
+    <div className="flex flex-col space-y-1">
+      {userInfo ? (
+        <>
+          <div className="flex items-center space-x-2">
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+              {userInfo.first_name?.[0] || userInfo.email?.[0] || '?'}
+            </div>
+            <div>
+              <p className="text-sm font-medium">
+                {userInfo.first_name} {userInfo.last_name}
+              </p>
+              <p className="text-xs text-muted-foreground">{userInfo.email}</p>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="text-sm text-muted-foreground">Not logged in</div>
+      )}
+    </div>
+  );
+};
 
 export { SidebarProvider, Sidebar, useSidebar };

@@ -57,11 +57,13 @@ export function SuspectProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const pageToFetch = params?.page !== undefined ? params.page : pagination.pageIndex + 1;
-      const pageSizeToFetch = params?.pageSize !== undefined ? params.pageSize : pagination.pageSize;
+      // Use the provided page or default to 1 (1-based for the API)
+      const pageToFetch = params?.page !== undefined ? params.page : 1;
+      const pageSizeToFetch = params?.pageSize || pagination.pageSize;
       const effectiveSearchTerm = params?.search !== undefined ? params.search : searchTerm;
 
-      console.log(`[SuspectContext] fetchSuspects: Called with params:`, params, `Effective API Call: page=${pageToFetch}, pageSize=${pageSizeToFetch}, search=${effectiveSearchTerm}`);
+      console.log(`[SuspectContext] fetchSuspects: Called with params:`, params, 
+        `Effective API Call: page=${pageToFetch}, pageSize=${pageSizeToFetch}, search=${effectiveSearchTerm}`);
 
       const response = await suspectService.getAllSuspects({
         page: pageToFetch,
@@ -73,10 +75,10 @@ export function SuspectProvider({ children }: { children: ReactNode }) {
       setPaginationState(prev => {
         const newState = {
           ...prev,
-          pageIndex: pageToFetch - 1, 
+          pageIndex: pageToFetch, // Store as 1-based to match API
           pageSize: pageSizeToFetch,
           totalCount: response.count,
-          totalPages: Math.ceil(response.count / pageSizeToFetch),
+          totalPages: Math.ceil(response.count / pageSizeToFetch) || 1,
         };
         console.log('[SuspectContext] fetchSuspects: setPaginationState. Prev:', prev, 'New:', newState);
         return newState;
@@ -86,7 +88,7 @@ export function SuspectProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, pagination.pageIndex, pagination.pageSize, setPaginationState]);
+  }, [searchTerm, pagination.pageSize, setPaginationState]);
 
   const fetchSuspectStatuses = useCallback(async (): Promise<void> => {
     // Statuses are already set in state, no need to fetch them

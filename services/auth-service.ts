@@ -6,7 +6,7 @@ interface AuthResponse {
   token: string;
   user_id?: number;
   email?: string;
-  first_name?: string;
+  firts_name?: string; // Note the typo in the API response
   last_name?: string;
 }
 
@@ -85,11 +85,14 @@ const login = async (username: string, password: string): Promise<boolean> => {
   }
 };
 
+// No need for AuthResponseWithTypo anymore since we're using the typo in the main interface
+
 const loginWithUserInfo = async (username: string, password: string): Promise<AuthResponse> => {
   try {
     console.log('[Auth] Iniciando login con info de usuario');
     const data = await authenticateUser(username, password);
     setToken(data.token);
+    
     console.log('[Auth] Login con info exitoso, datos de usuario:', data);
     return data;
   } catch (error) {
