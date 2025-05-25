@@ -1,7 +1,5 @@
 'use client';
 
-'use client';
-
 import { useRouter } from 'next/navigation';
 import React, { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -136,49 +134,60 @@ export function SuspectForm() {
 
   const onSubmit = async (values: SuspectFormValues) => {
     setLoading(true);
+    let finalPhotoUrl = values.PhotoUrl; // Start with existing PhotoUrl or empty string
+
     try {
-      let photoUrl = values.PhotoUrl;
-      
-      // Upload image if a new file is provided
+      // 1. Upload image if a new file is provided in values.image
       if (values.image) {
         const formData = new FormData();
-        formData.append('file', values.image);
-        
+        formData.append('image', values.image); // 'image' must match the field name expected by the API
+
         const uploadResponse = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
         });
-        
-        if (!uploadResponse.ok) {
-          throw new Error('Error al subir la imagen');
+
+        const uploadResult = await uploadResponse.json();
+
+        if (!uploadResponse.ok || !uploadResult.success) {
+          console.error('Image upload failed:', uploadResult.message);
+          toast({
+            title: 'Error de Subida',
+            description: `No se pudo subir la imagen: ${uploadResult.message || 'Error desconocido'}`,
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return; // Stop submission if image upload fails
         }
-        
-        const { url } = await uploadResponse.json();
-        photoUrl = url;
+        finalPhotoUrl = uploadResult.url; // Use the URL from Cloudinary
       }
-      
-      // Create suspect with the uploaded photo URL
-      const suspectData: Partial<Suspect> = {
+
+      // 2. Prepare suspect data for creation
+      const suspectDataToCreate: Partial<Suspect> = {
         Alias: values.Alias,
         PhysicalDescription: values.PhysicalDescription,
-        PhotoUrl: photoUrl,
-        Status: values.Status,
+        Status: Number(values.Status), // Ensure Status is a number
+        PhotoUrl: finalPhotoUrl, // Use the potentially updated photo URL
       };
-      
-      const response = await createSuspect(suspectData);
-      
-      if (response) {
+
+      // 3. Create the suspect
+      const newSuspect = await createSuspect(suspectDataToCreate);
+
+      if (newSuspect) {
         toast({
-          title: 'Sospechoso registrado',
-          description: 'La información del sospechoso se ha guardado correctamente.',
+          title: 'Éxito',
+          description: 'Sospechoso creado exitosamente.',
         });
-        router.push('/dashboard/sospechosos');
+        router.push('/dashboard/suspects'); // Or your desired redirect path
+      } else {
+        // If createSuspect returns null or undefined without throwing an error
+        throw new Error('La creación del sospechoso no devolvió un resultado exitoso.');
       }
     } catch (error) {
-      console.error('Error al registrar el sospechoso:', error);
+      console.error('Error submitting suspect form:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo registrar el sospechoso. Por favor, inténtalo de nuevo.',
+        description: `No se pudo crear el sospechoso: ${error instanceof Error ? error.message : 'Error desconocido'}`,
         variant: 'destructive',
       });
     } finally {

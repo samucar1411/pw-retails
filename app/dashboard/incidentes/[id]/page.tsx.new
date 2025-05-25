@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import Map from '@/components/ui/map';
+import UIMap from '@/components/ui/map';
 
 // Services
 import { getIncidentById } from '@/services/incident-service';
@@ -30,15 +30,7 @@ import { Incident } from '@/types/incident';
 import { Suspect } from '@/types/suspect';
 import { Office } from '@/types/office';
 
-interface IncidentDetailPageProps {
-  params: {
-    id: string;
-  };
-}
-
-export default function IncidentDetailPage(props: IncidentDetailPageProps) {
-  // Use the 'use' hook to unwrap the params object properly
-  const { id } = use(props.params);
+export default function IncidentDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [incident, setIncident] = useState<Incident | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,7 +45,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
     const fetchIncidentData = async () => {
       try {
         setLoading(true);
-        const data = await getIncidentById(id);
+        const data = await getIncidentById(params.id);
         setIncident(data);
         
         // Fetch incident type
@@ -101,7 +93,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
     };
     
     fetchIncidentData();
-  }, [id]);
+  }, [params.id]);
   
   const formatCurrency = (value: string | number | undefined | null): string => {
     if (value === undefined || value === null || value === '') return '$0';
@@ -149,21 +141,19 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
   };
   
   // Map location
-  const mapLocations = office || (incident?.Latitude && incident?.Longitude) ? [
+  const mapLocations = office ? [
     {
-      id: `incident-${incident?.id}`,
-      lat: office?.Latitude || (incident?.Latitude || 0),
-      lng: office?.Longitude || (incident?.Longitude || 0),
-      title: office?.Name || 'PUNTO ' + (incident?.id || ''),
-      address: office?.Address || incident?.Address || 'Dirección no disponible',
-      logoUrl: companyLogo || undefined,
-      officeId: office?.id,
+      lat: office.Latitude || (incident?.Latitude || 0),
+      lng: office.Longitude || (incident?.Longitude || 0),
+      title: office.Name || 'Ubicación del incidente',
+      icon: companyLogo ? {
+        url: companyLogo,
+        scaledSize: { width: 32, height: 32 }
+      } : undefined,
       popupContent: `
-        <div class="p-3">
-          <div class="font-bold mb-1 text-primary">${office?.Name || 'PUNTO ' + (incident?.id || '')}</div>
-          <div class="text-sm mb-2">${office?.Address || incident?.Address || 'Dirección no disponible'}</div>
-          ${office?.Phone ? `<div class="text-xs text-muted-foreground">Tel: ${office.Phone}</div>` : ''}
-          ${incident?.Date ? `<div class="text-xs mt-2 pt-2 border-t border-muted">Incidente ocurrido el ${format(new Date(incident.Date), 'dd/MM/yyyy', { locale: es })}</div>` : ''}
+        <div class="p-2">
+          <div class="font-bold mb-1">${office.Name || 'Ubicación del incidente'}</div>
+          <div class="text-sm">${office.Address || incident?.Address || 'Dirección no disponible'}</div>
         </div>
       `
     }
@@ -341,17 +331,17 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
         </Card>
         
         {/* Row 1, Column 2: Map */}
-        <Card className="h-full flex flex-col overflow-hidden">
+        <Card className="h-full flex flex-col">
           <CardHeader className="bg-muted/30 border-b border-muted pb-3">
             <CardTitle className="flex items-center text-base">
               <MapPin className="h-4 w-4 mr-2 text-primary" />
               Ubicación del Incidente
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 p-0 relative">
+          <CardContent className="flex-1 p-0">
             {office || (incident.Latitude && incident.Longitude) ? (
-              <div className="absolute inset-0">
-                <Map locations={mapLocations} />
+              <div className="w-full h-full min-h-[350px]">
+                <UIMap locations={mapLocations} />
               </div>
             ) : (
               <div className="flex items-center justify-center h-full min-h-[350px] bg-muted/20">
@@ -366,15 +356,10 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
             <div className="p-4 border-t border-muted bg-muted/10">
               <div className="flex items-center gap-2">
                 <Building className="h-4 w-4 text-muted-foreground" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{office.Name}</p>
-                  <p className="text-sm text-muted-foreground truncate">{office.Address}</p>
+                <div>
+                  <p className="font-medium">{office.Name}</p>
+                  <p className="text-sm text-muted-foreground">{office.Address}</p>
                 </div>
-                {office.Phone && (
-                  <Badge variant="outline" className="whitespace-nowrap text-xs">
-                    Tel: {office.Phone}
-                  </Badge>
-                )}
               </div>
             </div>
           )}

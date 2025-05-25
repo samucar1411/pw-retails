@@ -1,39 +1,84 @@
-import { NextResponse } from 'next/server';
-import { uploadImage } from '@/lib/cloudinary';
+import { NextRequest, NextResponse } from 'next/server';
+import { v2 as cloudinary, UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
 
-export async function POST(request: Request) {
+// Configure Cloudinary from environment variables
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true,
+});
+
+export async function POST(req: NextRequest) {
   try {
-    // Get the form data
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const formData = await req.formData();
+    const imageFile = formData.get('image') as File | null; // Assumes form field name is 'image'
 
-    if (!file) {
-      return NextResponse.json(
-        { error: 'No file provided' },
-        { status: 400 }
-      );
+    if (!imageFile) {
+      return NextResponse.json({ success: false, message: 'No image file found in form data.' }, { status: 400 });
     }
 
-    // Convert file to buffer
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    // Convert File to buffer to stream to Cloudinary
+    const arrayBuffer = await imageFile.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
-    // Upload to Cloudinary
-    const imageUrl = await uploadImage(buffer);
+    const uploadResult = await new Promise<UploadApiResponse | UploadApiErrorResponse>((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'suspect_photos',
+          // Cloudinary can often infer resource_type and format.
+          // You can specify them if needed, e.g., based on imageFile.type
+          // resource_type: 'image',
+          // format: imageFile.type.split('/')[1], // e.g., 'png', 'jpeg'
+        },
+        (error, result) => {
+          if (error) {
+            console.error('Cloudinary stream upload error:', error);
+            reject(error);
+            return;
+          }
+          if (result) {
+            resolve(result);
+          } else {
+            // This case should ideally not be reached if error is not present
+            reject(new Error('Cloudinary upload stream did not return a result or error.'));
+          }
+        }
+      );
+      stream.end(buffer);
+    });
 
-    return NextResponse.json({ url: imageUrl });
-  } catch (error) {
-    console.error('Upload error:', error);
-    return NextResponse.json(
-      { error: 'Error uploading file' },
-      { status: 500 }
-    );
+    // Check if the uploadResult indicates an error (some errors might not throw but return an error object)
+    if ('error' in uploadResult && uploadResult.error) {
+        console.error('Cloudinary upload failed with error object:', uploadResult.error);
+        return NextResponse.json({ success: false, message: `Cloudinary upload error: ${uploadResult.error.message}` }, { status: 500 });
+    }
+    
+    // Ensure secure_url is present in a successful response
+    if (!('secure_url' in uploadResult) || !uploadResult.secure_url) {
+        console.error('Cloudinary upload result missing secure_url:', uploadResult);
+        return NextResponse.json({ success: false, message: 'Cloudinary upload did not return a secure URL.' }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Image uploaded successfully!',
+      url: uploadResult.secure_url,
+      public_id: uploadResult.public_id,
+    }, { status: 200 });
+
+  } catch (error: any) {
+    console.error('Overall API Error in /api/upload:', error);
+    let errorMessage = 'Image upload failed due to an unexpected server error.';
+    // Use the error's message directly if available and more specific
+    if (error.message) {
+      errorMessage = error.message;
+    }
+    // Check if it's a Cloudinary-specific error structure if not caught by the promise's reject
+    // (e.g. if the promise resolved with an error object that wasn't caught above)
+    if (error.http_code && error.message) {
+        errorMessage = `Cloudinary error: ${error.message} (HTTP ${error.http_code})`;
+    }
+    return NextResponse.json({ success: false, message: errorMessage }, { status: 500 });
   }
 }
-
-// Handle preflight requests for CORS
-export const OPTIONS = async () => {
-  return new Response(null, {
-    status: 204,
-  });
-};

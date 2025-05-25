@@ -137,23 +137,23 @@ export async function getAllOffices(): Promise<Office[]> {
   const MAX_PAGES = 10; // Safety limit to prevent infinite loops
   
   try {
-    console.log('[OfficeService] getAllOffices: Starting to fetch all offices');
+    console.log(': Starting to fetch all offices');
     
     while (page <= MAX_PAGES) { // Add safety limit
-      console.log(`[OfficeService] getAllOffices: Fetching page ${page}`);
+      console.log(`: Fetching page ${page}`);
       const response = await getOffices({ page, pageSize });
       
       if (!response.results || response.results.length === 0) {
-        console.log('[OfficeService] getAllOffices: No more results, breaking loop');
+        console.log(': No more results, breaking loop');
         break;
       }
       
       allOffices.push(...response.results);
-      console.log(`[OfficeService] getAllOffices: Added ${response.results.length} offices, total now: ${allOffices.length}`);
+      console.log(`: Added ${response.results.length} offices, total now: ${allOffices.length}`);
       
       // More robust check for next page
       if (!response.next || response.results.length < pageSize) {
-        console.log('[OfficeService] getAllOffices: No next page or incomplete page, breaking loop');
+        console.log(': No next page or incomplete page, breaking loop');
         break;
       }
       
@@ -161,13 +161,13 @@ export async function getAllOffices(): Promise<Office[]> {
     }
     
     if (page > MAX_PAGES) {
-      console.warn(`[OfficeService] getAllOffices: Reached maximum page limit (${MAX_PAGES}), stopping fetch`);
+      console.warn(`: Reached maximum page limit (${MAX_PAGES}), stopping fetch`);
     }
     
-    console.log(`[OfficeService] getAllOffices: Completed with ${allOffices.length} total offices`);
+    console.log(`: Completed with ${allOffices.length} total offices`);
     return allOffices;
   } catch (error) {
-    console.error('[OfficeService] getAllOffices: Error fetching all offices:', error);
+    console.error(': Error fetching all offices:', error);
     return allOffices; // Return whatever we've collected so far
   }
 }

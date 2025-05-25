@@ -5,12 +5,19 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useTheme } from "next-themes"
 
+interface MapLocation {
+  id: string | number
+  lat: number
+  lng: number
+  title: string
+  address?: string
+  logoUrl?: string
+  officeId?: number
+  popupContent?: string
+}
+
 interface MapProps {
-  locations: {
-    lat: number
-    lng: number
-    title: string
-  }[]
+  locations: MapLocation[]
 }
 
 export default function Map({ locations }: MapProps) {
@@ -31,10 +38,39 @@ export default function Map({ locations }: MapProps) {
       })
 
       locations.forEach((location) => {
-        new mapboxgl.Marker()
+        // Create custom marker element if logoUrl is provided
+        let markerElement = undefined;
+        
+        if (location.logoUrl) {
+          markerElement = document.createElement('div');
+          markerElement.className = 'custom-marker';
+          markerElement.style.width = '30px';
+          markerElement.style.height = '30px';
+          markerElement.style.borderRadius = '50%';
+          markerElement.style.background = '#fff';
+          markerElement.style.display = 'flex';
+          markerElement.style.alignItems = 'center';
+          markerElement.style.justifyContent = 'center';
+          markerElement.style.border = '2px solid #0f172a';
+          markerElement.style.overflow = 'hidden';
+          
+          const img = document.createElement('img');
+          img.src = location.logoUrl;
+          img.style.width = '80%';
+          img.style.height = '80%';
+          img.style.objectFit = 'contain';
+          markerElement.appendChild(img);
+        }
+        
+        // Create marker with or without custom element
+        const marker = new mapboxgl.Marker(markerElement)
           .setLngLat([location.lng, location.lat])
-          .setPopup(new mapboxgl.Popup().setHTML(location.title))
-          .addTo(map)
+          
+        // Set popup content if provided, otherwise use title
+        const popupContent = location.popupContent || location.title;
+        marker.setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(popupContent));
+        
+        marker.addTo(map);
       })
 
       return () => map.remove()

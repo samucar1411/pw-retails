@@ -70,28 +70,18 @@ export async function createSuspect(suspect: Partial<Suspect>): Promise<Suspect 
 
 export async function getSuspect(id: string): Promise<Suspect | null> {
   try {
-    console.log(`Fetching suspect with ID: ${id}`);
+    console.log(`Fetching suspect with ID via proxy: ${id}`);
     
-    // Make a direct API call to the backend instead of using the Next.js API route
-    // This avoids potential issues with the API route implementation
-    const response = await fetch(`https://sys.adminpy.com:18001/api/suspects/${id}/?format=json`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
+    // Use the 'api' (getConfiguredAxios) instance and the proxied path
+    const { data } = await api.get<Suspect>(`${SUSPECTS_ENDPOINT}${id}/`, {
+      params: { format: 'json' } 
     });
     
-    if (!response.ok) {
-      console.error(`Backend API error for suspect ${id}:`, response.status, response.statusText);
-      return null;
-    }
-    
-    const data = await response.json();
     console.log(`Successfully fetched suspect:`, data);
     return data;
   } catch (error) {
     console.error(`Error fetching suspect ${id}:`, error);
+    // Consider re-throwing or handling specific error statuses (e.g., 404)
     return null;
   }
 }

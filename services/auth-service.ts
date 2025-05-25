@@ -1,6 +1,5 @@
 // Importamos axios directamente para evitar problemas con el proxy
 import axios from 'axios';
-import https from 'https';
 
 interface AuthResponse {
   token: string;
@@ -27,31 +26,23 @@ const setToken = (token: string) => {
 
 const authenticateUser = async (username: string, password: string): Promise<AuthResponse> => {
   try {
-    // Usar el proxy de Next.js en lugar de llamar directamente a la API
-    const endpoint = `/api/api-token-auth2/`;
+    const endpoint = `/api-token-auth2/`; // Path for Next.js proxy
     
     console.log(`[Auth] Intentando autenticar al usuario: ${username} en endpoint: ${endpoint}`);
     
-    // Configurar axios para ignorar errores de SSL
-    const axiosInstance = axios.create({
-      httpsAgent: new https.Agent({ rejectUnauthorized: false })
-    });
-    
-    // Usamos axios para hacer la petición al proxy de Next.js
-    const response = await axiosInstance.post(endpoint, 
-      { username, password }, // Enviamos como JSON, el proxy lo convertirá a form-urlencoded
+    // Use a direct axios.post call, not getConfiguredAxios() or an instance with httpsAgent
+    const response = await axios.post(endpoint, 
+      { username, password },
       {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        timeout: 15000
+        timeout: 15000 // 15 segundos de timeout
       }
     );
-    
-    console.log(`[Auth] Respuesta recibida:`, response.status, response.statusText);
-    
-    console.log('[Auth] Respuesta recibida:', response.data);
+
+    console.log('[Auth] Respuesta de autenticación:', response.data);
 
     if (!response.data.token) {
       console.error('[Auth] No se encontró token en la respuesta:', response.data);
