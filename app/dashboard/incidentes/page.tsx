@@ -4,16 +4,10 @@
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-
-
-import Alert from "@/components/ui/alert";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertDescription } from "visor-ui";
-
-import { useIncidents } from '@/hooks/use-incident';
-import { IncidentsTable } from "./components/incidents-table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIncidents } from '@/hooks/use-incident';
+import { IncidentsTable } from "./components/incidents-table";
 
 export default function IncidentesPage() {
   const router = useRouter();
@@ -22,53 +16,36 @@ export default function IncidentesPage() {
   
   if (error) {
     return (
-      <div className="p-6">
-        <Alert variant="destructive">
-          <AlertDescription>{error.message}</AlertDescription>
-        </Alert>
+      <div className="container mx-auto py-8 px-4">
+        <div className="bg-destructive/10 text-destructive p-4 rounded-md">
+          <p>Error al cargar los incidentes: {error.message}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <CardTitle>Incidentes</CardTitle>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
-              {/* <Input
-                placeholder="Buscar incidentes..."
-                className="w-full sm:w-[300px]"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              /> */}
-              <div className="flex flex-row gap-4">
-                <Button
-                  onClick={() => router.push("/dashboard/incidentes/crear")}
-                  className="flex-1 sm:flex-none"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nuevo cliente
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-2 p-4">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : (
-            <>
-              <IncidentsTable />
-            </>
-          )}
-        </CardContent>
-      </Card>
+    <div className="container mx-auto py-8 px-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Incidentes</h1>
+        <Button
+          onClick={() => router.push("/dashboard/incidentes/crear")}
+          className="flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Nuevo Incidente
+        </Button>
+      </div>
+      
+      {isLoading ? (
+        <div className="space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
+      ) : (
+        <IncidentsTable />
+      )}
     </div>
   );
 }

@@ -3,12 +3,14 @@ import { Suspect } from './suspect';
 
 
 
-export type IncidentType = BaseEntity & {
+export type IncidentType = {
   name: string;
+  id: number;
 };
 
-export type Incident = BaseEntity & {
+export type Incident = {
   // API field names match the actual response
+  id: number;
   Office: number; // Office ID
   Date: string; // Date in YYYY-MM-DD format
   Time: string; // Time in HH:MM:SS format
@@ -32,6 +34,9 @@ export type Incident = BaseEntity & {
   date?: string;
   time?: string;
   incidentTypeId?: number;
+  
+  // Type safety for error handling
+  [key: string]: unknown;
   type?: string; // Type name (e.g., 'hurto', 'robo')
   description?: string;
   cashLoss?: number | string;

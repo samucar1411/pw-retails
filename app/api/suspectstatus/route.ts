@@ -3,23 +3,16 @@ import https from "https";
 
 const API_URL = "https://sys.adminpy.com:18001/api/suspectstatus/";
 
-// GET /api/suspectstatus
-// List all suspect statuses
 export async function GET(request: Request) {
   try {
-    // Get the URL from the request to extract query parameters
     const url = new URL(request.url);
     const searchParams = url.searchParams;
     
-    // Construct the API URL with query parameters
     let apiUrlWithParams = API_URL;
     if (searchParams.toString()) {
       apiUrlWithParams += `?${searchParams.toString()}`;
     }
     
-    console.log("Proxying request to:", apiUrlWithParams);
-    
-    // Get authorization header from the incoming request
     const authHeader = request.headers.get('authorization');
     
     const agent = new https.Agent({

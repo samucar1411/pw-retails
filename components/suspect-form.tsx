@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import Image from 'next/image';
 
 type SuspectFormValues = {
   Alias: string;
@@ -315,11 +316,14 @@ export function SuspectForm() {
                 {previewImage ? (
                   <div className="flex flex-col items-start gap-4">
                     <div className="relative">
-                      <img
-                        src={previewImage}
-                        alt="Vista previa"
-                        className="h-48 w-48 object-cover rounded-md border"
-                      />
+                      <div className="relative h-48 w-48">
+                        <Image
+                          src={previewImage}
+                          alt="Vista previa"
+                          fill
+                          className="object-cover rounded-md border"
+                        />
+                      </div>
                       <Button
                         type="button"
                         variant="destructive"

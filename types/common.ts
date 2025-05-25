@@ -1,5 +1,5 @@
 export type BaseEntity = {
-  id: number | string; // Primary key
+  id: number; // Primary key
 };
 
 export type File = {

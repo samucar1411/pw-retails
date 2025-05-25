@@ -1,141 +1,104 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import https from "https";
 
-const API_URL = "https://sys.adminpy.com:18001/api/incidenttypes/";
+const API_BASE_URL = "https://sys.adminpy.com:18001/api/incidenttypes";
 
-// GET /api/incidenttypes
-// List all incident types with pagination and filtering
-export async function GET(request: Request) {
-  try {
-    // Get the URL from the request to extract query parameters
-    const url = new URL(request.url);
-    const searchParams = url.searchParams;
-    
-    // Log the query parameters for debugging
-    console.log("Incident Types - Query parameters:", Object.fromEntries(searchParams.entries()));
-    
-    // Construct the API URL with query parameters
-    let apiUrlWithParams = API_URL;
-    if (searchParams.toString()) {
-      apiUrlWithParams += `?${searchParams.toString()}`;
-    }
-    
-    console.log("Proxying request to:", apiUrlWithParams);
-    
-    // Get authorization header from the incoming request
-    const authHeader = request.headers.get('authorization');
-    console.log("Authorization header:", authHeader ? "Present" : "Missing");
-    
-    const agent = new https.Agent({
-      rejectUnauthorized: false
-    });
-    
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-    };
-    
-    // Add authorization header if present
-    if (authHeader) {
-      headers["Authorization"] = authHeader;
-    }
-    
-    const response = await fetch(apiUrlWithParams, {
-      method: "GET",
-      headers,
-      // @ts-expect-error - Required to ignore SSL in Next.js
-      agent: agent,
-      next: { revalidate: 60 }, // Revalidate every 60 seconds
-    });
-    
-    if (!response.ok) {
-      console.error("Error from API:", response.status, response.statusText);
-      return NextResponse.json(
-        { error: "Error fetching incident types" }, 
-        { status: response.status }
-      );
-    }
-    
-    const data = await response.json();
-    console.log("API response data:", {
-      count: data.count,
-      results: data.results?.length || 0,
-      next: !!data.next,
-      previous: !!data.previous
-    });
-    
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error("Error in incident types API route:", error);
-    return NextResponse.json(
-      { error: "Internal server error" }, 
-      { status: 500 }
-    );
-  }
+// Create a reusable HTTPS agent
+const agent = new https.Agent({
+  rejectUnauthorized: false
+});
+
+// Helper to add CORS headers to responses
+const withCors = (response: NextResponse): NextResponse => {
+  response.headers.set('Access-Control-Allow-Origin', '*');
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  response.headers.set('Access-Control-Max-Age', '86400');
+  return response;
+};
+
+export async function GET(request: NextRequest) {
+  return handleRequest(request);
 }
 
-// POST /api/incidenttypes
-// Create a new incident type
-export async function POST(request: Request) {
-  try {
-    console.log("Proxying POST request to:", API_URL);
-    
-    // Get authorization header from the incoming request
-    const authHeader = request.headers.get('authorization');
-    console.log("Authorization header:", authHeader ? "Present" : "Missing");
-    
-    const body = await request.json();
-    
-    const agent = new https.Agent({
-      rejectUnauthorized: false
-    });
-    
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-    };
-    
-    // Add authorization header if present
-    if (authHeader) {
-      headers["Authorization"] = authHeader;
-    }
-    
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers,
-      // @ts-expect-error - Required to ignore SSL in Next.js
-      agent: agent,
-      body: JSON.stringify(body)
-    });
-    
-    if (!response.ok) {
-      console.error("Error from API:", response.status, response.statusText);
-      return NextResponse.json(
-        { error: "Error creating incident type" }, 
-        { status: response.status }
-      );
-    }
-    
-    const data = await response.json();
-    
-    return NextResponse.json(data, { status: 201 });
-  } catch (error) {
-    console.error("Error in incident types API route:", error);
-    return NextResponse.json(
-      { error: "Internal server error" }, 
-      { status: 500 }
-    );
-  }
+export async function POST(request: NextRequest) {
+  return handleRequest(request);
+}
+
+export async function PUT(request: NextRequest) {
+  return handleRequest(request);
+}
+
+export async function DELETE(request: NextRequest) {
+  return handleRequest(request);
 }
 
 export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Max-Age": "86400",
-    },
-  });
+  return withCors(new NextResponse(null, { status: 204 }));
+}
+
+async function handleRequest(request: NextRequest) {
+  try {
+    // Handle preflight request
+    if (request.method === 'OPTIONS') {
+      return withCors(new NextResponse(null, { status: 204 }));
+    }
+
+    const url = new URL(request.url);
+    const searchParams = url.searchParams;
+    const apiUrl = searchParams.toString() 
+      ? `${API_BASE_URL}/?${searchParams.toString()}`
+      : `${API_BASE_URL}/`;
+
+    // Clone headers from the incoming request
+    const headers = new Headers();
+    request.headers.forEach((value, key) => {
+      if (key.toLowerCase() !== 'host') {
+        headers.set(key, value);
+      }
+    });
+
+    // Ensure proper content type for non-GET requests
+    if (request.method !== 'GET' && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+
+    const response = await fetch(apiUrl, {
+      method: request.method,
+      headers,
+      body: request.body,
+      // @ts-expect-error - Required to ignore SSL in Next.js
+      agent: agent,
+      // Only set next.revalidate for GET requests
+      ...(request.method === 'GET' && { next: { revalidate: 60 } })
+    });
+
+    // Handle non-OK responses
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Error fetching data');
+      console.error(`Error from API (${response.status}):`, errorText);
+      return withCors(new NextResponse(
+        JSON.stringify({ error: errorText }), 
+        { status: response.status, headers: { 'Content-Type': 'application/json' } }
+      ));
+    }
+
+    // For successful responses, pass through the data
+    const data = await response.arrayBuffer();
+    const responseHeaders = new Headers(response.headers);
+    
+    // Create a new response with the original data and headers
+    const newResponse = new NextResponse(Buffer.from(data), {
+      status: response.status,
+      headers: responseHeaders
+    });
+
+    return withCors(newResponse);
+  } catch (error) {
+    console.error('Error in API proxy:', error);
+    return withCors(new NextResponse(
+      JSON.stringify({ error: 'Internal server error' }), 
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    ));
+  }
 }

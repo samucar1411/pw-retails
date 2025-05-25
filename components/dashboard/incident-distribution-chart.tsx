@@ -71,7 +71,6 @@ export function IncidentDistributionChart() {
             const typeId = incident.IncidentType;
             if (typeId) {
               counts[typeId] = (counts[typeId] || 0) + 1;
-              console.log(`Incident type ${typeId} count: ${counts[typeId]}`);
             }
           });
         }

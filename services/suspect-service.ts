@@ -2,6 +2,19 @@ import { Suspect, SuspectTableItem, SuspectStatus } from '../types/suspect';
 import { PaginatedResponse, ListParams } from '../types/api';
 import { api } from './api';
 
+// Default suspect to use when a suspect is not found
+const DEFAULT_SUSPECT: Suspect = {
+  id: 'unknown',
+  Alias: 'Sospechoso desconocido',
+  PhysicalDescription: 'Información no disponible',
+  PhotoUrl: '',
+  Status: 0,
+  StatusDetails: {
+    id: 0,
+    Name: 'Desconocido'
+  }
+};
+
 // API ENDPOINTS
 const SUSPECTS_ENDPOINT = '/api/suspects/';
 const SUSPECT_STATUS_ENDPOINT = '/api/suspectstatus/';
@@ -142,23 +155,33 @@ export async function deleteSuspectPhoto(id: string): Promise<boolean> {
   }
 }
 
-// Get a single suspect by ID
-export async function getSuspectById(id: string): Promise<Suspect | null> {
+// Get a single suspect by ID with graceful error handling
+export async function getSuspectById(id: string): Promise<Suspect> {
   try {
     const { data } = await api.get<Suspect>(`${SUSPECTS_ENDPOINT}${id}/`);
     return data;
-  } catch (error) {
-    console.error(`Error fetching suspect ${id}:`, error);
-    return null;
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'response' in error && 
+        error.response && typeof error.response === 'object' && 
+        'status' in error.response && error.response.status === 404) {
+      console.warn(`Suspect with ID ${id} not found`);
+    } else {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`Error fetching suspect ${id}:`, errorMessage);
+    }
+    return { ...DEFAULT_SUSPECT, id };
   }
 }
 
-export async function getSuspectTableItemById(id: string): Promise<SuspectTableItem | null> {
+// Get suspect table item by ID with graceful error handling
+export async function getSuspectTableItemById(id: string): Promise<SuspectTableItem> {
   try {
-    return await getSuspectById(id);
-  } catch (error) {
-    console.error(`Error fetching suspect table item ${id}:`, error);
-    return null;
+    const suspect = await getSuspectById(id);
+    return suspect || { ...DEFAULT_SUSPECT, id };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`Error fetching suspect table item ${id}:`, errorMessage);
+    return { ...DEFAULT_SUSPECT, id };
   }
 }
 
