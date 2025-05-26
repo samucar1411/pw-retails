@@ -6,9 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   AlertCircle,
-  Building2,
   Users,
-  Bell,
   ChevronDown,
   ChevronsUpDown,
   User,
@@ -47,7 +45,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 import { useAuth } from "@/context/auth-context";
-import { OfficeSelectorCompact } from "@/components/office-selector";
+// Office selector removed for now
 import { OfficeProvider } from "@/context/office-context";
 
 // Restore NavItem interface
@@ -103,28 +101,28 @@ const navigationItems: NavItem[] = [
       },
     ],
   },
-  {
-    icon: Building2,
-    title: "Sucursales",
-    url: "/dashboard/sucursales",
-    children: [
-      {
-        icon: List,
-        title: "Lista de Sucursales",
-        url: "/dashboard/sucursales",
-      },
-      {
-        icon: PlusCircle,
-        title: "Agregar Sucursal",
-        url: "/dashboard/sucursales/nueva",
-      },
-    ],
-  },
-  {
-    icon: Bell,
-    title: "Alertas",
-    url: "/dashboard/alertas",
-  },
+  // {
+  //   icon: Building2,
+  //   title: "Sucursales",
+  //   url: "/dashboard/sucursales",
+  //   children: [
+  //     {
+  //       icon: List,
+  //       title: "Lista de Sucursales",
+  //       url: "/dashboard/sucursales",
+  //     },
+  //     {
+  //       icon: PlusCircle,
+  //       title: "Agregar Sucursal",
+  //       url: "/dashboard/sucursales/nueva",
+  //     },
+  //   ],
+  // },
+  // {
+  //   icon: Bell,
+  //   title: "Alertas",
+  //   url: "/dashboard/alertas",
+  // },
 ];
 
 export function AppSidebar() {
@@ -236,7 +234,15 @@ export function AppSidebar() {
       <Sidebar>
         {/* ── HEADER ─────────────────────────────────────── */}
         <SidebarHeader className="flex flex-col">
-          <OfficeSelectorCompact />
+          <div className="flex items-center gap-3 px-4 py-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
+              <span className="text-lg font-semibold text-primary-foreground">PW</span>
+            </div>
+            <div className="flex flex-col justify-center">
+              <h2 className="text-sm font-semibold">PW Retails</h2>
+              <p className="text-xs text-muted-foreground">Sistema de gestión</p>
+            </div>
+          </div>
         </SidebarHeader>
 
         {/* ── CONTENIDO ──────────────────────────────────── */}

@@ -10,6 +10,9 @@ export async function getIncidents(
     ordering?: string;
     page?: number;
     page_size?: number;
+    IncidentType?: number;
+    Office?: number;
+    suspect_alias?: string;
   } = {}
 ): Promise<PaginatedResponse<Incident>> {
   console.log("Fetching incidents with page:", filters.page);
@@ -53,6 +56,23 @@ export async function deleteIncident(id: number): Promise<void> {
 }
 
 /**
+ * Get incident type by ID
+ */
+export async function getIncidentType(id: number): Promise<IncidentType | null> {
+  if (!id) return null;
+  
+  try {
+    const { data } = await api.get<IncidentType>(`/api/incidenttypes/${id}/`, {
+      params: { format: 'json' }
+    });
+    return data;
+  } catch (error) {
+    console.error(`Error fetching incident type ${id}:`, error);
+    return null;
+  }
+}
+
+/**
  * Get a single incident by ID
  */
 export async function getIncidentById(id: string | number): Promise<Incident> {
@@ -87,7 +107,7 @@ export async function uploadIncidentAttachments(id: number, files: File[]): Prom
 
 // INCIDENT TYPE FUNCTIONS
 export async function getIncidentTypes(params?: ListParams): Promise<PaginatedResponse<IncidentType>> {
-  const { data } = await api.get<PaginatedResponse<IncidentType>>('/api/incidenttypes', { 
+  const { data } = await api.get<PaginatedResponse<IncidentType>>('/api/incidenttypes/', { 
     params: { ...params, format: 'json' } 
   });
   return data;
@@ -98,7 +118,7 @@ export async function getIncidentTypes(params?: ListParams): Promise<PaginatedRe
  */
 export async function getAllIncidentTypes(): Promise<IncidentType[]> {
   try {
-    const { data } = await api.get<PaginatedResponse<IncidentType>>('/api/incidenttypes', { 
+    const { data } = await api.get<PaginatedResponse<IncidentType>>('/api/incidenttypes/', { 
       params: { format: 'json' } 
     });
     return data.results || [];

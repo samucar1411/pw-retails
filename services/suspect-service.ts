@@ -58,9 +58,13 @@ export async function getAllSuspects(
 }
 
 
-export async function createSuspect(suspect: Partial<Suspect>): Promise<Suspect | null> {
+export async function createSuspect(suspect: Partial<Suspect> | FormData): Promise<Suspect | null> {
   try {
-    const { data } = await api.post<Suspect>(SUSPECTS_ENDPOINT, suspect);
+    const headers = suspect instanceof FormData 
+      ? { 'Content-Type': 'multipart/form-data' }
+      : { 'Content-Type': 'application/json' };
+    
+    const { data } = await api.post<Suspect>(SUSPECTS_ENDPOINT, suspect, { headers });
     return data;
   } catch (error) {
     console.error('Error creating suspect:', error);

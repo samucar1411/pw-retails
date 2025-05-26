@@ -96,7 +96,7 @@ export const columns: ColumnDef<Suspect>[] = [
               <div className="py-1">
                 <DropdownMenuItem>
                   <Link 
-                    href={`/dashboard/suspects/${suspect.id}`} 
+                    href={`/dashboard/sospechosos/${suspect.id}`} 
                     className="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     onClick={() => setIsOpen(false)}
                   >
@@ -105,7 +105,7 @@ export const columns: ColumnDef<Suspect>[] = [
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Link 
-                    href={`/dashboard/suspects/${suspect.id}/edit`} 
+                    href={`/dashboard/sospechosos/${suspect.id}/edit`} 
                     className="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     onClick={() => setIsOpen(false)}
                   >

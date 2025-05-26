@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,11 +12,46 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
-import { createSuspect } from '@/services/suspect-service';
+import { getSuspectById, updateSuspect, uploadSuspectPhoto } from '@/services/suspect-service';
+import { Suspect } from '@/types/suspect';
 
-export default function NewSuspectPage() {
+export default function EditSuspectPage() {
   const router = useRouter();
+  const params = useParams();
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [suspect, setSuspect] = useState<Partial<Suspect>>({});
+
+  useEffect(() => {
+    const fetchSuspect = async () => {
+      try {
+        const suspectId = Number(params.id);
+        const data = await getSuspectById(suspectId);
+        if (data) {
+          setSuspect(data);
+        } else {
+          toast({
+            title: 'Error',
+            description: 'Suspect not found',
+            variant: 'destructive',
+          });
+          router.push('/dashboard/sospechosos');
+        }
+      } catch (error) {
+        console.error('Error fetching suspect:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load suspect data',
+          variant: 'destructive',
+        });
+        router.push('/dashboard/sospechosos');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSuspect();
+  }, [params.id, router]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -24,7 +60,7 @@ export default function NewSuspectPage() {
     const formData = new FormData(e.currentTarget);
     
     try {
-      const response = await createSuspect({
+      const updatedSuspect = await updateSuspect(Number(params.id), {
         first_name: formData.get('first_name') as string,
         last_name: formData.get('last_name') as string,
         identification_number: formData.get('identification_number') as string,
@@ -42,21 +78,15 @@ export default function NewSuspectPage() {
         status: formData.get('status') as string || 'active',
       });
 
-      if (response) {
-        toast({
-          title: 'Success',
-          description: 'Suspect created successfully',
-          variant: 'default',
-        });
-        
-        // Handle photo upload if a file was selected
+      if (updatedSuspect) {
+        // Handle photo upload if a new file was selected
         const photoFile = (formData.get('photo') as File)?.size > 0 
           ? formData.get('photo') as File 
           : null;
           
         if (photoFile) {
           try {
-            await uploadSuspectPhoto(response.id, photoFile);
+            await uploadSuspectPhoto(updatedSuspect.id, photoFile);
             toast({
               title: 'Success',
               description: 'Photo uploaded successfully',
@@ -71,16 +101,22 @@ export default function NewSuspectPage() {
             });
           }
         }
+
+        toast({
+          title: 'Success',
+          description: 'Suspect updated successfully',
+          variant: 'default',
+        });
         
-        router.push(`/dashboard/suspects/${response.id}`);
+        router.push(`/dashboard/sospechosos/${updatedSuspect.id}`);
       } else {
-        throw new Error('Failed to create suspect');
+        throw new Error('Failed to update suspect');
       }
     } catch (error) {
-      console.error('Error creating suspect:', error);
+      console.error('Error updating suspect:', error);
       toast({
         title: 'Error',
-        description: 'Failed to create suspect. Please try again.',
+        description: 'Failed to update suspect. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -88,22 +124,30 @@ export default function NewSuspectPage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center space-x-4">
         <Button variant="outline" size="icon" asChild>
-          <Link href="/dashboard/suspects">
+          <Link href={`/dashboard/sospechosos/${params.id}`}>
             <ArrowLeft className="h-4 w-4" />
             <span className="sr-only">Back</span>
           </Link>
         </Button>
-        <h1 className="text-3xl font-bold">Add New Suspect</h1>
+        <h1 className="text-3xl font-bold">Edit Suspect</h1>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Suspect Information</CardTitle>
-          <CardDescription>Enter the suspect's details below.</CardDescription>
+          <CardTitle>Edit Suspect Information</CardTitle>
+          <CardDescription>Update the suspect&apos;s details below.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -114,6 +158,7 @@ export default function NewSuspectPage() {
                   id="first_name" 
                   name="first_name" 
                   required 
+                  defaultValue={suspect.first_name}
                   disabled={isSubmitting}
                 />
               </div>
@@ -123,6 +168,7 @@ export default function NewSuspectPage() {
                   id="last_name" 
                   name="last_name" 
                   required 
+                  defaultValue={suspect.last_name}
                   disabled={isSubmitting}
                 />
               </div>
@@ -132,6 +178,7 @@ export default function NewSuspectPage() {
                   id="identification_number" 
                   name="identification_number" 
                   required 
+                  defaultValue={suspect.identification_number}
                   disabled={isSubmitting}
                 />
               </div>
@@ -141,12 +188,13 @@ export default function NewSuspectPage() {
                   id="date_of_birth" 
                   name="date_of_birth" 
                   type="date" 
+                  defaultValue={suspect.date_of_birth?.split('T')[0]}
                   disabled={isSubmitting}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="gender">Gender</Label>
-                <Select name="gender" disabled={isSubmitting}>
+                <Select name="gender" defaultValue={suspect.gender} disabled={isSubmitting}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
@@ -160,7 +208,11 @@ export default function NewSuspectPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Status *</Label>
-                <Select name="status" defaultValue="active" disabled={isSubmitting}>
+                <Select 
+                  name="status" 
+                  defaultValue={suspect.status || 'active'} 
+                  disabled={isSubmitting}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
@@ -183,6 +235,7 @@ export default function NewSuspectPage() {
                     id="email" 
                     name="email" 
                     type="email" 
+                    defaultValue={suspect.email}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -191,6 +244,7 @@ export default function NewSuspectPage() {
                   <Input 
                     id="phone_number" 
                     name="phone_number" 
+                    defaultValue={suspect.phone_number}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -199,6 +253,7 @@ export default function NewSuspectPage() {
                   <Input 
                     id="address" 
                     name="address" 
+                    defaultValue={suspect.address}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -207,6 +262,7 @@ export default function NewSuspectPage() {
                   <Input 
                     id="city" 
                     name="city" 
+                    defaultValue={suspect.city}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -215,6 +271,7 @@ export default function NewSuspectPage() {
                   <Input 
                     id="postal_code" 
                     name="postal_code" 
+                    defaultValue={suspect.postal_code}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -223,6 +280,7 @@ export default function NewSuspectPage() {
                   <Input 
                     id="country" 
                     name="country" 
+                    defaultValue={suspect.country}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -234,6 +292,7 @@ export default function NewSuspectPage() {
               <Input 
                 id="alias" 
                 name="alias" 
+                defaultValue={suspect.alias}
                 disabled={isSubmitting}
               />
             </div>
@@ -245,6 +304,7 @@ export default function NewSuspectPage() {
                 name="physical_description"
                 rows={4}
                 placeholder="Enter physical description details..."
+                defaultValue={suspect.physical_description}
                 disabled={isSubmitting}
               />
             </div>
@@ -256,12 +316,13 @@ export default function NewSuspectPage() {
                 name="notes"
                 rows={4}
                 placeholder="Enter any additional notes..."
+                defaultValue={suspect.notes}
                 disabled={isSubmitting}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="photo">Photo</Label>
+              <Label htmlFor="photo">Update Photo</Label>
               <Input 
                 id="photo" 
                 name="photo" 
@@ -269,6 +330,21 @@ export default function NewSuspectPage() {
                 accept="image/*" 
                 disabled={isSubmitting}
               />
+              {suspect.photo_url && (
+                <div className="mt-2">
+                  <p className="text-sm text-muted-foreground">Current photo:</p>
+                  <div className="relative h-24 w-24 mt-2">
+                    <Image
+                      src={suspect.photo_url}
+                      alt={`${suspect.first_name || ''} ${suspect.last_name || ''}`}
+                      fill
+                      className="rounded-md object-cover"
+                      sizes="96px"
+                      priority
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end space-x-4 pt-4">
@@ -276,15 +352,15 @@ export default function NewSuspectPage() {
                 type="button" 
                 variant="outline" 
                 disabled={isSubmitting}
-                asChild
+                onClick={() => router.push(`/dashboard/sospechosos/${params.id}`)}
               >
-                <Link href="/dashboard/suspects">Cancel</Link>
+                Cancel
               </Button>
               <Button 
                 type="submit" 
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Creating...' : 'Create Suspect'}
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </form>

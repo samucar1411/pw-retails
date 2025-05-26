@@ -18,25 +18,197 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin } from "lucide-react";
-import { Incident } from "@/types/incident";
-import { FileText } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
+import { DollarSign, FileText, MapPin } from "lucide-react";
+import Link from "next/link";
+import { Incident, IncidentType } from "@/types/incident";
+import { Office } from "@/types/office";
+import { getOffice } from "@/services/office-service";
+import { getIncidentType } from "@/services/incident-service";
+import { useState, useEffect } from "react";
 
 interface RecentIncidentsTableProps {
   data: Incident[];
 }
 
-// Helper to determine badge variant based on incident type
-const getIncidentTypeVariant = (type: string): "default" | "secondary" | "destructive" | "outline" => {
-  switch (type.toLowerCase()) {
-    case 'hurto':
-      return 'destructive';
-    case 'vandalismo':
-      return 'outline';
-    default:
-      return 'secondary';
+// Format date for better display
+const formatDate = (dateStr: string | undefined, timeStr: string | undefined) => {
+  if (!dateStr || !timeStr) {
+    return {
+      date: 'Fecha no disponible',
+      time: '',
+      fullDate: 'Fecha no disponible'
+    };
+  }
+  
+  try {
+    const date = new Date(dateStr);
+    const options: Intl.DateTimeFormatOptions = { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    };
+    
+    const formattedTime = timeStr.substring(0, 5); // HH:MM format
+    const formattedDate = date.toLocaleDateString('es-PY', options);
+    
+    return {
+      date: formattedDate,
+      time: formattedTime,
+      fullDate: `${formattedDate}, ${formattedTime}hs`
+    };
+  } catch {
+    // Fallback if date parsing fails
+    return {
+      date: dateStr,
+      time: timeStr,
+      fullDate: `${dateStr}, ${timeStr}`
+    };
   }
 };
+
+// Helper to parse numeric string values
+const parseNumeric = (value: string | number | undefined): number => {
+  if (value === undefined || value === null) return 0;
+  if (typeof value === 'number') return value;
+  return parseFloat(value) || 0;
+};
+
+// Format currency with proper symbol and thousands separators
+const formatCurrency = (value: number): string => {
+  return value.toLocaleString("es-PY", {
+    style: "currency",
+    currency: "PYG",
+    maximumFractionDigits: 0,
+  });
+};
+
+// Component to display office information
+const OfficeInfo = React.memo(function OfficeInfo({ officeId }: { officeId: number }) {
+  const [office, setOffice] = useState<Office | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchOffice = async () => {
+      try {
+        const officeData = await getOffice(officeId);
+        setOffice(officeData);
+      } catch (error) {
+        console.error("Error fetching office:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchOffice();
+  }, [officeId]);
+  
+  if (loading) return <Skeleton className="h-4 w-24" />;
+  
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex items-center gap-1.5 cursor-help">
+          <MapPin className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+          <span className="text-sm font-medium">{office?.Name || `Sucursal ${officeId}`}</span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="text-sm space-y-1">
+        <p className="font-medium">{office?.Name || `Sucursal ${officeId}`}</p>
+        {office?.Address && <p className="text-xs">{office.Address}</p>}
+        {office?.Code && <p className="text-xs text-muted-foreground">Código: {office.Code}</p>}
+      </TooltipContent>
+    </Tooltip>
+  );
+});
+
+// Component to display incident type with tooltip
+const IncidentTypeInfo = React.memo(function IncidentTypeInfo({ typeId }: { typeId: number }) {
+  const [incidentType, setIncidentType] = useState<IncidentType | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchIncidentType = async () => {
+      try {
+        const type = await getIncidentType(typeId);
+        setIncidentType(type);
+      } catch (error) {
+        console.error("Error fetching incident type:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchIncidentType();
+  }, [typeId]);
+  
+  if (loading) return <Skeleton className="h-4 w-20" />;
+  
+  // Determine badge variant based on incident type
+  const getVariant = (): "default" | "secondary" | "destructive" | "outline" => {
+    if (!incidentType?.name) return 'secondary';
+    
+    const type = incidentType.name.toLowerCase();
+    if (type.includes('hurto')) return 'destructive';
+    if (type.includes('robo')) return 'destructive';
+    if (type.includes('vandalismo')) return 'outline';
+    return 'secondary';
+  };
+  
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Badge variant={getVariant()} className="text-xs font-medium">
+          {incidentType?.name || `Tipo ${typeId}`}
+        </Badge>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="text-sm">
+        <p>Tipo de incidente: {incidentType?.name || `Tipo ${typeId}`}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+});
+
+// Component to display loss information with tooltip
+const LossesInfo = React.memo(function LossesInfo({ incident }: { incident: Incident }) {
+  // Handle both API field names (uppercase) and local field names (lowercase)
+  const cashLoss = parseNumeric(incident.CashLoss || incident.cashLoss);
+  const merchandiseLoss = parseNumeric(incident.MerchandiseLoss || incident.merchandiseLoss);
+  const otherLosses = parseNumeric(incident.OtherLosses || incident.otherLosses);
+  const totalLoss = parseNumeric(incident.TotalLoss || incident.totalLoss);
+  
+  return (
+    <div className="flex items-center gap-2">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex items-center gap-1 font-medium cursor-help">
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <span>{formatCurrency(totalLoss)}</span>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="left" className="text-sm space-y-1">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+            <span>Efectivo:</span>
+            <span>{formatCurrency(cashLoss)}</span>
+            
+            <span>Mercancía:</span>
+            <span>{formatCurrency(merchandiseLoss)}</span>
+            
+            <span>Otros:</span>
+            <span>{formatCurrency(otherLosses)}</span>
+            
+            <div className="col-span-2 border-t mt-1 pt-1 flex justify-between font-medium">
+              <span>Total:</span>
+              <span>{formatCurrency(totalLoss)}</span>
+            </div>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  );
+});
 
 export function RecentIncidentsTable({ data }: RecentIncidentsTableProps) {
   const recentIncidents = React.useMemo(() => {
@@ -58,7 +230,9 @@ export function RecentIncidentsTable({ data }: RecentIncidentsTableProps) {
           <CardTitle>Incidentes recientes</CardTitle>
           <CardDescription>Últimos 5 incidentes reportados</CardDescription>
         </div>
-        <Button variant="outline" size="sm">Ver todos</Button>
+        <Link href="/dashboard/incidentes">
+          <Button variant="outline" size="sm">Ver todos</Button>
+        </Link>
       </CardHeader>
       <CardContent>
         {isEmpty ? (
@@ -68,47 +242,70 @@ export function RecentIncidentsTable({ data }: RecentIncidentsTableProps) {
             <p className="text-xs">No se han registrado incidentes aún</p>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Sucursal</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Pérdidas</TableHead>
-                <TableHead className="text-right">Acción</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentIncidents.map((incident) => (
-                <TableRow key={incident.id}>
-                  <TableCell className="font-medium">{incident.id}</TableCell>
-                  <TableCell>{`${incident.date} - ${incident.time}`}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      {incident.officeId}
-                      <MapPin className="h-3 w-3 text-muted-foreground" />
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getIncidentTypeVariant(incident.incidentTypeId?.toString() || '')} className="text-xs">
-                      {incident.incidentTypeId}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {incident.totalLoss ? `$${incident.totalLoss.toLocaleString()}` : 'N/A'}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
-                      Ver detalle
-                    </Button>
-                  </TableCell>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>FECHA</TableHead>
+                  <TableHead>SUCURSAL</TableHead>
+                  <TableHead>TIPO</TableHead>
+                  <TableHead>PÉRDIDAS</TableHead>
+                  <TableHead className="text-right">ACCIÓN</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {recentIncidents.map((incident) => {
+                  // Handle both API field names (uppercase) and local field names (lowercase)
+                  const formattedDate = formatDate(
+                    incident.Date || incident.date, 
+                    incident.Time || incident.time
+                  );
+                  
+                  return (
+                    <TableRow key={incident.id} className="hover:bg-muted/50">
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-1">
+                          <span>#{incident.id}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="cursor-help">
+                              <div className="text-sm font-medium">{formattedDate.date}</div>
+                              <div className="text-xs text-muted-foreground">{formattedDate.time}hs</div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">
+                            <p>{formattedDate.fullDate}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell>
+                        {(incident.officeId || incident.Office) && 
+                          <OfficeInfo officeId={incident.officeId || incident.Office} />}
+                      </TableCell>
+                      <TableCell>
+                        {(incident.incidentTypeId || incident.IncidentType) && 
+                          <IncidentTypeInfo typeId={incident.incidentTypeId || incident.IncidentType} />}
+                      </TableCell>
+                      <TableCell>
+                        <LossesInfo incident={incident} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Link href={`/dashboard/incidentes/${incident.id}`}>
+                          <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
+                            Ver detalle
+                          </Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>

@@ -6,6 +6,7 @@ import {
   PaginationPrevious, PaginationLink, PaginationNext
 } from "@/components/ui/pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import Link from "next/link";
 import { useIncidents } from "@/hooks/use-incident";
 import { Incident, IncidentType } from "@/types/incident";
 import { Badge } from "@/components/ui/badge";
@@ -20,9 +21,14 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Suspect } from "@/types/suspect";
 import { Office } from "@/types/office";
 
-// Helper function to format date in a more readable way
 const formatDate = (dateStr: string | undefined, timeStr: string | undefined) => {
-  if (!dateStr || !timeStr) return 'Fecha no disponible';
+  if (!dateStr || !timeStr) {
+    return {
+      date: 'Fecha no disponible',
+      time: '',
+      fullDate: 'Fecha no disponible'
+    };
+  }
   
   try {
     const date = new Date(dateStr);
@@ -33,13 +39,13 @@ const formatDate = (dateStr: string | undefined, timeStr: string | undefined) =>
       day: 'numeric' 
     };
     
-    // Format time to be more readable (remove seconds)
     const formattedTime = timeStr.substring(0, 5); // HH:MM format
+    const formattedDate = date.toLocaleDateString('es-PY', options);
     
     return {
-      date: date.toLocaleDateString('es-PY', options),
+      date: formattedDate,
       time: formattedTime,
-      fullDate: `${date.toLocaleDateString('es-PY', options)}, ${formattedTime}hs`
+      fullDate: `${formattedDate}, ${formattedTime}hs`
     };
   } catch {
     // Fallback if date parsing fails
@@ -241,10 +247,7 @@ export function IncidentsTable() {
 
   const { data, isLoading, isFetching, isError } = useIncidents(page, pageSize);
 
-  // Calculate total pages based on data count
   const totalPages = Math.ceil((data?.count || 0) / pageSize);
-
-  // Memoize the table rows for better performance
   const tableRows = useMemo(() => {
     if (isLoading || isFetching) {
       return Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />);
@@ -273,8 +276,13 @@ export function IncidentsTable() {
           {/* ID */}
           <TableCell className="py-3">
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Hash className="h-3.5 w-3.5" />
-              <span>{inc.id}</span>
+              <Hash className="h-3.5 w-3.5 flex-shrink-0" />
+              <Link 
+                href={`/dashboard/incidentes/${inc.id}`}
+                className="hover:underline hover:text-primary"
+              >
+                {inc.id}
+              </Link>
             </div>
           </TableCell>
           

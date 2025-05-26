@@ -246,7 +246,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-4">
           <Button variant="outline" size="icon" asChild>
-            <Link href="/dashboard/suspects">
+            <Link href="/dashboard/sospechosos">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
@@ -255,7 +255,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
           </h1>
         </div>
         <Button asChild>
-          <Link href={`/dashboard/suspects/${suspectId}/edit`}>
+          <Link href={`/dashboard/sospechosos/${suspectId}/edit`}>
             <Edit className="mr-2 h-4 w-4" /> Editar
           </Link>
         </Button>
@@ -454,7 +454,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                       )}
                     </div>
                     <div className="flex-1">
-                      <Link href={`/dashboard/suspects/${rs.id}`} className="font-medium hover:underline text-primary">
+                      <Link href={`/dashboard/sospechosos/${rs.id}`} className="font-medium hover:underline text-primary">
                         {rs.Name || 'Sospechoso sin nombre'}
                       </Link>
                       {rs.Alias && <p className="text-xs text-muted-foreground">{rs.Alias}</p>}

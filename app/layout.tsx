@@ -7,6 +7,7 @@ import { Archivo } from "next/font/google";
 import { Toaster } from 'sonner';
 import { IncidentProvider } from "@/context/incident-context";
 import { SuspectProvider } from "@/context/suspect-context";
+import { ReactQueryClientProvider } from "./providers/react-query-provider";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -26,22 +27,24 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${archivo.variable} antialiased`} suppressHydrationWarning>
-        <ThemeProvider 
-          attribute="class" 
-          defaultTheme="system" 
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthProvider>
-            <UserProvider>
-              <IncidentProvider>
-                <SuspectProvider>
-                  {children}
-                </SuspectProvider>
-              </IncidentProvider>
-            </UserProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <ReactQueryClientProvider>
+          <ThemeProvider 
+            attribute="class" 
+            defaultTheme="system" 
+            enableSystem
+            disableTransitionOnChange
+          >
+            <AuthProvider>
+              <UserProvider>
+                <IncidentProvider>
+                  <SuspectProvider>
+                    {children}
+                  </SuspectProvider>
+                </IncidentProvider>
+              </UserProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </ReactQueryClientProvider>
         <Toaster 
           richColors 
           closeButton 

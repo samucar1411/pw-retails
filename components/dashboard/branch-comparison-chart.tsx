@@ -19,29 +19,107 @@ import {
 } from "@/components/ui/card";
 import { Incident } from "@/types/incident";
 import { BarChart as BarChartIcon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/services/api";
 
-interface BranchComparisonChartProps {
-  data: Incident[];
-}
+export function BranchComparisonChart() {
+  // Obtener los incidentes usando React Query con configuración optimizada
+  const { 
+    data: incidents = [], 
+    isLoading, 
+    error 
+  } = useQuery({
+    queryKey: ['incidents-for-branches'],
+    queryFn: async () => {
+      try {
+        // Obtener la primera página para conocer el total de incidentes
+        const firstPageResponse = await api.get('/api/incidents/', { 
+          params: { 
+            format: 'json',
+            page: 1,
+            page_size: 10, // La API permite máximo 10 por página
+            ordering: '-created_at'
+          } 
+        });
+        
+        const totalIncidents = firstPageResponse.data.count || 0;
+        const totalPages = Math.ceil(totalIncidents / 10);
+        console.log(`Total de incidentes: ${totalIncidents}, páginas necesarias: ${totalPages}`);
+        
+        // Si solo hay una página, devolver los resultados directamente
+        if (totalPages <= 1) {
+          return firstPageResponse.data.results || [];
+        }
+        
+        // Limitar a máximo 5 páginas (50 incidentes) para no sobrecargar
+        const pagesToFetch = Math.min(totalPages, 5);
+        
+        // Crear un array de promesas para las páginas adicionales
+        const pagePromises = [];
+        for (let page = 2; page <= pagesToFetch; page++) {
+          pagePromises.push(
+            api.get('/api/incidents/', {
+              params: {
+                format: 'json',
+                page,
+                page_size: 10,
+                ordering: '-created_at'
+              }
+            })
+          );
+        }
+        
+        // Ejecutar todas las consultas en paralelo
+        const additionalResponses = await Promise.all(pagePromises);
+        
+        // Combinar todos los resultados
+        const allIncidents = [
+          ...firstPageResponse.data.results,
+          ...additionalResponses.flatMap(response => response.data.results || [])
+        ];
+        
+        console.log(`Incidentes obtenidos para comparativa de sucursales: ${allIncidents.length}`);
+        return allIncidents;
+      } catch (error) {
+        console.error('Error al obtener incidentes para comparativa:', error);
+        throw error;
+      }
+    },
+    staleTime: 5 * 60 * 1000 // 5 minutos de caché
+  });
 
-export function BranchComparisonChart({ data }: BranchComparisonChartProps) {
   // Process data to get incidents by office
   const chartData = React.useMemo(() => {
-    const officeCount = data.reduce((acc, incident) => {
-      acc[incident.officeId] = (acc[incident.officeId] || 0) + 1;
+    if (!incidents.length) return [];
+    
+    const officeCount = incidents.reduce((acc: Record<number, number>, incident: Incident) => {
+      // Asegurarse de que officeId existe
+      if (incident.officeId) {
+        acc[incident.officeId] = (acc[incident.officeId] || 0) + 1;
+      }
       return acc;
-    }, {} as Record<number, number>);
+    }, {});
 
-    return Object.entries(officeCount).map(([office, count]) => ({
-      name: `Sucursal ${office}`,
-      incidents: count
-    }));
-  }, [data]);
+    interface ChartDataItem {
+      name: string;
+      incidents: number;
+    }
+    
+    return Object.entries(officeCount)
+      .map(([office, count]): ChartDataItem => ({
+        name: `Sucursal ${office}`,
+        incidents: count
+      }))
+      // Ordenar por número de incidentes (descendente)
+      .sort((a, b) => (b.incidents as number) - (a.incidents as number));
+  }, [incidents]);
 
-  const summaryStats = {
-    reportedIncidents: data.length,
-    affectedBranches: new Set(data.map(incident => incident.officeId)).size,
-  };
+  const summaryStats = React.useMemo(() => ({
+    reportedIncidents: incidents.length,
+    affectedBranches: new Set(incidents
+      .filter((incident: Incident) => incident.officeId)
+      .map((incident: Incident) => incident.officeId)).size,
+  }), [incidents]);
 
   const isEmpty = chartData.length === 0;
 
@@ -66,7 +144,15 @@ export function BranchComparisonChart({ data }: BranchComparisonChartProps) {
         </div>
       </CardHeader>
       <CardContent className="pl-2 pr-6 pb-4">
-        {isEmpty ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
+            <p className="text-sm font-medium">Cargando datos...</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
+            <p className="text-sm font-medium text-red-500">Error al cargar los datos</p>
+          </div>
+        ) : isEmpty ? (
           <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
             <BarChartIcon className="h-12 w-12 mb-4 opacity-50" />
             <p className="text-sm font-medium">No hay datos disponibles</p>
