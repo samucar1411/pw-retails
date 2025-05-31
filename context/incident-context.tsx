@@ -17,7 +17,7 @@ import {
   updateIncident,
   deleteIncident,
   uploadIncidentAttachments,
-  getAllIncidentTypes,
+  getIncidentTypes,
 } from "@/services/incident-service";
 
 interface IncidentContextType {
@@ -71,8 +71,8 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
   const loadIncidentTypes = useCallback(async () => {
     setLoading(true);
     try {
-      const types = await getAllIncidentTypes();
-      setIncidentTypes(types);
+      const types = await getIncidentTypes();
+      setIncidentTypes(types.results);
       setError(null);
     } catch (error) {
       console.error("Error loading incident types:", error);

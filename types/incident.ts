@@ -1,10 +1,10 @@
-import { BaseEntity, File } from './common';
+import { File } from './common';
 import { Suspect } from './suspect';
 
 
 
 export type IncidentType = {
-  name: string;
+  Name: string;
   id: number;
 };
 
@@ -19,6 +19,7 @@ export type Incident = {
   CashLoss: string; // Monetary values come as strings
   MerchandiseLoss: string;
   OtherLosses: string;
+
   TotalLoss: string;
   Notes: string;
   Attachments: File[]; // Array of attachment objects

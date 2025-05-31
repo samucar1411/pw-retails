@@ -5,34 +5,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 // Calendar picker removed
 import { PlusCircle } from "lucide-react"
-import { HourlyIncidentsChart } from "@/components/dashboard/hourly-incidents-chart"
 import { RecentIncidentsTable } from "@/components/dashboard/recent-incidents-table"
 import { OfficeMap } from "@/components/dashboard/incident-map"
 import { IncidentDistributionChart } from "@/components/dashboard/incident-distribution-chart"
 import { BranchComparisonChart } from "@/components/dashboard/branch-comparison-chart"
 import Link from "next/link"
 import * as suspectService from "@/services/suspect-service"
+import * as incidentService from "@/services/incident-service"
 import { Loader2 } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/services/api"
 
-// Interfaces para tipado
-interface Incident {
-  id: number;
-  officeId?: number;
-  // Otros campos necesarios
-}
+// Import types from the types directory
+import { Incident, IncidentType } from "@/types/incident";
 
-interface IncidentType {
-  id: number;
-  name: string;
-  // Otros campos necesarios
-}
-
+// Local interfaces for dashboard data
 interface Office {
   id: number;
   name: string;
-  // Otros campos necesarios
 }
 
 interface DashboardData {
@@ -51,12 +41,7 @@ interface SuspectDetailData {
 export default function DashboardPage() {
   // Filtros locales - Using fixed values since UI selectors were removed
   const page = 1;
-  const ordering = "-created_at";
-
-  // Crear los parámetros de filtro para las consultas
-  const filters = React.useMemo(() => {
-    return { ordering, page, format: 'json', page_size: 50 };
-  }, [ordering, page]);
+  const pageSize = 50;
 
   // Consulta centralizada para obtener datos del dashboard
   const { 
@@ -64,12 +49,12 @@ export default function DashboardPage() {
     isLoading: isLoadingDashboard,
     error: dashboardError
   } = useQuery<DashboardData>({
-    queryKey: ['dashboard-data', filters],
+    queryKey: ['dashboard-data', { page, pageSize }],
     queryFn: async () => {
       try {
         // Realizar consultas en paralelo para mejorar el rendimiento
         const [incidentsRes, typesRes, officesRes, suspectsRes] = await Promise.all([
-          api.get('/api/incidents/', { params: filters }),
+          incidentService.getLatestIncidents({ page, page_size: pageSize }),
           api.get('/api/incidenttypes/', { params: { format: 'json' } }),
           api.get('/api/offices/', { params: { format: 'json' } }),
           api.get('/api/suspects/', { params: { format: 'json', page_size: 1 } }) // Solo necesitamos el count
@@ -78,8 +63,8 @@ export default function DashboardPage() {
         console.log('Datos centralizados obtenidos para el dashboard');
         
         return {
-          incidents: incidentsRes.data.results || [],
-          incidentCount: incidentsRes.data.count || 0,
+          incidents: incidentsRes.results || [],
+          incidentCount: incidentsRes.count || 0,
           types: typesRes.data.results || [],
           offices: officesRes.data.results || [],
           suspectCount: suspectsRes.data.count || 0
