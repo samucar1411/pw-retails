@@ -8,244 +8,40 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Link from "next/link";
 import { useIncidents } from "@/hooks/use-incident";
-import { Incident, IncidentType } from "@/types/incident";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, Hash, Loader2, Search, UserIcon } from "lucide-react";
+import { Incident } from "@/types/incident";
+import { Hash, Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { getSuspectById } from "@/services/suspect-service";
-import { getIncidentTypeById } from "@/services/incident-type-service";
-import { getOffice } from "@/services/office-service";
-import React, { useState, useEffect, useMemo } from "react";
-import { Suspect } from "@/types/suspect";
-import { Office } from "@/types/office";
+import React, { useMemo } from "react";
+import { formatDate } from "@/lib/date-format";
+import { ErrorDisplay } from "@/components/ui/error-display";
+import { LoadingState } from "@/components/ui/loading-state";
+import { withErrorBoundary } from "@/components/error-boundary";
 
-const formatDate = (dateStr: string | undefined, timeStr: string | undefined) => {
-  if (!dateStr || !timeStr) {
-    return {
-      date: 'Fecha no disponible',
-      time: '',
-      fullDate: 'Fecha no disponible'
-    };
-  }
-  
-  try {
-    const date = new Date(dateStr);
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    };
-    
-    const formattedTime = timeStr.substring(0, 5); // HH:MM format
-    const formattedDate = date.toLocaleDateString('es-PY', options);
-    
-    return {
-      date: formattedDate,
-      time: formattedTime,
-      fullDate: `${formattedDate}, ${formattedTime}hs`
-    };
-  } catch {
-    // Fallback if date parsing fails
-    return {
-      date: dateStr,
-      time: timeStr,
-      fullDate: `${dateStr}, ${timeStr}`
-    };
-  }
-};
-
-// Helper to parse numeric string values
-const parseNumeric = (value: string | number | undefined): number => {
-  if (value === undefined || value === null) return 0;
-  if (typeof value === 'number') return value;
-  return parseFloat(value) || 0;
-};
-
-// Format currency with proper symbol and thousands separators
-const formatCurrency = (value: number): string => {
-  return value.toLocaleString("es-PY", {
-    style: "currency",
-    currency: "PYG",
-    maximumFractionDigits: 0,
-  });
-};
-
-// Component to display suspect information
-const SuspectInfo = React.memo(function SuspectInfo({ suspectId }: { suspectId: string }) {
-  const [suspect, setSuspect] = useState<Suspect | null>(null);
-  
-  useEffect(() => {
-    const fetchSuspect = async () => {
-      try {
-        const data = await getSuspectById(suspectId);
-        setSuspect(data);
-      } catch (error) {
-        console.error("Error fetching suspect:", error);
-      }
-    };
-    
-    fetchSuspect();
-  }, [suspectId]);
-  
-  if (!suspect) return <Skeleton className="h-4 w-24" />;
-  
-  return (
-    <div className="flex items-center gap-1.5 group">
-      <UserIcon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="text-xs font-medium text-foreground/90 hover:underline cursor-help truncate max-w-[120px]">
-            {suspect.Alias || 'Sospechoso'}
-          </span>
-        </TooltipTrigger>
-        <TooltipContent side="right" className="max-w-[300px] text-sm">
-          <div className="space-y-1">
-            <p className="font-semibold">{suspect.Alias || 'Sospechoso'}</p>
-            {suspect.PhysicalDescription && (
-              <p className="text-muted-foreground">{suspect.PhysicalDescription}</p>
-            )}
-            {suspect.StatusDetails && (
-              <div className="mt-1">
-                <Badge variant={suspect.Status === 1 ? 'destructive' : 'outline'} className="text-xs">
-                  {suspect.StatusDetails.Name}
-                </Badge>
-              </div>
-            )}
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </div>
-  );
-});
-
-// Component to display incident type information with caching
-const IncidentTypeInfo = React.memo(function IncidentTypeInfo({ typeId }: { typeId: number }) {
-  const [incidentType, setIncidentType] = useState<IncidentType | null>(null);
-  
-  useEffect(() => {
-    const fetchIncidentType = async () => {
-      try {
-        const data = await getIncidentTypeById(typeId);
-        setIncidentType(data);
-      } catch (error) {
-        console.error("Error fetching incident type:", error);
-      }
-    };
-    
-    fetchIncidentType();
-  }, [typeId]);
-  
-  if (!incidentType) return <Skeleton className="h-4 w-20" />;
-  
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Badge variant="outline" className="text-xs font-medium">
-          {incidentType.name}
-        </Badge>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p className="text-sm">{incidentType.name || 'Sin descripción'}</p>
-      </TooltipContent>
-    </Tooltip>
-  );
-});
-
-// Component to display office information with caching
-const OfficeInfo = React.memo(function OfficeInfo({ officeId }: { officeId: number }) {
-  const [office, setOffice] = useState<Office | null>(null);
-  const [loading, setLoading] = useState(true);
-  
-  useEffect(() => {
-    const fetchOffice = async () => {
-      try {
-        const data = await getOffice(officeId);
-        setOffice(data);
-      } catch (error) {
-        console.error("Error fetching office:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchOffice();
-  }, [officeId]);
-  
-  if (loading) return <Skeleton className="h-4 w-32" />;
-  
-  return (
-    <div className="font-medium">
-      {office?.Name || `Sucursal ${officeId}`}
-    </div>
-  );
-});
-
-// Component to display all losses in a tooltip
-const LossesInfo = React.memo(function LossesInfo({ incident }: { incident: Incident }) {
-  const cashLoss = parseNumeric(incident.CashLoss || incident.cashLoss);
-  const merchandiseLoss = parseNumeric(incident.MerchandiseLoss || incident.merchandiseLoss);
-  const otherLosses = parseNumeric(incident.OtherLosses || incident.otherLosses);
-  const totalLoss = parseNumeric(incident.TotalLoss || incident.totalLoss);
-  
-  return (
-    <div className="flex items-center gap-2">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="flex items-center gap-1 font-medium">
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-            <span>{formatCurrency(totalLoss)}</span>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="w-48">
-          <div className="space-y-1">
-            <p className="font-semibold text-sm mb-1">Desglose de pérdidas</p>
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Efectivo:</span>
-              <span>{formatCurrency(cashLoss)}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Mercadería:</span>
-              <span>{formatCurrency(merchandiseLoss)}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Otros:</span>
-              <span>{formatCurrency(otherLosses)}</span>
-            </div>
-            <div className="border-t border-border pt-1 mt-1 flex justify-between text-xs font-medium">
-              <span>Total:</span>
-              <span>{formatCurrency(totalLoss)}</span>
-            </div>
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </div>
-  );
-});
+// Import extracted components
+import { SuspectInfo } from "./suspect-info";
+import { IncidentTypeInfo } from "./incident-type-info";
+import { OfficeInfo } from "./office-info";
+import { LossesInfo } from "./losses-info";
 
 // Skeleton row for loading state
 const SkeletonRow = React.memo(function SkeletonRow() {
   return (
     <TableRow>
-      <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-      <TableCell><Skeleton className="h-4 w-full" /></TableCell>
-      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+      <TableCell><LoadingState variant="inline" /></TableCell>
+      <TableCell><LoadingState variant="inline" /></TableCell>
+      <TableCell><LoadingState variant="inline" /></TableCell>
+      <TableCell><LoadingState variant="inline" /></TableCell>
+      <TableCell><LoadingState variant="inline" /></TableCell>
+      <TableCell><LoadingState variant="inline" /></TableCell>
     </TableRow>
   );
 });
 
-export function IncidentsTable() {
+function IncidentsTableComponent() {
   const [page, setPage] = React.useState(1);
   const pageSize = 10;
 
-  const { data, isLoading, isFetching, isError } = useIncidents(page, pageSize);
+  const { data, isLoading, isError, isFetching, refetch: refetchIncidents } = useIncidents(page, pageSize);
 
   const totalPages = Math.ceil((data?.count || 0) / pageSize);
   const tableRows = useMemo(() => {
@@ -281,7 +77,7 @@ export function IncidentsTable() {
                 href={`/dashboard/incidentes/${inc.id}`}
                 className="hover:underline hover:text-primary"
               >
-                {inc.id}
+                {inc.id.toString().slice(-8)}
               </Link>
             </div>
           </TableCell>
@@ -335,14 +131,17 @@ export function IncidentsTable() {
 
   if (isError) {
     return (
-      <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-        Error al cargar los datos. Por favor, intente nuevamente más tarde.
-      </div>
+      <ErrorDisplay 
+        title="Error al cargar los datos" 
+        message="No se pudieron cargar los incidentes." 
+        error={new Error('Error al cargar los incidentes')} 
+        retry={refetchIncidents}
+      />
     );
   }
 
   return (
-    <div className="container mx-auto py-8 px-4"> 
+    <div className="w-full"> 
       <div className="mb-6">
         <div className="relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -443,10 +242,11 @@ export function IncidentsTable() {
             <Loader2 className="h-3 w-3 animate-spin" />
             <span>{isLoading ? 'Cargando...' : 'Actualizando...'}</span>
           </div>
-        ) : isError ? (
-          <div className="text-destructive">Error al cargar los incidentes</div>
         ) : null}
       </div>
     </div>
   );
 }
+
+// Export the component wrapped with error boundary
+export const IncidentsTable = withErrorBoundary(IncidentsTableComponent);

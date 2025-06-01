@@ -68,6 +68,6 @@ export async function getIncidentTypeWithCache(id: number): Promise<IncidentType
     return incidentType;
   }
   
-  // Return the default incident type with the requested ID
-  return { ...DEFAULT_INCIDENT_TYPE, id } as IncidentType;
+  // Return a default incident type with the requested ID
+  return { id, Name: `Tipo ${id}`, Description: '' } as IncidentType;
 }

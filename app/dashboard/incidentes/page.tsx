@@ -1,25 +1,29 @@
 "use client";
 
-
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useIncidents } from '@/hooks/use-incident';
 import { IncidentsTable } from "./components/incidents-table";
+import { ErrorDisplay } from "@/components/ui/error-display";
+import { LoadingState } from "@/components/ui/loading-state";
+import { withErrorBoundary } from "@/components/error-boundary";
 
-export default function IncidentesPage() {
+function IncidentesPage() {
   const router = useRouter();
-  const { error, isLoading } = useIncidents(1);
+  const { error, isLoading, refetch } = useIncidents(1);
 
   
   if (error) {
     return (
       <div className="container mx-auto py-8 px-4">
-        <div className="bg-destructive/10 text-destructive p-4 rounded-md">
-          <p>Error al cargar los incidentes: {error.message}</p>
-        </div>
+        <ErrorDisplay 
+          title="Error al cargar los incidentes" 
+          message={error.message} 
+          error={error} 
+          retry={refetch}
+        />
       </div>
     );
   }
@@ -38,14 +42,13 @@ export default function IncidentesPage() {
       </div>
       
       {isLoading ? (
-        <div className="space-y-2">
-          {[...Array(5)].map((_, i) => (
-            <Skeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
+        <LoadingState variant="skeleton" count={5} height="h-12" />
       ) : (
         <IncidentsTable />
       )}
     </div>
   );
 }
+
+// Export the component wrapped with error boundary
+export default withErrorBoundary(IncidentesPage);

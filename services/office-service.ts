@@ -126,6 +126,20 @@ export const deleteOffice = async (id: number): Promise<boolean> => {
 };
 
 /**
+ * Get all offices using the ?all=true endpoint
+ * @returns Array of all offices
+ */
+export const getAllOfficesComplete = async (): Promise<Office[]> => {
+  try {
+    const response = await api.get<Office[]>(`${OFFICES_ENDPOINT}?all=true&format=json`);
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error('[OfficeService] Error fetching all offices with ?all=true:', error);
+    return [];
+  }
+};
+
+/**
  * Backward compatibility function that fetches all pages
  * @deprecated Use getOffices with pagination instead
  * @returns Array of all offices

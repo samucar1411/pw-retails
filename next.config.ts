@@ -15,7 +15,7 @@ module.exports = {
     return [
       { source: '/api/:path*',  destination: `${process.env.API_TARGET}/api/:path*/` },
       // token clásico de DRF (si lo usas)
-      { source: '/api-token-auth2{/}?', destination: `${process.env.API_TARGET}/api-token-auth2/` },
+      { source: '/api-token-auth2', destination: `${process.env.API_TARGET}/api-token-auth2/` },
     ];
   },
 

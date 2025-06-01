@@ -20,16 +20,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, FileText, MapPin } from "lucide-react";
+import { DollarSign, FileText, MapPin, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Incident, IncidentType } from "@/types/incident";
 import { Office } from "@/types/office";
 import { getOffice } from "@/services/office-service";
 import { getIncidentType } from "@/services/incident-service";
+import { usePaginatedIncidents } from "@/hooks/usePaginatedIncidents";
 import { useState, useEffect } from "react";
 
 interface RecentIncidentsTableProps {
-  data: Incident[];
+  fromDate: string;
+  toDate: string;
+  officeId: string;
 }
 
 // Format date for better display
@@ -148,9 +151,9 @@ const IncidentTypeInfo = React.memo(function IncidentTypeInfo({ typeId }: { type
   
   // Determine badge variant based on incident type
   const getVariant = (): "default" | "secondary" | "destructive" | "outline" => {
-    if (!incidentType?.name) return 'secondary';
+    if (!incidentType?.Name) return 'secondary';
     
-    const type = incidentType.name.toLowerCase();
+    const type = incidentType.Name.toLowerCase();
     if (type.includes('hurto')) return 'destructive';
     if (type.includes('robo')) return 'destructive';
     if (type.includes('vandalismo')) return 'outline';
@@ -161,11 +164,11 @@ const IncidentTypeInfo = React.memo(function IncidentTypeInfo({ typeId }: { type
     <Tooltip>
       <TooltipTrigger asChild>
         <Badge variant={getVariant()} className="text-xs font-medium">
-          {incidentType?.name || `Tipo ${typeId}`}
+          {incidentType?.Name || `Tipo ${typeId}`}
         </Badge>
       </TooltipTrigger>
       <TooltipContent side="top" className="text-sm">
-        <p>Tipo de incidente: {incidentType?.name || `Tipo ${typeId}`}</p>
+        <p>Tipo de incidente: {incidentType?.Name || `Tipo ${typeId}`}</p>
       </TooltipContent>
     </Tooltip>
   );
@@ -210,16 +213,71 @@ const LossesInfo = React.memo(function LossesInfo({ incident }: { incident: Inci
   );
 });
 
-export function RecentIncidentsTable({ data }: RecentIncidentsTableProps) {
+export function RecentIncidentsTable({ fromDate, toDate, officeId }: RecentIncidentsTableProps) {
+  const { 
+    data: incidents = [], 
+    isLoading, 
+    error 
+  } = usePaginatedIncidents(fromDate, toDate, officeId);
+
   const recentIncidents = React.useMemo(() => {
-    return [...data]
+    return [...incidents]
       .sort((a, b) => {
-        const dateA = new Date(`${a.date}T${a.time}`);
-        const dateB = new Date(`${b.date}T${b.time}`);
+        const dateA = new Date(`${a.Date}T${a.Time}`);
+        const dateB = new Date(`${b.Date}T${b.Time}`);
         return dateB.getTime() - dateA.getTime();
       })
       .slice(0, 5);
-  }, [data]);
+  }, [incidents]);
+
+  // Build link to all incidents with filters
+  const allIncidentsLink = React.useMemo(() => {
+    let link = `/dashboard/incidentes?Date_after=${fromDate}&Date_before=${toDate}`;
+    if (officeId && officeId !== '') {
+      link += `&Office=${officeId}`;
+    }
+    return link;
+  }, [fromDate, toDate, officeId]);
+
+  if (isLoading) {
+    return (
+      <Card className="lg:col-span-3">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Incidentes recientes</CardTitle>
+            <CardDescription>Últimos 5 incidentes reportados</CardDescription>
+          </div>
+          <Link href={allIncidentsLink}>
+            <Button variant="outline" size="sm">Ver todos</Button>
+          </Link>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-[200px]">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="lg:col-span-3">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Incidentes recientes</CardTitle>
+            <CardDescription>Últimos 5 incidentes reportados</CardDescription>
+          </div>
+          <Link href={allIncidentsLink}>
+            <Button variant="outline" size="sm">Ver todos</Button>
+          </Link>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-destructive">Error al cargar incidentes</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const isEmpty = recentIncidents.length === 0;
 
@@ -230,7 +288,7 @@ export function RecentIncidentsTable({ data }: RecentIncidentsTableProps) {
           <CardTitle>Incidentes recientes</CardTitle>
           <CardDescription>Últimos 5 incidentes reportados</CardDescription>
         </div>
-        <Link href="/dashboard/incidentes">
+        <Link href={allIncidentsLink}>
           <Button variant="outline" size="sm">Ver todos</Button>
         </Link>
       </CardHeader>
@@ -239,7 +297,7 @@ export function RecentIncidentsTable({ data }: RecentIncidentsTableProps) {
           <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
             <FileText className="h-12 w-12 mb-4 opacity-50" />
             <p className="text-sm font-medium">No hay incidentes recientes</p>
-            <p className="text-xs">No se han registrado incidentes aún</p>
+            <p className="text-xs">No se han registrado incidentes en este período</p>
           </div>
         ) : (
           <div className="rounded-md border">
@@ -266,7 +324,7 @@ export function RecentIncidentsTable({ data }: RecentIncidentsTableProps) {
                     <TableRow key={incident.id} className="hover:bg-muted/50">
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-1">
-                          <span>#{incident.id}</span>
+                          <span>#{incident.id.toString().slice(-8)}</span>
                         </div>
                       </TableCell>
                       <TableCell>

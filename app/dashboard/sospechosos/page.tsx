@@ -236,7 +236,7 @@ export default function SuspectsPage() {
                             href={`/dashboard/sospechosos/${suspect.id}`}
                             className="font-medium hover:underline hover:text-primary"
                           >
-                            {suspect.id}
+                            {suspect.id.slice(-8)}
                           </Link>
                           <div className="text-sm text-muted-foreground">
                             {suspect.alias}

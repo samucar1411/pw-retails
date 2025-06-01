@@ -5,47 +5,46 @@ import { api } from '@/services/api';
 
 export async function getIncidents(
   filters: ListParams & {
-    created_at_after?: string;
-    created_at_before?: string;
+    fromDate?: string;
+    toDate?: string;
     ordering?: string;
     page?: number;
     page_size?: number;
     IncidentType?: string;
-    Office?: number;
+    Office?: string; // Backend expects Office parameter directly
     suspect_alias?: string;
   } = {}
 ): Promise<PaginatedResponse<Incident>> {
-  // Depurar los filtros para ver qué se está enviando
+  // Debug the filters to see what's being sent
   console.log("Fetching incidents with filters:", JSON.stringify(filters, null, 2));
   
-  // Verificar específicamente el filtro de tipo de incidente
+  // Check specifically for incident type filter
   if (filters.IncidentType) {
     console.log(`Filtering by incident type: ${filters.IncidentType}`);
   }
   
   // Only pass parameters in the params object, not in the URL
-  // Ensure we're using the correct case for API parameters
-  // The backend expects 'incident_type' (snake_case) but our frontend uses 'IncidentType' (PascalCase)
   const params: Record<string, string | number | boolean | undefined> = { format: 'json' };
   
-  // Copy all filters to params, converting PascalCase keys to snake_case for the API
+  // Copy all filters to params - simplified approach
   Object.entries(filters).forEach(([key, value]) => {
-    if (key === 'IncidentType' && value) {
-      params['IncidentType'] = value;
-    } else if (key === 'Office' && value) {
-      params['office'] = value;
-    } else {
+    if (key === 'fromDate' && value) {
+      params['Date_after'] = value;
+    } else if (key === 'toDate' && value) {
+      params['Date_before'] = value;
+    } else if (value !== undefined && value !== null && value !== '') {
+      // For all other parameters, use them directly (including Office)
       params[key] = value;
     }
   });
   
   try {
-    // Depurar la URL y parámetros que se enviarán
+    // Debug the URL and parameters that will be sent
     console.log(`API Request: GET /api/incidents/ with params:`, params);
     
     const { data } = await api.get<PaginatedResponse<Incident>>('/api/incidents/', { params });
     
-    // Depurar la respuesta para ver qué estamos recibiendo
+    // Debug the response to see what we're receiving
     console.log(`Received ${data.count} incidents for the query`);
     
     return data;
@@ -62,7 +61,7 @@ export async function getIncidentsByOffice(
 ): Promise<PaginatedResponse<Incident>> {
   return getIncidents({
     ...params,
-    Office: officeId,
+    Office: officeId.toString(),
     ordering: '-created_at'
   });
 }

@@ -6,22 +6,40 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, MapPin, AlertCircle } from "lucide-react";
-import { useIncidentOffices } from "@/hooks/useIncidentMap";
+import { usePaginatedIncidents } from "@/hooks/usePaginatedIncidents";
 import { useTheme } from "@/hooks/use-theme";
-// Importamos solo lo necesario para el componente
+import { getOffice } from "@/services/office-service";
+import { getIncidentType } from "@/services/incident-service";
 
 // Initialize Mapbox
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
 
-// Importar los tipos directamente desde los archivos de tipos
-// No necesitamos definir tipos adicionales
+interface OfficeMapProps {
+  fromDate: string;
+  toDate: string;
+  officeId: string;
+}
 
-export function OfficeMap() {
-  const { incidents, loading, error, loadNextPage, hasNextPage, isLoadingNextPage } = useIncidentOffices();
+export function OfficeMap({ fromDate, toDate, officeId }: OfficeMapProps) {
+  const { 
+    data: incidents = [], 
+    isLoading: loading, 
+    error 
+  } = usePaginatedIncidents(fromDate, toDate, officeId);
+  
+  const [mapPage, setMapPage] = React.useState(1);
   const theme = useTheme();
   const mapContainer = React.useRef<HTMLDivElement>(null);
   const map = React.useRef<mapboxgl.Map | null>(null);
   const markers = React.useRef<mapboxgl.Marker[]>([]);
+
+  // Calculate visible incidents based on pagination
+  const visibleCount = mapPage * 10;
+  const visibleIncidents = React.useMemo(() => {
+    return incidents.slice(0, visibleCount);
+  }, [incidents, visibleCount]);
+
+  const hasNextPage = visibleCount < incidents.length;
 
   // Handle zoom to fit all markers
   const onZoomToFit = React.useCallback(() => {
@@ -37,6 +55,12 @@ export function OfficeMap() {
       padding: 50,
     });
   }, []);
+
+  const loadNextPage = () => {
+    if (hasNextPage) {
+      setMapPage(prev => prev + 1);
+    }
+  };
 
   // Update map style when theme changes
   React.useEffect(() => {
@@ -100,7 +124,7 @@ export function OfficeMap() {
     if (typeof window === 'undefined') return;
     
     // Check if map is ready and we have incidents
-    if (!map.current || loading || !incidents || incidents.length === 0) return;
+    if (!map.current || loading || !visibleIncidents || visibleIncidents.length === 0) return;
     
     const currentMap = map.current;
     const currentMarkers = [...markers.current];
@@ -109,67 +133,31 @@ export function OfficeMap() {
     currentMarkers.forEach(marker => marker.remove());
     markers.current = [];
 
-    // Add new markers for each incident
-    incidents.forEach((incident) => {
+    // Add new markers for each visible incident
+    visibleIncidents.forEach(async (incident) => {
       try {
-        // Use office or officeData, with office taking precedence
-        const office = incident.office || incident.officeData;
+        // Get office information
+        const office = await getOffice(incident.Office);
         if (!office) return;
         
-        // Get office information with fallbacks
-        // Use type assertion to handle different property naming conventions
-        const typedOffice = office as Record<string, any>;
-        const officeName = typedOffice.name || typedOffice.Name || incident.office_name || 'Sucursal';
-        const officeAddress = typedOffice.address || typedOffice.Address || incident.office_address || '';
-        
-        // Get incident information
-        const incidentInfo = incident;
-        
-        // Get incident details with fallbacks
-        const incidentDate = incidentInfo.Date || 'No especificada';
-        
         // Get incident type information
-        const incidentTypeId = typeof incidentInfo.IncidentType === 'number' ? incidentInfo.IncidentType : null;
+        const incidentType = await getIncidentType(incident.IncidentType);
         
-        // Use the incident type from the hook if available
-        let incidentTypeName = 'No especificado';
-        let displayTypeId = incidentTypeId;
-        
-        if (incidentInfo.incidentType && incidentInfo.incidentType.name) {
-          // Si tenemos el objeto completo del tipo de incidente del hook
-          incidentTypeName = incidentInfo.incidentType.name;
-          displayTypeId = incidentInfo.incidentType.id;
-        }
-        
-        // Get incident description
-        const incidentDescription = incidentInfo.Description || 'Sin descripción';
-
-        // Use coordinates directly from the incident if available (added by our enhanced hook)
-        // or parse from office data as fallback
+        // Get coordinates from office
         let lng: number | null = null;
         let lat: number | null = null;
 
-        // First check if coordinates are directly on the incident (from our enhanced hook)
-        if (incident.latitude !== undefined && incident.longitude !== undefined) {
-          lat = incident.latitude;
-          lng = incident.longitude;
-        } else if (typedOffice.Geo) {
-          // Fallback to parsing from Geo string
+        if (office.Geo) {
           try {
-            const parts = typedOffice.Geo.split(',');
+            const parts = office.Geo.split(',');
             lat = parseFloat(parts[0]);
             lng = parseFloat(parts[1]);
           } catch (e) {
             console.error('Error parsing coordinates:', e);
             return;
           }
-        } else if (typedOffice.latitude && typedOffice.longitude) {
-          // Fallback to separate lat/lng fields
-          lat = typeof typedOffice.latitude === 'string' ? parseFloat(typedOffice.latitude) : typedOffice.latitude;
-          lng = typeof typedOffice.longitude === 'string' ? parseFloat(typedOffice.longitude) : typedOffice.longitude;
         } else {
-          // No coordinates available
-          console.warn('No coordinates available for incident:', incident.id);
+          console.warn('No coordinates available for office:', office.id);
           return;
         }
 
@@ -179,13 +167,6 @@ export function OfficeMap() {
           return;
         }
 
-        // Format status for display
-        const statusText = (incidentInfo.estado || incidentInfo.status || 'No especificado').toString();
-        const isResolved = statusText.toLowerCase().includes('resuelto');
-        
-        // Only create DOM elements if we're in the browser
-        if (typeof window === 'undefined') return;
-        
         // Create popup content with Tailwind classes
         const popupElement = document.createElement('div');
         popupElement.className = 'bg-card text-card-foreground rounded-lg shadow-lg border border-border w-72 overflow-hidden';
@@ -193,10 +174,10 @@ export function OfficeMap() {
         popupElement.innerHTML = `
           <div class="bg-muted/50 p-4 border-b border-border">
             <div class="flex items-center gap-2">
-              <div class="w-2 h-2 rounded-full ${isResolved ? 'bg-green-500' : 'bg-red-500'}"></div>
-              <h3 class="text-lg font-semibold text-foreground">${officeName}</h3>
+              <div class="w-2 h-2 rounded-full bg-red-500"></div>
+              <h3 class="text-lg font-semibold text-foreground">${office.Name}</h3>
             </div>
-            <p class="text-sm text-muted-foreground mt-1">${officeAddress}</p>
+            <p class="text-sm text-muted-foreground mt-1">${office.Address || ''}</p>
           </div>
           <div class="p-4 space-y-3">
             <div class="grid grid-cols-2 gap-2">
@@ -206,21 +187,22 @@ export function OfficeMap() {
               </div>
               <div>
                 <p class="text-xs text-muted-foreground">Fecha</p>
-                <p class="text-sm">${incidentDate}</p>
+                <p class="text-sm">${incident.Date}</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <p class="text-xs text-muted-foreground">Hora</p>
+                <p class="text-sm">${incident.Time}</p>
+              </div>
+              <div>
+                <p class="text-xs text-muted-foreground">Tipo</p>
+                <p class="text-sm">${incidentType?.Name || 'No especificado'}</p>
               </div>
             </div>
             <div class="pt-2 border-t border-border">
               <p class="text-xs text-muted-foreground mb-1">Descripción</p>
-              <p class="text-sm text-foreground">${incidentDescription}</p>
-            </div>
-            <div class="flex justify-end">
-              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                isResolved 
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
-                  : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-              }">
-                ${statusText}
-              </span>
+              <p class="text-sm text-foreground">${incident.Description || 'Sin descripción'}</p>
             </div>
           </div>
         `;
@@ -250,9 +232,9 @@ export function OfficeMap() {
 
     // Zoom to fit all markers
     if (markers.current.length > 0) {
-      onZoomToFit();
+      setTimeout(() => onZoomToFit(), 500); // Small delay to ensure markers are rendered
     }
-  }, [incidents, loading, onZoomToFit]);
+  }, [visibleIncidents, loading, onZoomToFit]);
 
   return (
     <Card className="lg:col-span-4 border-0 shadow-lg h-full flex flex-col">
@@ -261,22 +243,17 @@ export function OfficeMap() {
           <CardTitle className="text-xl font-bold">Mapa de Incidentes</CardTitle>
           <CardDescription className="text-sm text-muted-foreground">
             {loading ? 'Cargando incidentes...' : 
-              `${incidents.length} incidente${incidents.length !== 1 ? 's' : ''} en el mapa`}
+              `${visibleIncidents.length} de ${incidents.length} incidente${incidents.length !== 1 ? 's' : ''} en el mapa`}
           </CardDescription>
         </div>
         <Button 
-          onClick={() => loadNextPage()} 
-          disabled={!hasNextPage || isLoadingNextPage}
+          onClick={loadNextPage} 
+          disabled={!hasNextPage}
           variant="outline"
           size="sm"
           className="ml-4"
         >
-          {isLoadingNextPage ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Cargando...
-            </>
-          ) : hasNextPage ? (
+          {hasNextPage ? (
             'Cargar más'
           ) : (
             'Todos cargados'
@@ -323,12 +300,12 @@ export function OfficeMap() {
         <div className="flex justify-between items-center text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-primary" />
-            <span>{incidents.length} incidente{incidents.length !== 1 ? 's' : ''} en el mapa</span>
+            <span>{visibleIncidents.length} de {incidents.length} incidente{incidents.length !== 1 ? 's' : ''} mostrados</span>
           </div>
           <button 
             onClick={onZoomToFit}
             className="text-sm text-primary hover:underline flex items-center gap-1"
-            disabled={incidents.length === 0}
+            disabled={visibleIncidents.length === 0}
           >
             <MapPin className="h-3.5 w-3.5" />
             <span>Ver todos</span>

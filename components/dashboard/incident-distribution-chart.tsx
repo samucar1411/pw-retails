@@ -18,8 +18,8 @@ import {
 } from "@/components/ui/card";
 import { PieChartIcon, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { getIncidents } from "@/services/incident-service";
-import { useIncident } from "@/context";
+import { getIncidentTypes } from "@/services/incident-service";
+import { usePaginatedIncidents } from "@/hooks/usePaginatedIncidents";
 
 /* -------------------------------- helpers ------------------------------- */
 // 1. Colores fijos para no perder consistencia entre renders
@@ -32,44 +32,46 @@ const COLORS = [
   "#775DD0",
 ];
 
-
-
+interface IncidentDistributionChartProps {
+  fromDate: string;
+  toDate: string;
+  officeId: string;
+}
 
 /* -------------------------- componente principal ------------------------- */
-export function IncidentDistributionChart() {
-
-  const { incidentTypes } = useIncident();
-  
-  console.log("INCIDEEEEEEEENTES", incidentTypes);
-  const {
-    data: counts = {},
-    isLoading: isLoadingCounts,
-    error: countsError,
-  } = useQuery({
-    queryKey: ["incident-type-counts", incidentTypes],
-    enabled: incidentTypes.length > 0,
-    queryFn: async () => {
-      const initial: Record<number, number> = {};
-      // Necesitamos todas las promesas en paralelo
-      await Promise.all(
-        incidentTypes.map(async (type) => {
-          try {
-            const r = await getIncidents({
-              IncidentType: type.Name, // <<— filtras por NOMBRE
-              page_size: 1, // solo interesa el .count
-            });
-            initial[type.id] = r.count ?? 0;
-          } catch {
-            initial[type.id] = 0;
-          }
-        }),
-      );
-      return initial; // { [id]: totalIncidentes }
-    },
+export function IncidentDistributionChart({ fromDate, toDate, officeId }: IncidentDistributionChartProps) {
+  // Fetch incident types
+  const { data: incidentTypesResponse, isLoading: isLoadingTypes } = useQuery({
+    queryKey: ['incident-types'],
+    queryFn: () => getIncidentTypes({ page_size: 100 }),
+    staleTime: 10 * 60 * 1000, // 10 minutes
   });
-  console.log("COUNTS", counts);
+
+  const incidentTypes = incidentTypesResponse?.results || [];
+
+  // Fetch incidents with filters
+  const { 
+    data: incidents = [], 
+    isLoading: isLoadingIncidents,
+    error: incidentsError
+  } = usePaginatedIncidents(fromDate, toDate, officeId);
+
+  console.log("INCIDENT TYPES", incidentTypes);
+  console.log("FILTERED INCIDENTS", incidents);
 
   const distributionData = React.useMemo(() => {
+    if (!incidentTypes.length || !incidents.length) return [];
+
+    // Count incidents by type
+    const counts: Record<number, number> = {};
+    
+    incidents.forEach((incident) => {
+      const typeId = incident.IncidentType;
+      if (typeId) {
+        counts[typeId] = (counts[typeId] || 0) + 1;
+      }
+    });
+
     return incidentTypes
       .map((type, idx) => ({
         id: type.id,
@@ -78,7 +80,7 @@ export function IncidentDistributionChart() {
         color: COLORS[idx % COLORS.length],
       }))
       .filter((d) => d.value > 0);
-  }, [incidentTypes, counts]);
+  }, [incidentTypes, incidents]);
 
   const totalIncidents = React.useMemo(
     () => distributionData.reduce((sum, i) => sum + i.value, 0),
@@ -88,8 +90,8 @@ export function IncidentDistributionChart() {
   /* -----------------------------------------------------------------------
    * 5. Estados de carga / error
    * --------------------------------------------------------------------- */
-  const isLoading = isLoadingCounts;
-  const hasError = countsError;
+  const isLoading = isLoadingTypes || isLoadingIncidents;
+  const hasError = incidentsError;
   const isEmpty = !isLoading && !hasError && distributionData.length === 0;
 
   /* -----------------------------------------------------------------------
@@ -99,7 +101,7 @@ export function IncidentDistributionChart() {
     <Card className="lg:col-span-3 flex flex-col">
       <CardHeader>
         <CardTitle>Distribución de incidentes</CardTitle>
-        <CardDescription>Por tipo de incidente</CardDescription>
+        <CardDescription>Por tipo de incidente en el período seleccionado</CardDescription>
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col items-center justify-center pb-4">
@@ -151,7 +153,7 @@ function EmptyState() {
     <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
       <PieChartIcon className="h-12 w-12 mb-4 opacity-50" />
       <p className="text-sm font-medium">No hay datos disponibles</p>
-      <p className="text-xs">Aún no se registraron incidentes</p>
+      <p className="text-xs">No se registraron incidentes en este período</p>
     </div>
   );
 }
@@ -253,13 +255,21 @@ function ChartAndTable({ data, total }: ChartAndTableProps) {
   );
 }
 
-function CustomTooltip({
-  payload,
-  total,
-}: {
-  payload: any[];
+// Using a pragmatic approach for Recharts tooltip types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TooltipProps = {
+  active?: boolean;
+  // Using any here is intentional due to the complexity of Recharts types
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  payload?: any[];
   total: number;
-}) {
+};
+
+function CustomTooltip({ payload, total }: TooltipProps) {
+  // Early return if no payload or empty payload
+  if (!payload || !payload.length || !payload[0]?.payload) {
+    return null;
+  }
   const { name, value, color } = payload[0].payload;
   const pct = total ? Math.round((value / total) * 100) : 0;
 
