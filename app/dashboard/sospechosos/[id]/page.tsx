@@ -19,7 +19,6 @@ import { getSuspect } from '@/services/suspect-service';
 import { Suspect } from '@/types/suspect';
 import { api } from '@/services/api'; // Import the centralized API configuration
 import Link from 'next/link';
-import { useTheme } from 'next-themes';
 
 interface SuspectDetailPageProps {
   params: Promise<{
@@ -52,7 +51,6 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
   const [incidentTypeNames, setIncidentTypeNames] = useState<Map<number, string>>(new Map());
   const [relatedSuspects, setRelatedSuspects] = useState<Suspect[]>([]); // Placeholder for now
   const [additionalDataLoading, setAdditionalDataLoading] = useState(true);
-  const { resolvedTheme } = useTheme();
 
   // Define the Incident type
   type Incident = {
@@ -369,14 +367,14 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                 <UIMap 
                 locations={mapLocations.map(location => ({
                   ...location,
-                  popupContent: (
-                    `<div class="p-2">
-                      ${location.logoUrl ? `<img src="${location.logoUrl}" alt="Logo" class="h-8 mb-2" />` : ''}
-                      <h3 class="font-bold">${location.title}</h3>
-                      ${location.address ? `<p class="text-sm">${location.address}</p>` : ''}
-                      ${location.officeId ? `<a href="/dashboard/offices/${location.officeId}" class="text-${resolvedTheme === 'dark' ? 'blue-400' : 'blue-600'} text-xs hover:underline">Ver detalles</a>` : ''}
-                    </div>`
-                  )
+                  popupContent: `
+                    <div class="mapbox-popup-content-inner">
+                      ${location.logoUrl ? `<img src="${location.logoUrl}" alt="Logo" class="h-8 mb-2 object-contain" />` : ''}
+                      <h3 class="mapbox-popup-title">${location.title}</h3>
+                      ${location.address ? `<p class="mapbox-popup-address">${location.address}</p>` : ''}
+                      ${location.officeId ? `<a href="/dashboard/offices/${location.officeId}" class="text-primary text-xs hover:underline">Ver detalles</a>` : ''}
+                    </div>
+                  `
                 }))} 
                 />
               </div>

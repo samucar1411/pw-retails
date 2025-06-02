@@ -237,29 +237,12 @@ export function OfficeMap({ fromDate, toDate, officeId }: OfficeMapProps) {
             </div>
           `;
 
-          // Create a marker with office building icon for incidents
+          // Create a marker with red pulsating dot for incidents
           const el = document.createElement('div');
-          el.className = 'relative w-8 h-8 flex items-center justify-center cursor-pointer';
-          
-          // Style based on theme
-          el.style.background = currentTheme === 'dark' ? '#1f2937' : '#ffffff';
-          el.style.border = `2px solid ${currentTheme === 'dark' ? '#ef4444' : '#dc2626'}`;
-          el.style.borderRadius = '50%';
-          el.style.boxShadow = currentTheme === 'dark' 
-            ? '0 4px 6px -1px rgba(239, 68, 68, 0.3)' 
-            : '0 4px 6px -1px rgba(220, 38, 38, 0.3)';
-          
-          // Add office building icon for incidents
+          el.className = 'relative w-6 h-6 flex items-center justify-center cursor-pointer';
           el.innerHTML = `
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 21V7L9 3L15 7V21H3Z" stroke="${currentTheme === 'dark' ? '#ef4444' : '#dc2626'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M9 9V13" stroke="${currentTheme === 'dark' ? '#ef4444' : '#dc2626'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M9 17H9.01" stroke="${currentTheme === 'dark' ? '#ef4444' : '#dc2626'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M13 9V13" stroke="${currentTheme === 'dark' ? '#ef4444' : '#dc2626'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M13 17H13.01" stroke="${currentTheme === 'dark' ? '#ef4444' : '#dc2626'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="18" cy="6" r="3" fill="${currentTheme === 'dark' ? '#ef4444' : '#dc2626'}"/>
-              <text x="18" y="7" text-anchor="middle" fill="white" font-size="8" font-weight="bold">!</text>
-            </svg>
+            <div class="absolute w-3 h-3 bg-red-500 rounded-full"></div>
+            <div class="absolute w-5 h-5 border-2 border-red-500 rounded-full animate-ping opacity-70"></div>
           `;
 
           // Create marker with popup - use default Mapbox behavior

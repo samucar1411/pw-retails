@@ -152,18 +152,18 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
   const mapLocations = office ? [
     {
       id: `incident-${incident?.id}`,
-      lat: -25.2637, // Default to Asunción if no coords
-      lng: -57.5759,
+      lat: office.Geo ? parseFloat(office.Geo.split(',')[0]) : -25.2637, // Use actual coordinates or default to Asunción
+      lng: office.Geo ? parseFloat(office.Geo.split(',')[1]) : -57.5759,
       title: office.Name,
       address: office.Address || 'Dirección no disponible',
       logoUrl: companyLogo || undefined,
       officeId: office.id,
       popupContent: `
-        <div class="p-3 bg-white rounded-lg shadow-md">
-          <div class="font-bold mb-1 text-blue-600">${office.Name}</div>
-          <div class="text-sm mb-2 text-gray-600">${office.Address || 'Dirección no disponible'}</div>
-          ${office.Phone ? `<div class="text-xs text-gray-500">Tel: ${office.Phone}</div>` : ''}
-          ${incident?.Date ? `<div class="text-xs mt-2 pt-2 border-t border-gray-200">Incidente: ${format(new Date(incident.Date), 'dd/MM/yyyy', { locale: es })}</div>` : ''}
+        <div class="mapbox-popup-content-inner">
+          <h3 class="mapbox-popup-title">${office.Name}</h3>
+          <p class="mapbox-popup-address">${office.Address || 'Dirección no disponible'}</p>
+          ${office.Phone ? `<p class="mapbox-popup-address">Tel: ${office.Phone}</p>` : ''}
+          ${incident?.Date ? `<p class="mapbox-popup-address">Incidente: ${format(new Date(incident.Date), 'dd/MM/yyyy', { locale: es })}</p>` : ''}
         </div>
       `
     }
