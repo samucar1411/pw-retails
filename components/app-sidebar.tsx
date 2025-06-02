@@ -14,7 +14,6 @@ import {
   LogOut,
   PlusCircle,
   List,
-  FileCheck,
 } from "lucide-react";
 
 import {
@@ -78,11 +77,6 @@ const navigationItems: NavItem[] = [
         icon: PlusCircle,
         title: "Nuevo Incidente",
         url: "/dashboard/incidentes/nuevo",
-      },
-      {
-        icon: FileCheck,
-        title: "Denuncias Policiales",
-        url: "/dashboard/incidentes/denuncias",
       },
     ],
   },

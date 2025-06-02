@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Loader2, MapPin, AlertCircle } from "lucide-react";
 import { usePaginatedIncidents } from "@/hooks/usePaginatedIncidents";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "next-themes";
 import { getOffice } from "@/services/office-service";
 import { getIncidentType } from "@/services/incident-service";
 
@@ -28,10 +28,13 @@ export function OfficeMap({ fromDate, toDate, officeId }: OfficeMapProps) {
   } = usePaginatedIncidents(fromDate, toDate, officeId);
   
   const [mapPage, setMapPage] = React.useState(1);
-  const theme = useTheme();
+  const { theme, resolvedTheme } = useTheme();
   const mapContainer = React.useRef<HTMLDivElement>(null);
   const map = React.useRef<mapboxgl.Map | null>(null);
   const markers = React.useRef<mapboxgl.Marker[]>([]);
+
+  // Get the current theme, defaulting to light if system
+  const currentTheme = theme === 'system' ? resolvedTheme : theme;
 
   // Calculate visible incidents based on pagination
   const visibleCount = mapPage * 10;
@@ -66,12 +69,15 @@ export function OfficeMap({ fromDate, toDate, officeId }: OfficeMapProps) {
   React.useEffect(() => {
     if (!map.current) return;
     
-    const style = theme === 'dark' 
+    const style = currentTheme === 'dark' 
       ? 'mapbox://styles/mapbox/dark-v11' 
       : 'mapbox://styles/mapbox/light-v11';
     
-    map.current.setStyle(style);
-  }, [theme]);
+    // Only update style if it's different to avoid unnecessary reloads
+    if (map.current.getStyle().name !== style) {
+      map.current.setStyle(style);
+    }
+  }, [currentTheme]);
 
   // Initialize map and set up controls
   React.useEffect(() => {
@@ -82,7 +88,7 @@ export function OfficeMap({ fromDate, toDate, officeId }: OfficeMapProps) {
     if (!mapContainer.current || map.current) return;
 
     // Set map style based on theme
-    const style = theme === 'dark' 
+    const style = currentTheme === 'dark' 
       ? 'mapbox://styles/mapbox/dark-v11' 
       : 'mapbox://styles/mapbox/light-v11';
 
@@ -115,35 +121,7 @@ export function OfficeMap({ fromDate, toDate, officeId }: OfficeMapProps) {
     } catch (error) {
       console.error('Error initializing map:', error);
     }
-  }, [theme]); // Recreate map when theme changes
-
-  // Add markers for incidents
-  React.useEffect(() => {
-    // Check if we're in the browser environment
-    if (typeof window === 'undefined') return;
-    
-    // Check if map is ready and we have incidents
-    if (!map.current || loading || !visibleIncidents || visibleIncidents.length === 0) return;
-    
-    const currentMap = map.current;
-    
-    // Wait for map to be fully loaded before adding markers
-    if (!currentMap.loaded()) {
-      const onMapLoad = () => {
-        currentMap.off('load', onMapLoad);
-        // Retry adding markers after map is loaded
-        setTimeout(() => {
-          if (currentMap && visibleIncidents && visibleIncidents.length > 0) {
-            addMarkersToMap(currentMap, visibleIncidents);
-          }
-        }, 100);
-      };
-      currentMap.on('load', onMapLoad);
-      return;
-    }
-    
-    addMarkersToMap(currentMap, visibleIncidents);
-  }, [visibleIncidents, loading, onZoomToFit]);
+  }, []); // Only initialize once
 
   // Helper function to add markers to the map
   const addMarkersToMap = React.useCallback(async (currentMap: mapboxgl.Map, incidents: typeof visibleIncidents) => {
@@ -188,47 +166,56 @@ export function OfficeMap({ fromDate, toDate, officeId }: OfficeMapProps) {
             continue;
           }
           
-          // Create popup content with Tailwind classes
+          // Create popup content with theme-aware styling
           const popupElement = document.createElement('div');
-          popupElement.className = 'bg-card text-card-foreground rounded-lg shadow-lg border border-border w-72 overflow-hidden';
+          
+          // Apply theme-specific classes
+          const isDark = currentTheme === 'dark';
+          const bgCard = isDark ? 'bg-gray-800' : 'bg-white';
+          const textForeground = isDark ? 'text-white' : 'text-gray-900';
+          const bgMuted = isDark ? 'bg-gray-700/50' : 'bg-gray-50';
+          const borderColor = isDark ? 'border-gray-600' : 'border-gray-200';
+          const textMuted = isDark ? 'text-gray-300' : 'text-gray-600';
+          
+          popupElement.className = `${bgCard} ${textForeground} rounded-lg shadow-lg border ${borderColor} w-72 overflow-hidden`;
           
           popupElement.innerHTML = `
-            <div class="bg-muted/50 p-4 border-b border-border">
+            <div class="${bgMuted} p-4 border-b ${borderColor}">
               <div class="flex items-center gap-2">
                 <div class="w-2 h-2 rounded-full bg-red-500"></div>
-                <h3 class="text-lg font-semibold text-foreground">${office.Name}</h3>
+                <h3 class="text-lg font-semibold ${textForeground}">${office.Name}</h3>
               </div>
-              <p class="text-sm text-muted-foreground mt-1">${office.Address || ''}</p>
+              <p class="text-sm ${textMuted} mt-1">${office.Address || ''}</p>
             </div>
             <div class="p-4 space-y-3">
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <p class="text-xs text-muted-foreground">Pérdida total</p>
-                  <p class="text-sm font-medium">${incident.TotalLoss ? `GS ${Number(incident.TotalLoss).toLocaleString('es-PY')}` : 'GS 0'}</p>
+                  <p class="text-xs ${textMuted}">Pérdida total</p>
+                  <p class="text-sm font-medium ${textForeground}">${incident.TotalLoss ? `GS ${Number(incident.TotalLoss).toLocaleString('es-PY')}` : 'GS 0'}</p>
                 </div>
                 <div>
-                  <p class="text-xs text-muted-foreground">Fecha</p>
-                  <p class="text-sm">${incident.Date}</p>
+                  <p class="text-xs ${textMuted}">Fecha</p>
+                  <p class="text-sm ${textForeground}">${incident.Date}</p>
                 </div>
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <p class="text-xs text-muted-foreground">Hora</p>
-                  <p class="text-sm">${incident.Time}</p>
+                  <p class="text-xs ${textMuted}">Hora</p>
+                  <p class="text-sm ${textForeground}">${incident.Time}</p>
                 </div>
                 <div>
-                  <p class="text-xs text-muted-foreground">Tipo</p>
-                  <p class="text-sm">${incidentType?.Name || 'No especificado'}</p>
+                  <p class="text-xs ${textMuted}">Tipo</p>
+                  <p class="text-sm ${textForeground}">${incidentType?.Name || 'No especificado'}</p>
                 </div>
               </div>
-              <div class="pt-2 border-t border-border">
-                <p class="text-xs text-muted-foreground mb-1">Descripción</p>
-                <p class="text-sm text-foreground">${incident.Description || 'Sin descripción'}</p>
+              <div class="pt-2 border-t ${borderColor}">
+                <p class="text-xs ${textMuted} mb-1">Descripción</p>
+                <p class="text-sm ${textForeground}">${incident.Description || 'Sin descripción'}</p>
               </div>
             </div>
           `;
 
-          // Create a marker with dot and circle
+          // Create a marker with dot and circle - theme-aware colors
           const el = document.createElement('div');
           el.className = 'relative w-6 h-6 flex items-center justify-center';
           el.innerHTML = `
@@ -241,7 +228,10 @@ export function OfficeMap({ fromDate, toDate, officeId }: OfficeMapProps) {
             const marker = new mapboxgl.Marker(el)
               .setLngLat([lng, lat])
               .setPopup(
-                new mapboxgl.Popup({ offset: 10 })
+                new mapboxgl.Popup({ 
+                  offset: 10,
+                  className: isDark ? 'mapbox-popup-dark' : 'mapbox-popup-light'
+                })
                   .setDOMContent(popupElement)
               )
               .addTo(currentMap);
@@ -260,7 +250,35 @@ export function OfficeMap({ fromDate, toDate, officeId }: OfficeMapProps) {
     } catch (error) {
       console.error('Error adding markers to map:', error);
     }
-  }, [onZoomToFit]);
+  }, [onZoomToFit, currentTheme]);
+
+  // Add markers for incidents
+  React.useEffect(() => {
+    // Check if we're in the browser environment
+    if (typeof window === 'undefined') return;
+    
+    // Check if map is ready and we have incidents
+    if (!map.current || loading || !visibleIncidents || visibleIncidents.length === 0) return;
+    
+    const currentMap = map.current;
+    
+    // Wait for map to be fully loaded before adding markers
+    if (!currentMap.loaded()) {
+      const onMapLoad = () => {
+        currentMap.off('load', onMapLoad);
+        // Retry adding markers after map is loaded
+        setTimeout(() => {
+          if (currentMap && visibleIncidents && visibleIncidents.length > 0) {
+            addMarkersToMap(currentMap, visibleIncidents);
+          }
+        }, 100);
+      };
+      currentMap.on('load', onMapLoad);
+      return;
+    }
+    
+    addMarkersToMap(currentMap, visibleIncidents);
+  }, [visibleIncidents, loading, addMarkersToMap]);
 
   return (
     <Card className="lg:col-span-4 border-0 shadow-lg h-full flex flex-col">

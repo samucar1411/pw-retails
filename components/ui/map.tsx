@@ -22,21 +22,67 @@ interface MapProps {
 
 export default function Map({ locations }: MapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
-  const { theme } = useTheme()
+  const mapInstance = useRef<mapboxgl.Map | null>(null)
+  const { theme, resolvedTheme } = useTheme()
 
+  // Get the current theme, defaulting to light if system
+  const currentTheme = theme === 'system' ? resolvedTheme : theme
+
+  // Initialize map only once
   useEffect(() => {
+    if (!mapRef.current || mapInstance.current) return
+
     mapboxgl.accessToken = "pk.eyJ1Ijoic2FtdWNhcmRlbmFzIiwiYSI6ImNreHJoazJtYTAzb2UyeG1wb2h6aHVrdXcifQ.Cm8Mhw8a8Q49AJzZ0aQmhg"
 
-    if (mapRef.current) {
-      const map = new mapboxgl.Map({
-        container: mapRef.current,
-        style: theme === 'dark' 
-          ? 'mapbox://styles/mapbox/dark-v11'
-          : 'mapbox://styles/mapbox/light-v11',
-        center: locations[0] || [-57.3333, -25.2867], // Asunción por defecto
-        zoom: 12,
-      })
+    const initialStyle = currentTheme === 'dark' 
+      ? 'mapbox://styles/mapbox/dark-v11'
+      : 'mapbox://styles/mapbox/light-v11'
 
+    const map = new mapboxgl.Map({
+      container: mapRef.current,
+      style: initialStyle,
+      center: locations.length > 0 
+        ? [locations[0].lng, locations[0].lat] 
+        : [-57.3333, -25.2867], // Asunción por defecto
+      zoom: 12,
+    })
+
+    mapInstance.current = map
+
+    return () => {
+      if (mapInstance.current) {
+        mapInstance.current.remove()
+        mapInstance.current = null
+      }
+    }
+  }, []) // Only run once on mount
+
+  // Update map style when theme changes
+  useEffect(() => {
+    if (!mapInstance.current) return
+    
+    const newStyle = currentTheme === 'dark' 
+      ? 'mapbox://styles/mapbox/dark-v11'
+      : 'mapbox://styles/mapbox/light-v11'
+    
+    // Only update style if it's different
+    if (mapInstance.current.getStyle().name !== newStyle) {
+      mapInstance.current.setStyle(newStyle)
+    }
+  }, [currentTheme])
+
+  // Update markers when locations change
+  useEffect(() => {
+    if (!mapInstance.current || !locations.length) return
+
+    const map = mapInstance.current
+
+    // Wait for map to be loaded before adding markers
+    const addMarkers = () => {
+      // Clear existing markers by removing all markers
+      // Note: Mapbox doesn't have a direct way to remove all markers, 
+      // so we'll need to keep track of them or recreate as needed
+      
       locations.forEach((location) => {
         // Create custom marker element if logoUrl is provided
         let markerElement = undefined;
@@ -47,12 +93,15 @@ export default function Map({ locations }: MapProps) {
           markerElement.style.width = '30px';
           markerElement.style.height = '30px';
           markerElement.style.borderRadius = '50%';
-          markerElement.style.background = '#fff';
+          markerElement.style.background = currentTheme === 'dark' ? '#1f2937' : '#ffffff';
           markerElement.style.display = 'flex';
           markerElement.style.alignItems = 'center';
           markerElement.style.justifyContent = 'center';
-          markerElement.style.border = '2px solid #0f172a';
+          markerElement.style.border = `2px solid ${currentTheme === 'dark' ? '#374151' : '#0f172a'}`;
           markerElement.style.overflow = 'hidden';
+          markerElement.style.boxShadow = currentTheme === 'dark' 
+            ? '0 4px 6px -1px rgba(0, 0, 0, 0.5)' 
+            : '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
           
           const img = document.createElement('img');
           img.src = location.logoUrl;
@@ -66,16 +115,39 @@ export default function Map({ locations }: MapProps) {
         const marker = new mapboxgl.Marker(markerElement)
           .setLngLat([location.lng, location.lat])
           
-        // Set popup content if provided, otherwise use title
-        const popupContent = location.popupContent || location.title;
-        marker.setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(popupContent));
+        // Create popup with theme-aware styling
+        const popupContent = location.popupContent || 
+          `<div class="p-3 ${currentTheme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} rounded-lg shadow-md">
+             <div class="font-bold mb-1 ${currentTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'}">${location.title}</div>
+             ${location.address ? `<div class="text-sm mb-2 ${currentTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'}">${location.address}</div>` : ''}
+           </div>`;
+        
+        marker.setPopup(
+          new mapboxgl.Popup({ 
+            offset: 25,
+            className: currentTheme === 'dark' ? 'mapbox-popup-dark' : 'mapbox-popup-light'
+          }).setHTML(popupContent)
+        );
         
         marker.addTo(map);
       })
 
-      return () => map.remove()
+      // Fit map to show all markers if multiple locations
+      if (locations.length > 1) {
+        const bounds = new mapboxgl.LngLatBounds()
+        locations.forEach(location => {
+          bounds.extend([location.lng, location.lat])
+        })
+        map.fitBounds(bounds, { padding: 50 })
+      }
     }
-  }, [locations, theme])
+
+    if (map.loaded()) {
+      addMarkers()
+    } else {
+      map.on('load', addMarkers)
+    }
+  }, [locations, currentTheme])
 
   return <div ref={mapRef} className="h-full w-full rounded-md" />
 } 
