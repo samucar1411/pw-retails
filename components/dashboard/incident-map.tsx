@@ -262,15 +262,13 @@ export function OfficeMap({ fromDate, toDate, officeId }: OfficeMapProps) {
             </svg>
           `;
 
-          // Prevent map movement when clicking on marker
-          el.addEventListener('click', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-          });
-
-          // Prevent map movement on mouse down
+          // Prevent map movement when clicking on marker - but allow popup to work
           el.addEventListener('mousedown', (e) => {
             e.stopPropagation();
+          });
+
+          // Prevent drag on marker element
+          el.addEventListener('dragstart', (e) => {
             e.preventDefault();
           });
 
@@ -286,18 +284,33 @@ export function OfficeMap({ fromDate, toDate, officeId }: OfficeMapProps) {
 
           // Create marker with popup - only add to map if it's ready
           if (currentMap && currentMap.getContainer() && currentMap.loaded()) {
-            const marker = new mapboxgl.Marker(el)
+            const marker = new mapboxgl.Marker({
+              element: el,
+              anchor: 'center'
+            })
               .setLngLat([lng, lat])
               .setPopup(
                 new mapboxgl.Popup({ 
                   offset: 10,
-                  closeOnClick: true,
+                  closeOnClick: false,
                   closeButton: true,
+                  focusAfterOpen: false,
                   className: currentTheme === 'dark' ? 'mapbox-popup-dark' : 'mapbox-popup-light'
                 })
                   .setDOMContent(popupElement)
               )
               .addTo(currentMap);
+
+            // Add click handler to manually toggle popup
+            el.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const popup = marker.getPopup();
+              if (popup && popup.isOpen()) {
+                marker.togglePopup();
+              } else if (popup) {
+                marker.togglePopup();
+              }
+            });
 
             markers.current.push(marker);
           }

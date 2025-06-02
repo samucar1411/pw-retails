@@ -362,7 +362,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
         {mapLocations.length > 0 && (
             <Card className="bg-card border-border h-full flex flex-col">
               <CardHeader className="bg-muted/30 border-b border-border pb-3">
-                <CardTitle className="text-base text-foreground">Sucursalesen Involucradas</CardTitle>
+                <CardTitle className="text-base text-foreground">Sucursales Afectadas</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 p-0">
               <div className="w-full h-full min-h-[350px]">

@@ -172,15 +172,13 @@ export default function Map({ locations }: MapProps) {
         markerElement.style.transform = 'scale(1)'
       })
 
-      // Prevent map movement when clicking on marker
-      markerElement.addEventListener('click', (e) => {
-        e.stopPropagation()
-        e.preventDefault()
-      })
-
-      // Prevent map movement on mouse down
+      // Prevent map movement when clicking on marker - but allow popup to work
       markerElement.addEventListener('mousedown', (e) => {
         e.stopPropagation()
+      })
+
+      // Prevent drag on marker element
+      markerElement.addEventListener('dragstart', (e) => {
         e.preventDefault()
       })
 
@@ -214,15 +212,32 @@ export default function Map({ locations }: MapProps) {
       `
 
       // Create marker with themed popup
-      new mapboxgl.Marker(markerElement)
+      const marker = new mapboxgl.Marker({
+        element: markerElement,
+        anchor: 'center'
+      })
         .setLngLat([location.lng, location.lat])
         .setPopup(
           new mapboxgl.Popup({ 
             offset: 25,
-            className: currentTheme === 'dark' ? 'mapbox-popup-dark' : 'mapbox-popup-light'
+            className: currentTheme === 'dark' ? 'mapbox-popup-dark' : 'mapbox-popup-light',
+            closeOnClick: false,
+            closeButton: true,
+            focusAfterOpen: false
           }).setHTML(popupContent)
         )
         .addTo(map)
+
+      // Add click handler to manually toggle popup
+      markerElement.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const popup = marker.getPopup()
+        if (popup && popup.isOpen()) {
+          marker.togglePopup()
+        } else if (popup) {
+          marker.togglePopup()
+        }
+      })
     })
 
     // Fit map to show all markers if there are multiple locations

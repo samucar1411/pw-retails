@@ -212,9 +212,12 @@
   transform: scale(1.1) !important;
 }
 
-/* Prevent pointer events on marker children to avoid event conflicts */
+/* Prevent text selection on marker children but allow events */
 .custom-marker > * {
-  pointer-events: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
 }
 
 /* Ensure map containers have proper theming */
@@ -227,7 +230,7 @@
   cursor: pointer !important;
 }
 
-/* Prevent text selection on markers */
+/* Prevent text selection on markers but allow click events */
 .mapboxgl-marker * {
   user-select: none !important;
   -webkit-user-select: none !important;
