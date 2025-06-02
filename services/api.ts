@@ -3,7 +3,7 @@ import qs from 'qs';
 
 /* Instancia global ------------------------------------------------ */
 export const api = axios.create({
-  baseURL: '/api',  // Usar rutas locales que serán redirigidas por rewrites
+  baseURL: '',  // Usar rutas locales que serán redirigidas por rewrites
   timeout: 15000,
   paramsSerializer: { serialize: (p) => qs.stringify(p, { arrayFormat: 'repeat' }) },
   headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
