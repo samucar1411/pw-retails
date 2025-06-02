@@ -10,7 +10,6 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Calendar,
-  CalendarProps,
 } from "@/components/ui/calendar"
 import {
   Popover,

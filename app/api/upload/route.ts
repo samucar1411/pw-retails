@@ -67,18 +67,27 @@ export async function POST(req: NextRequest) {
       public_id: uploadResult.public_id,
     }, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Overall API Error in /api/upload:', error);
     let errorMessage = 'Image upload failed due to an unexpected server error.';
+    
     // Use the error's message directly if available and more specific
-    if (error.message) {
+    if (error instanceof Error && error.message) {
       errorMessage = error.message;
     }
-    // Check if it's a Cloudinary-specific error structure if not caught by the promise's reject
-    // (e.g. if the promise resolved with an error object that wasn't caught above)
-    if (error.http_code && error.message) {
-        errorMessage = `Cloudinary error: ${error.message} (HTTP ${error.http_code})`;
+    
+    // Check if it's a Cloudinary-specific error structure
+    if (
+      error && 
+      typeof error === 'object' && 
+      'http_code' in error && 
+      'message' in error &&
+      typeof (error as { message: unknown }).message === 'string'
+    ) {
+      const cloudinaryError = error as { http_code: number; message: string };
+      errorMessage = `Cloudinary error: ${cloudinaryError.message} (HTTP ${cloudinaryError.http_code})`;
     }
+    
     return NextResponse.json({ success: false, message: errorMessage }, { status: 500 });
   }
 }

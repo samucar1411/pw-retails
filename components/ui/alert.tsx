@@ -64,11 +64,10 @@
 import React from "react"
 import { Alert, AlertTitle, AlertDescription } from "visor-ui"
 
-interface CustomAlertProps {
+interface CustomAlertProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: "default" | "destructive"
   title?: string
   description?: string
-  [key: string]: any
 }
 
 const CustomAlert: React.FC<CustomAlertProps> = ({

@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, 
-  FileText, 
-  Printer, 
   Share2, 
+  FileText, 
+  Printer,
   CheckCircle2,
   Info
 } from 'lucide-react';
@@ -17,43 +17,10 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { loadMockData } from './mock-data';
 import { PoliceReportPreview } from '@/components/police-report-preview';
-import { Incident } from '@/types/incident';
-
-type Suspect = {
-  id: string;
-  alias: string;
-  status: string;
-  description?: string;
-  imageUrl?: string;
-};
-
-type AttachmentMetadata = {
-  name: string;
-  type: string;
-  size: number;
-};
-
-type IncidentData = {
-  id: string;
-  branchId: string;
-  date: string;
-  time: string;
-  type: string;
-  description: string;
-  cash: number;
-  merchandise: number;
-  otherLosses: number;
-  total: number;
-  suspects?: Suspect[];
-  suspectAlias?: string;
-  suspectStatus?: string;
-  notes?: string;
-  attachments?: AttachmentMetadata[];
-  created_at: string;
-};
 
 export default function IncidentPreviewPage() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [incidentData, setIncidentData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [generatingPdf, setGeneratingPdf] = useState(false);
