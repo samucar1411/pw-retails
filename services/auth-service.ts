@@ -26,7 +26,7 @@ const setToken = (token: string) => {
 
 const authenticateUser = async (username: string, password: string): Promise<AuthResponse> => {
   try {
-    const endpoint = `/api-token-auth2/`; // Path for Next.js proxy
+    const endpoint = `/api-token-auth/`; // Path for Next.js proxy - fixed to match next.config.ts rewrite
     
     console.log(`[Auth] Intentando autenticar al usuario: ${username} en endpoint: ${endpoint}`);
     
