@@ -201,15 +201,38 @@
 /* Custom marker animations */
 .custom-marker {
   transition: all 0.2s ease !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
 }
 
 .custom-marker:hover {
   transform: scale(1.1) !important;
 }
 
+/* Prevent pointer events on marker children to avoid event conflicts */
+.custom-marker > * {
+  pointer-events: none !important;
+}
+
 /* Ensure map containers have proper theming */
 .mapboxgl-map {
   background: transparent !important;
+}
+
+/* Map marker interaction improvements */
+.mapboxgl-marker {
+  cursor: pointer !important;
+}
+
+/* Prevent text selection on markers */
+.mapboxgl-marker * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
 }
 
 /* Attribution control theming */

@@ -66,8 +66,8 @@ const nextConfig: NextConfig = {
         basePath: false,
       },
       {
-        source: "/api-token-auth",
-        destination: "https://sys.adminpy.com:18001/api-token-auth/",
+        source: "/api-token-auth2",
+        destination: "https://sys.adminpy.com:18001/api-token-auth2/",
         // Configuración para manejar problemas de SSL
         basePath: false,
       },

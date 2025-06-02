@@ -117,22 +117,50 @@ export default function Map({ locations }: MapProps) {
         img.style.height = '80%'
         img.style.objectFit = 'contain'
         img.style.borderRadius = '50%'
+        
+        // Add fallback office icon if image fails to load
+        img.onerror = () => {
+          img.style.display = 'none'
+          const officeIcon = document.createElement('div')
+          officeIcon.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 21V7L9 3L15 7V21H3Z" stroke="${currentTheme === 'dark' ? '#9ca3af' : '#6b7280'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M9 9V13" stroke="${currentTheme === 'dark' ? '#9ca3af' : '#6b7280'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M9 17H9.01" stroke="${currentTheme === 'dark' ? '#9ca3af' : '#6b7280'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M13 9V13" stroke="${currentTheme === 'dark' ? '#9ca3af' : '#6b7280'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M13 17H13.01" stroke="${currentTheme === 'dark' ? '#9ca3af' : '#6b7280'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          `
+          officeIcon.style.display = 'flex'
+          officeIcon.style.alignItems = 'center'
+          officeIcon.style.justifyContent = 'center'
+          markerElement.appendChild(officeIcon)
+        }
+        
         markerElement.appendChild(img)
       } else {
-        // Default marker without logo
-        markerElement.style.background = currentTheme === 'dark' ? '#3b82f6' : '#2563eb'
-        markerElement.style.border = `2px solid ${currentTheme === 'dark' ? '#1e40af' : '#1d4ed8'}`
+        // Default marker with office icon
+        markerElement.style.background = currentTheme === 'dark' ? '#1f2937' : '#ffffff'
+        markerElement.style.border = `2px solid ${currentTheme === 'dark' ? '#374151' : '#e5e7eb'}`
         markerElement.style.boxShadow = currentTheme === 'dark' 
-          ? '0 4px 6px -1px rgba(59, 130, 246, 0.3)' 
-          : '0 4px 6px -1px rgba(37, 99, 235, 0.3)'
+          ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)' 
+          : '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
         
-        // Add a small circle inside
-        const innerCircle = document.createElement('div')
-        innerCircle.style.width = '12px'
-        innerCircle.style.height = '12px'
-        innerCircle.style.borderRadius = '50%'
-        innerCircle.style.background = '#ffffff'
-        markerElement.appendChild(innerCircle)
+        // Add office building icon
+        const officeIcon = document.createElement('div')
+        officeIcon.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 21V7L9 3L15 7V21H3Z" stroke="${currentTheme === 'dark' ? '#3b82f6' : '#2563eb'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 9V13" stroke="${currentTheme === 'dark' ? '#3b82f6' : '#2563eb'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 17H9.01" stroke="${currentTheme === 'dark' ? '#3b82f6' : '#2563eb'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M13 9V13" stroke="${currentTheme === 'dark' ? '#3b82f6' : '#2563eb'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M13 17H13.01" stroke="${currentTheme === 'dark' ? '#3b82f6' : '#2563eb'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        `
+        officeIcon.style.display = 'flex'
+        officeIcon.style.alignItems = 'center'
+        officeIcon.style.justifyContent = 'center'
+        markerElement.appendChild(officeIcon)
       }
 
       // Add hover effect
@@ -142,6 +170,18 @@ export default function Map({ locations }: MapProps) {
       
       markerElement.addEventListener('mouseleave', () => {
         markerElement.style.transform = 'scale(1)'
+      })
+
+      // Prevent map movement when clicking on marker
+      markerElement.addEventListener('click', (e) => {
+        e.stopPropagation()
+        e.preventDefault()
+      })
+
+      // Prevent map movement on mouse down
+      markerElement.addEventListener('mousedown', (e) => {
+        e.stopPropagation()
+        e.preventDefault()
       })
 
       // Create themed popup content
