@@ -19,17 +19,6 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
 
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${process.env.API_TARGET}/api/:path*`,
-      },
-      // token clásico de DRF (si lo usas)
-      { source: '/api-token-auth2', destination: `${process.env.API_TARGET}/api-token-auth2/` },
-    ];
-  },
-
   async headers() { return []; },   // ya no necesitamos CORS aquí
 };
 
