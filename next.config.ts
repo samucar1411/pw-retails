@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: 'https://pw-retails.vercel.app/api/:path*',
+        source: '/api/:path*',
         destination: 'https://sys.adminpy.com:18001/:path*',
       },
     ];
