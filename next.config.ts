@@ -19,6 +19,15 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
 
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'https://sys.adminpy.com:18001/:path*',
+      },
+    ];
+  },
+
   async headers() { return []; },   // ya no necesitamos CORS aquí
 };
 
