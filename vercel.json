@@ -1,0 +1,14 @@
+{
+  "buildCommand": "pnpm run build",
+  "installCommand": "pnpm install",
+  "framework": "nextjs",
+  "env": {
+    "API_TARGET": "https://sys.adminpy.com:18001"
+  },
+  "functions": {
+    "app/api/upload/route.ts": {
+      "maxDuration": 30
+    }
+  },
+  "crons": []
+} 
