@@ -237,31 +237,23 @@ export function OfficeMap({ fromDate, toDate, officeId }: OfficeMapProps) {
             </div>
           `;
 
-          // Create a marker with red pulsating dot for incidents
+          // Create a simple marker with red pulsating dot
           const el = document.createElement('div');
-          el.className = 'relative w-6 h-6 flex items-center justify-center cursor-pointer';
+          el.className = 'relative w-6 h-6 flex items-center justify-center';
           el.innerHTML = `
             <div class="absolute w-3 h-3 bg-red-500 rounded-full"></div>
             <div class="absolute w-5 h-5 border-2 border-red-500 rounded-full animate-ping opacity-70"></div>
           `;
 
-          // Create marker with popup - use default Mapbox behavior
+          // Create simple marker - basic Mapbox behavior
           if (currentMap && currentMap.getContainer() && currentMap.loaded()) {
-            const marker = new mapboxgl.Marker({
-              element: el,
-              draggable: false // Explicitly disable dragging
-            })
+            new mapboxgl.Marker(el)
               .setLngLat([lng, lat])
               .setPopup(
-                new mapboxgl.Popup({ 
-                  offset: 10,
-                  className: `mapbox-popup-themed incident-popup ${currentTheme === 'dark' ? 'mapbox-popup-dark' : 'mapbox-popup-light'}`
-                })
+                new mapboxgl.Popup({ offset: 10 })
                   .setDOMContent(popupElement)
               )
               .addTo(currentMap);
-
-            markers.current.push(marker);
           }
         } catch (error) {
           console.error('Error creating marker for incident:', incident, error);
