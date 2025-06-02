@@ -247,7 +247,10 @@ export function OfficeMap({ fromDate, toDate, officeId }: OfficeMapProps) {
 
           // Create marker with popup - use default Mapbox behavior
           if (currentMap && currentMap.getContainer() && currentMap.loaded()) {
-            const marker = new mapboxgl.Marker(el)
+            const marker = new mapboxgl.Marker({
+              element: el,
+              draggable: false // Explicitly disable dragging
+            })
               .setLngLat([lng, lat])
               .setPopup(
                 new mapboxgl.Popup({ 

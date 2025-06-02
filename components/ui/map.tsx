@@ -172,7 +172,10 @@ export default function Map({ locations }: MapProps) {
       `
 
       // Create marker with themed popup - use default Mapbox behavior
-      new mapboxgl.Marker(markerElement)
+      new mapboxgl.Marker({
+        element: markerElement,
+        draggable: false // Explicitly disable dragging
+      })
         .setLngLat([location.lng, location.lat])
         .setPopup(
           new mapboxgl.Popup({ 
