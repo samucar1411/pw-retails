@@ -163,81 +163,24 @@ export default function Map({ locations }: MapProps) {
         markerElement.appendChild(officeIcon)
       }
 
-      // Add hover effect
-      markerElement.addEventListener('mouseenter', () => {
-        markerElement.style.transform = 'scale(1.1)'
-      })
-      
-      markerElement.addEventListener('mouseleave', () => {
-        markerElement.style.transform = 'scale(1)'
-      })
-
-      // Prevent map movement when clicking on marker - but allow popup to work
-      markerElement.addEventListener('mousedown', (e) => {
-        e.stopPropagation()
-      })
-
-      // Prevent drag on marker element
-      markerElement.addEventListener('dragstart', (e) => {
-        e.preventDefault()
-      })
-
       // Create themed popup content
       const popupContent = location.popupContent || `
-        <div style="
-          background: ${currentTheme === 'dark' ? '#1f2937' : '#ffffff'};
-          color: ${currentTheme === 'dark' ? '#f9fafb' : '#111827'};
-          padding: 12px;
-          border-radius: 8px;
-          font-family: system-ui, -apple-system, sans-serif;
-          border: 1px solid ${currentTheme === 'dark' ? '#374151' : '#e5e7eb'};
-          box-shadow: ${currentTheme === 'dark' 
-            ? '0 10px 15px -3px rgba(0, 0, 0, 0.3)' 
-            : '0 10px 15px -3px rgba(0, 0, 0, 0.1)'};
-        ">
-          <h3 style="
-            font-weight: 600;
-            margin: 0 0 8px 0;
-            font-size: 14px;
-            color: ${currentTheme === 'dark' ? '#f9fafb' : '#111827'};
-          ">${location.title}</h3>
-          ${location.address ? `
-            <p style="
-              margin: 0;
-              font-size: 12px;
-              color: ${currentTheme === 'dark' ? '#d1d5db' : '#6b7280'};
-            ">${location.address}</p>
-          ` : ''}
+        <div class="mapbox-popup-content-inner">
+          <h3 class="mapbox-popup-title">${location.title}</h3>
+          ${location.address ? `<p class="mapbox-popup-address">${location.address}</p>` : ''}
         </div>
       `
 
-      // Create marker with themed popup
-      const marker = new mapboxgl.Marker({
-        element: markerElement,
-        anchor: 'center'
-      })
+      // Create marker with themed popup - use default Mapbox behavior
+      new mapboxgl.Marker(markerElement)
         .setLngLat([location.lng, location.lat])
         .setPopup(
           new mapboxgl.Popup({ 
             offset: 25,
-            className: currentTheme === 'dark' ? 'mapbox-popup-dark' : 'mapbox-popup-light',
-            closeOnClick: false,
-            closeButton: true,
-            focusAfterOpen: false
+            className: `mapbox-popup-themed ${currentTheme === 'dark' ? 'mapbox-popup-dark' : 'mapbox-popup-light'}`
           }).setHTML(popupContent)
         )
         .addTo(map)
-
-      // Add click handler to manually toggle popup
-      markerElement.addEventListener('click', (e) => {
-        e.stopPropagation()
-        const popup = marker.getPopup()
-        if (popup && popup.isOpen()) {
-          marker.togglePopup()
-        } else if (popup) {
-          marker.togglePopup()
-        }
-      })
     })
 
     // Fit map to show all markers if there are multiple locations

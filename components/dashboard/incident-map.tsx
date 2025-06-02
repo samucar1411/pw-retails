@@ -237,7 +237,7 @@ export function OfficeMap({ fromDate, toDate, officeId }: OfficeMapProps) {
             </div>
           `;
 
-          // Create a marker with dot and circle
+          // Create a marker with office building icon for incidents
           const el = document.createElement('div');
           el.className = 'relative w-8 h-8 flex items-center justify-center cursor-pointer';
           
@@ -262,55 +262,18 @@ export function OfficeMap({ fromDate, toDate, officeId }: OfficeMapProps) {
             </svg>
           `;
 
-          // Prevent map movement when clicking on marker - but allow popup to work
-          el.addEventListener('mousedown', (e) => {
-            e.stopPropagation();
-          });
-
-          // Prevent drag on marker element
-          el.addEventListener('dragstart', (e) => {
-            e.preventDefault();
-          });
-
-          // Add hover effects
-          el.addEventListener('mouseenter', () => {
-            el.style.transform = 'scale(1.2)';
-            el.style.transition = 'transform 0.2s ease';
-          });
-
-          el.addEventListener('mouseleave', () => {
-            el.style.transform = 'scale(1)';
-          });
-
-          // Create marker with popup - only add to map if it's ready
+          // Create marker with popup - use default Mapbox behavior
           if (currentMap && currentMap.getContainer() && currentMap.loaded()) {
-            const marker = new mapboxgl.Marker({
-              element: el,
-              anchor: 'center'
-            })
+            const marker = new mapboxgl.Marker(el)
               .setLngLat([lng, lat])
               .setPopup(
                 new mapboxgl.Popup({ 
                   offset: 10,
-                  closeOnClick: false,
-                  closeButton: true,
-                  focusAfterOpen: false,
-                  className: currentTheme === 'dark' ? 'mapbox-popup-dark' : 'mapbox-popup-light'
+                  className: `mapbox-popup-themed incident-popup ${currentTheme === 'dark' ? 'mapbox-popup-dark' : 'mapbox-popup-light'}`
                 })
                   .setDOMContent(popupElement)
               )
               .addTo(currentMap);
-
-            // Add click handler to manually toggle popup
-            el.addEventListener('click', (e) => {
-              e.stopPropagation();
-              const popup = marker.getPopup();
-              if (popup && popup.isOpen()) {
-                marker.togglePopup();
-              } else if (popup) {
-                marker.togglePopup();
-              }
-            });
 
             markers.current.push(marker);
           }

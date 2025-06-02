@@ -136,6 +136,9 @@
   color: var(--mapbox-popup-text) !important;
   border: 1px solid var(--mapbox-popup-border) !important;
   box-shadow: var(--mapbox-popup-shadow) !important;
+  border-radius: 8px !important;
+  padding: 0 !important;
+  max-width: 280px !important;
 }
 
 .mapboxgl-popup-tip {
@@ -146,11 +149,39 @@
   color: var(--mapbox-popup-text) !important;
   font-size: 20px !important;
   font-weight: 600 !important;
+  right: 8px !important;
+  top: 8px !important;
 }
 
 .mapboxgl-popup-close-button:hover {
   background: transparent !important;
   opacity: 0.7 !important;
+}
+
+/* Custom popup content styles */
+.mapbox-popup-content-inner {
+  padding: 12px;
+  border-radius: 8px;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.mapbox-popup-title {
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: var(--mapbox-popup-text);
+}
+
+.mapbox-popup-address {
+  margin: 0;
+  font-size: 12px;
+  color: var(--mapbox-popup-text);
+  opacity: 0.7;
+}
+
+/* Incident popup specific styles */
+.incident-popup .mapboxgl-popup-content {
+  max-width: 300px !important;
 }
 
 /* Mapbox controls theming */
@@ -198,9 +229,9 @@
   background: #374151 !important;
 }
 
-/* Custom marker animations */
+/* Custom marker animations and interaction */
 .custom-marker {
-  transition: all 0.2s ease !important;
+  transition: transform 0.2s ease !important;
   cursor: pointer !important;
   user-select: none !important;
   -webkit-user-select: none !important;
@@ -210,14 +241,6 @@
 
 .custom-marker:hover {
   transform: scale(1.1) !important;
-}
-
-/* Prevent text selection on marker children but allow events */
-.custom-marker > * {
-  user-select: none !important;
-  -webkit-user-select: none !important;
-  -moz-user-select: none !important;
-  -ms-user-select: none !important;
 }
 
 /* Ensure map containers have proper theming */
@@ -230,7 +253,7 @@
   cursor: pointer !important;
 }
 
-/* Prevent text selection on markers but allow click events */
+/* Prevent text selection on marker children but allow events */
 .mapboxgl-marker * {
   user-select: none !important;
   -webkit-user-select: none !important;
