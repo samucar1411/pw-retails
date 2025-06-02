@@ -9,6 +9,26 @@ const nextConfig: NextConfig = {
         port: "18001",
         pathname: "/media/**",
       },
+      {
+        protocol: "https",
+        hostname: "sys.adminpy.com",
+        pathname: "/media/**",
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "asset.cloudinary.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "randomuser.me",
+        pathname: "/api/portraits/**",
+      },
     ],
   },
   async headers() {

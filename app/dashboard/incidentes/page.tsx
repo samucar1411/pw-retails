@@ -33,7 +33,7 @@ function IncidentesPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Incidentes</h1>
         <Button
-          onClick={() => router.push("/dashboard/incidentes/crear")}
+          onClick={() => router.push("/dashboard/incidentes/nuevo")}
           className="flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
