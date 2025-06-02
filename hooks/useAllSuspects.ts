@@ -5,72 +5,179 @@ import { Suspect } from '@/types/suspect';
 interface AllSuspectsResult {
   suspects: Suspect[];
   total: number;
+  hasMore: boolean;
+  loadedPages: number;
 }
 
-// Add delay between requests to avoid overwhelming the backend
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// Global cache for progressive loading - shared across all components
+const suspectsCache = new Map<string, AllSuspectsResult>();
 
-async function fetchAllSuspects(): Promise<AllSuspectsResult> {
+// Smart delay that adapts based on server response
+const adaptiveDelay = (requestCount: number) => {
+  if (requestCount <= 4) return 150; // Slightly slower than incidents
+  if (requestCount <= 12) return 300; 
+  if (requestCount <= 25) return 500;
+  return 1000; // More conservative for suspects
+};
+
+async function fetchAllSuspectsProgressive(): Promise<AllSuspectsResult> {
+  const cacheKey = 'all-suspects';
+  
+  // Return cached data if available and recent
+  if (suspectsCache.has(cacheKey)) {
+    const cached = suspectsCache.get(cacheKey)!;
+    console.log(`Using cached suspects: ${cached.suspects.length} items`);
+    return cached;
+  }
+  
   let allSuspects: Suspect[] = [];
   let currentPage = 1;
   let hasNextPage = true;
+  let totalFromServer = 0;
   
-  // CRITICAL: Reduce maximum pages to prevent firewall blocking
-  const MAX_PAGES = 10; // Reduced from 100 to 10
-  const PAGE_SIZE = 50; // Reduced from 100 to 50
-  const DELAY_BETWEEN_REQUESTS = 200; // 200ms delay between requests
+  // Phase 1: Quick initial load for immediate UI response
+  const INITIAL_BATCH_SIZE = 20;
+  const INITIAL_PAGES = 3; // Load first 3 pages quickly
   
-  while (hasNextPage && currentPage <= MAX_PAGES) {
+  // Phase 2: Background loading with larger batches
+  const BACKGROUND_BATCH_SIZE = 60;
+  const MAX_TOTAL_PAGES = 75; // Conservative but sufficient maximum
+  
+  console.log(`Starting suspects fetch...`);
+  
+  // Phase 1: Quick initial load
+  while (hasNextPage && currentPage <= INITIAL_PAGES) {
     try {
       const response = await getAllSuspects({ 
         page: currentPage,
-        page_size: PAGE_SIZE
+        page_size: INITIAL_BATCH_SIZE
       });
       
       if (response.results && response.results.length > 0) {
         allSuspects = [...allSuspects, ...response.results];
       }
       
-      // Check if there's a next page
-      hasNextPage = !!response.next;
+      totalFromServer = response.count || 0;
+      hasNextPage = !!response.next && currentPage < MAX_TOTAL_PAGES;
+      
+      // Cache intermediate results for immediate UI updates
+      const intermediateResult: AllSuspectsResult = {
+        suspects: allSuspects,
+        total: totalFromServer,
+        hasMore: hasNextPage,
+        loadedPages: currentPage
+      };
+      suspectsCache.set(cacheKey, intermediateResult);
+      
       currentPage++;
       
-      // Add delay between requests to avoid overwhelming the backend
-      if (hasNextPage && currentPage <= MAX_PAGES) {
-        await delay(DELAY_BETWEEN_REQUESTS);
+      // Quick initial delay
+      if (hasNextPage && currentPage <= INITIAL_PAGES) {
+        await new Promise(resolve => setTimeout(resolve, adaptiveDelay(currentPage)));
       }
     } catch (error) {
       console.error(`Error fetching suspects page ${currentPage}:`, error);
-      // If we get a rate limit or connection error, stop fetching
+      
+      // Return partial data if we have some
+      if (allSuspects.length > 0) {
+        const partialResult: AllSuspectsResult = {
+          suspects: allSuspects,
+          total: allSuspects.length,
+          hasMore: false,
+          loadedPages: currentPage - 1
+        };
+        suspectsCache.set(cacheKey, partialResult);
+        return partialResult;
+      }
+      
+      throw error;
+    }
+  }
+  
+  // Phase 2: Background loading of remaining data with larger batches and delays
+  while (hasNextPage && currentPage <= MAX_TOTAL_PAGES) {
+    try {
+      const response = await getAllSuspects({ 
+        page: currentPage,
+        page_size: BACKGROUND_BATCH_SIZE
+      });
+      
+      if (response.results && response.results.length > 0) {
+        allSuspects = [...allSuspects, ...response.results];
+        
+        // Update cache with new data
+        const updatedResult: AllSuspectsResult = {
+          suspects: allSuspects,
+          total: Math.max(totalFromServer, allSuspects.length),
+          hasMore: !!response.next && currentPage < MAX_TOTAL_PAGES,
+          loadedPages: currentPage
+        };
+        suspectsCache.set(cacheKey, updatedResult);
+      }
+      
+      totalFromServer = response.count || totalFromServer;
+      hasNextPage = !!response.next && currentPage < MAX_TOTAL_PAGES;
+      currentPage++;
+      
+      // Adaptive delay based on current load
+      if (hasNextPage) {
+        await new Promise(resolve => setTimeout(resolve, adaptiveDelay(currentPage)));
+      }
+    } catch (error) {
+      console.error(`Error in background suspects fetch page ${currentPage}:`, error);
+      
+      // If we get rate limited or blocked, stop gracefully but return what we have
       if (error instanceof Error && (
         error.message.includes('429') || 
         error.message.includes('rate limit') ||
         error.message.includes('firewall')
       )) {
-        console.warn('Rate limit detected, stopping suspect fetch');
+        console.warn(`Rate limit detected at suspects page ${currentPage}, stopping background fetch`);
         break;
       }
-      throw error;
+      
+      // For other errors, continue trying a few more times
+      if (currentPage <= MAX_TOTAL_PAGES - 5) {
+        console.warn(`Error on suspects page ${currentPage}, will try to continue...`);
+        currentPage++;
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Longer delay for suspects
+        continue;
+      }
+      
+      break; // Stop if too many errors near the end
     }
   }
   
-  console.log(`Fetched ${allSuspects.length} suspects from ${currentPage - 1} pages`);
-  
-  return {
+  const finalResult: AllSuspectsResult = {
     suspects: allSuspects,
-    total: allSuspects.length
+    total: Math.max(totalFromServer, allSuspects.length),
+    hasMore: false,
+    loadedPages: currentPage - 1
   };
+  
+  // Cache final result with longer TTL
+  suspectsCache.set(cacheKey, finalResult);
+  
+  console.log(`Completed suspects fetch: ${allSuspects.length} suspects from ${currentPage - 1} pages`);
+  return finalResult;
+}
+
+// Clear cache when needed
+export function clearSuspectsCache() {
+  suspectsCache.clear();
+  console.log('Suspects cache cleared');
 }
 
 export function useAllSuspects() {
   return useQuery({
-    queryKey: ['all-suspects-complete'],
-    queryFn: fetchAllSuspects,
-    staleTime: 10 * 60 * 1000, // Increased to 10 minutes
-    gcTime: 20 * 60 * 1000, // Increased to 20 minutes
-    // Reduce retry attempts
-    retry: 1,
-    // Add retry delay
-    retryDelay: 5000, // 5 seconds between retries
+    queryKey: ['all-suspects-progressive'],
+    queryFn: fetchAllSuspectsProgressive,
+    staleTime: 4 * 60 * 1000, // 4 minutes - suspects change less frequently
+    gcTime: 45 * 60 * 1000, // 45 minutes - keep in memory longer
+    retry: 2, // Allow 2 retries
+    retryDelay: (attemptIndex) => Math.min(1500 * 2 ** attemptIndex, 30000), // Slower exponential backoff
+    // More conservative refetch settings
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 } 

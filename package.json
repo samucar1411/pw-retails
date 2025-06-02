@@ -89,6 +89,7 @@
     "@storybook/nextjs": "^8.6.4",
     "@storybook/react": "^8.6.4",
     "@storybook/test": "^8.6.4",
+    "@types/lodash": "^4.17.17",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

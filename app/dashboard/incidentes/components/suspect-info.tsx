@@ -41,7 +41,7 @@ export const SuspectInfo = React.memo(function SuspectInfo({ suspectId }: Suspec
     fetchSuspect();
   }, [suspectId]);
   
-  if (isLoading) return <LoadingState variant="inline" size="xs" />;
+  if (isLoading) return <LoadingState variant="inline" />;
   if (error) return <span className="text-xs text-destructive">Error</span>;
   if (!suspect) return <span className="text-xs text-muted-foreground">No disponible</span>;
   

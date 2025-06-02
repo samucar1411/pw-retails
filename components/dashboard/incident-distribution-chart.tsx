@@ -19,7 +19,7 @@ import {
 import { PieChartIcon, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getIncidentTypes } from "@/services/incident-service";
-import { usePaginatedIncidents } from "@/hooks/usePaginatedIncidents";
+import { useAllIncidents } from "@/hooks/useAllIncidents";
 
 /* -------------------------------- helpers ------------------------------- */
 // 1. Colores fijos para no perder consistencia entre renders
@@ -49,15 +49,15 @@ export function IncidentDistributionChart({ fromDate, toDate, officeId }: Incide
 
   const incidentTypes = incidentTypesResponse?.results || [];
 
-  // Fetch incidents with filters
+  // Use ALL incidents with filters - same as other dashboard components
   const { 
-    data: incidents = [], 
+    data: incidentsData, 
     isLoading: isLoadingIncidents,
     error: incidentsError
-  } = usePaginatedIncidents(fromDate, toDate, officeId);
+  } = useAllIncidents(fromDate, toDate, officeId);
 
-  console.log("INCIDENT TYPES", incidentTypes);
-  console.log("FILTERED INCIDENTS", incidents);
+  // Get incidents array from the data structure
+  const incidents = incidentsData?.incidents || [];
 
   const distributionData = React.useMemo(() => {
     if (!incidentTypes.length || !incidents.length) return [];
@@ -101,7 +101,10 @@ export function IncidentDistributionChart({ fromDate, toDate, officeId }: Incide
     <Card className="lg:col-span-3 flex flex-col">
       <CardHeader>
         <CardTitle>Distribución de incidentes</CardTitle>
-        <CardDescription>Por tipo de incidente en el período seleccionado</CardDescription>
+        <CardDescription>
+          Por tipo de incidente en el período seleccionado
+          {incidentsData?.total ? ` (${incidentsData.total} incidentes analizados)` : ''}
+        </CardDescription>
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col items-center justify-center pb-4">

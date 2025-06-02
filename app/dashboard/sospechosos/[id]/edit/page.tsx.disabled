@@ -26,7 +26,7 @@ export default function EditSuspectPage() {
     const fetchSuspect = async () => {
       try {
         const suspectId = Number(params.id);
-        const data = await getSuspectById(suspectId);
+        const data = await getSuspectById(suspectId.toString());
         if (data) {
           setSuspect(data);
         } else {

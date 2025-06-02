@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { UserProvider } from "@/context/user-context";
 import { AuthProvider } from "@/context/auth-context";
 import { ThemeProvider } from "next-themes";
 import { Archivo } from "next/font/google";
@@ -35,13 +34,11 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <AuthProvider>
-              <UserProvider>
-                <IncidentProvider>
-                  <SuspectProvider>
-                    {children}
-                  </SuspectProvider>
-                </IncidentProvider>
-              </UserProvider>
+              <IncidentProvider>
+                <SuspectProvider>
+                  {children}
+                </SuspectProvider>
+              </IncidentProvider>
             </AuthProvider>
           </ThemeProvider>
         </ReactQueryClientProvider>

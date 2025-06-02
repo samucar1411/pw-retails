@@ -12,6 +12,8 @@ import { getAllOfficesComplete } from "@/services/office-service";
 import { Office } from "@/types/office";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { clearIncidentsCache } from "@/hooks/useAllIncidents";
+import { clearSuspectsCache } from "@/hooks/useAllSuspects";
 
 interface FiltersBarProps {
   fromDate: string;
@@ -27,11 +29,8 @@ function FilterForm({
   localToDate,
   setLocalToDate,
   localOfficeId,
-  open,
-  setOpen,
   offices,
   isLoadingOffices,
-  selectedOffice,
   isDateRangeValid,
   handleApplyFilters,
   handleReset,
@@ -43,11 +42,8 @@ function FilterForm({
   localToDate: string;
   setLocalToDate: (date: string) => void;
   localOfficeId: string;
-  open: boolean;
-  setOpen: (open: boolean) => void;
   offices: Office[];
   isLoadingOffices: boolean;
-  selectedOffice: string;
   isDateRangeValid: boolean;
   handleApplyFilters: () => void;
   handleReset: () => void;
@@ -100,65 +96,24 @@ function FilterForm({
         </div>
       </div>
 
-      {/* Office Command Select */}
+      {/* Office Select - Native for mobile */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">
           Sucursal
         </Label>
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={open}
-              className="w-full justify-between"
-              disabled={isLoadingOffices}
-            >
-              <span className="truncate">
-                {isLoadingOffices ? "Cargando..." : selectedOffice}
-              </span>
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[300px] p-0">
-            <Command>
-              <CommandInput
-                placeholder="Buscar sucursal..."
-              />
-              <CommandList>
-                <CommandEmpty>No se encontraron sucursales</CommandEmpty>
-                <CommandItem
-                  key="all"
-                  value="all"
-                  onSelect={() => handleOfficeSelect("all")}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      localOfficeId === "all" ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  Todas las sucursales
-                </CommandItem>
-                {offices.map((office: Office) => (
-                  <CommandItem
-                    key={office.id}
-                    value={`${office.Name} ${office.Code}`}
-                    onSelect={() => handleOfficeSelect(office.id.toString())}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        localOfficeId === office.id.toString() ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {office.Name} ({office.Code})
-                  </CommandItem>
-                ))}
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+        <select
+          value={localOfficeId}
+          onChange={(e) => handleOfficeSelect(e.target.value)}
+          disabled={isLoadingOffices}
+          className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+        >
+          <option value="all">Todas las sucursales</option>
+          {offices.map((office: Office) => (
+            <option key={office.id} value={office.id.toString()}>
+              {office.Name} ({office.Code})
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Action Buttons */}
@@ -247,18 +202,28 @@ export function FiltersBar({
   }, [localFromDate, localToDate]);
 
   const handleApplyFilters = () => {
-    if (isDateRangeValid) {
-      // Convert "all" to empty string for the parent component
-      const officeValue = localOfficeId === "all" ? "" : localOfficeId;
-      onFiltersChange(localFromDate, localToDate, officeValue);
-    }
+    if (!isDateRangeValid) return;
+    
+    // Clear caches when filters change to ensure fresh data
+    clearIncidentsCache();
+    clearSuspectsCache();
+    
+    const targetOfficeId = localOfficeId === "all" ? "" : localOfficeId;
+    onFiltersChange(localFromDate, localToDate, targetOfficeId);
+    setOpen(false);
   };
 
   const handleReset = () => {
     setLocalFromDate("");
     setLocalToDate("");
     setLocalOfficeId("all");
+    
+    // Clear caches when resetting filters
+    clearIncidentsCache();
+    clearSuspectsCache();
+    
     onFiltersChange("", "", "");
+    setOpen(false);
   };
 
   const handleOfficeSelect = (officeId: string) => {
@@ -299,11 +264,8 @@ export function FiltersBar({
                 localToDate={localToDate}
                 setLocalToDate={setLocalToDate}
                 localOfficeId={localOfficeId}
-                open={open}
-                setOpen={setOpen}
                 offices={offices}
                 isLoadingOffices={isLoadingOffices}
-                selectedOffice={selectedOffice}
                 isDateRangeValid={isDateRangeValid}
                 handleApplyFilters={handleApplyFilters}
                 handleReset={handleReset}
@@ -379,15 +341,19 @@ export function FiltersBar({
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0">
-                  <Command>
-                    <CommandInput placeholder="Buscar sucursal..." />
-                    <CommandList>
+                <PopoverContent className="w-full max-w-[90vw] p-0" align="start">
+                  <Command className="w-full">
+                    <CommandInput
+                      placeholder="Buscar sucursal..."
+                      className="h-9"
+                    />
+                    <CommandList className="max-h-[200px]">
                       <CommandEmpty>No se encontraron sucursales</CommandEmpty>
                       <CommandItem
                         key="all"
                         value="all"
                         onSelect={() => handleOfficeSelect("all")}
+                        className="cursor-pointer"
                       >
                         <Check
                           className={cn(
@@ -402,6 +368,7 @@ export function FiltersBar({
                           key={office.id}
                           value={`${office.Name} ${office.Code}`}
                           onSelect={() => handleOfficeSelect(office.id.toString())}
+                          className="cursor-pointer"
                         >
                           <Check
                             className={cn(

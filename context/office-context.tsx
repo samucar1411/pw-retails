@@ -22,30 +22,24 @@ export const OfficeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
 
   const fetchOfficesData = useCallback(async () => {
-    console.log("[OfficeContext] Starting fetch of all offices...");
     setIsLoading(true);
     setError(null);
     try {
       const fetchedOffices = await getAllOffices(); // Assuming getAllOffices returns Office[]
-      console.log(`[OfficeContext] Fetched ${fetchedOffices.length} offices successfully`);
       setOffices(fetchedOffices);
       // If no office is selected and we fetched some, select the first one by default
       if (!selectedOffice && fetchedOffices.length > 0) {
         setSelectedOffice(fetchedOffices[0]);
-        console.log(`[OfficeContext] Default office selected: ${fetchedOffices[0].Name}`);
       }
     } catch (err) {
-      console.error("[OfficeContext] Failed to fetch offices:", err);
       setError(err instanceof Error ? err : new Error('An unknown error occurred while fetching offices'));
       setOffices([]);
     } finally {
       setIsLoading(false);
-      console.log("[OfficeContext] Fetch finished.");
     }
   }, []); // Remove selectedOffice from dependencies to prevent infinite loop
 
   useEffect(() => {
-    console.log("[OfficeContext] Provider mounted, triggering fetch.");
     // Fetch offices when the provider mounts
     fetchOfficesData();
   }, [fetchOfficesData]); // fetchOfficesData is stable due to useCallback with empty deps

@@ -42,14 +42,11 @@ export async function getAllSuspects(
     search?: string;
   } = {}
 ): Promise<PaginatedResponse<Suspect>> {
-  console.log("Fetching suspects with page:", filters.page);
-  
   // Only pass parameters in the params object, not in the URL
   const params = { ...filters, format: 'json' };
   
   try {
     const { data } = await api.get<PaginatedResponse<Suspect>>('/api/suspects/', { params });
-    console.log("Fetched suspects:", data.results.length);
     return data;
   } catch (error) {
     console.error("Error fetching suspects:", error);
@@ -60,11 +57,25 @@ export async function getAllSuspects(
 
 export async function createSuspect(suspect: Partial<Suspect> | FormData): Promise<Suspect | null> {
   try {
-    const headers = suspect instanceof FormData 
-      ? { 'Content-Type': 'multipart/form-data' }
-      : { 'Content-Type': 'application/json' };
+    let config = {};
     
-    const { data } = await api.post<Suspect>(SUSPECTS_ENDPOINT, suspect, { headers });
+    // For FormData, don't set Content-Type - let the browser set it automatically
+    if (suspect instanceof FormData) {
+      // Remove any Content-Type header for FormData to let browser set the boundary
+      config = {
+        headers: {
+          // Don't set Content-Type for FormData
+        }
+      };
+    } else {
+      config = {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      };
+    }
+    
+    const { data } = await api.post<Suspect>(SUSPECTS_ENDPOINT, suspect, config);
     return data;
   } catch (error) {
     console.error('Error creating suspect:', error);
@@ -74,14 +85,11 @@ export async function createSuspect(suspect: Partial<Suspect> | FormData): Promi
 
 export async function getSuspect(id: string): Promise<Suspect | null> {
   try {
-    console.log(`Fetching suspect with ID via proxy: ${id}`);
-    
     // Use the 'api' (getConfiguredAxios) instance and the proxied path
     const { data } = await api.get<Suspect>(`${SUSPECTS_ENDPOINT}${id}/`, {
       params: { format: 'json' } 
     });
     
-    console.log(`Successfully fetched suspect:`, data);
     return data;
   } catch (error) {
     console.error(`Error fetching suspect ${id}:`, error);

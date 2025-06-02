@@ -31,20 +31,22 @@ type SectionProps = {
   children: React.ReactNode;
 };
 
-const Section = memo(({ id, icon: Icon, title, subtitle, children }: SectionProps) => (
-  <section id={id} className="space-y-4 rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-    <div className="flex gap-3 items-center mb-4">
-      <div className="p-2 rounded-lg bg-primary/10 text-primary">
-        <Icon className="h-5 w-5" />
+const Section = React.memo(({ id, icon: Icon, title, subtitle, children }: SectionProps) => (
+  <section id={id} className="space-y-4 rounded-lg border bg-card p-6">
+    <div className="flex items-center space-x-3">
+      <div className="rounded-lg bg-primary/10 p-2">
+        <Icon className="h-5 w-5 text-primary" />
       </div>
       <div>
-        <h2 className="text-lg font-semibold">{title}</h2>
+        <h3 className="text-lg font-medium">{title}</h3>
         <p className="text-sm text-muted-foreground">{subtitle}</p>
       </div>
     </div>
-    {children}
+    <div className="space-y-4">{children}</div>
   </section>
 ));
+
+Section.displayName = 'Section';
 
 type IndexButtonProps = {
   id: string;
@@ -68,6 +70,8 @@ const IndexButton = memo(({ id, icon: Icon, label, activeSection, onClick }: Ind
     <span>{label}</span>
   </Button>
 ));
+
+IndexButton.displayName = 'IndexButton';
 
 export function SuspectForm() {
   const router = useRouter();

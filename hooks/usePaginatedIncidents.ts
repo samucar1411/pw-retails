@@ -1,13 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Incident } from '@/types/incident';
-import { api } from '@/services/api';
-
-interface PaginatedIncidentsResponse {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: Incident[];
-}
+import { getIncidents } from '@/services/incident-service';
 
 export function usePaginatedIncidents(
   fromDate?: string,
@@ -18,31 +11,48 @@ export function usePaginatedIncidents(
     queryKey: ['paginated-incidents', fromDate, toDate, officeId],
     queryFn: async () => {
       const allIncidents: Incident[] = [];
+      let page = 1;
+      let hasNextPage = true;
       
-      // Build initial URL - always start with ordering
-      let nextUrl: string | null = '/api/incidents/?ordering=-Date&format=json';
+      // Prepare filters object
+      const filters: {
+        ordering: string;
+        page_size: number;
+        fromDate?: string;
+        toDate?: string;
+        Office?: string;
+      } = {
+        ordering: '-Date',
+        page_size: 50, // Reasonable page size
+      };
       
-      // Only add date filters if they are provided
-      if (fromDate && fromDate.trim() !== '') nextUrl += `&Date_after=${fromDate}`;
-      if (toDate && toDate.trim() !== '') nextUrl += `&Date_before=${toDate}`;
-      if (officeId && officeId !== '') nextUrl += `&Office=${officeId}`;
+      // Only add filters if they have valid values
+      if (fromDate && fromDate.trim() !== '') {
+        filters.fromDate = fromDate;
+      }
+      if (toDate && toDate.trim() !== '') {
+        filters.toDate = toDate;
+      }
+      if (officeId && officeId !== '') {
+        filters.Office = officeId;
+      }
       
-      // Only create date objects if dates are provided
+      // Only create date objects if dates are provided for client-side filtering
       const fromDateObj = (fromDate && fromDate.trim() !== '') ? new Date(fromDate) : null;
       const toDateObj = (toDate && toDate.trim() !== '') ? new Date(toDate) : null;
-      
-      // If no date filters are applied, we can rely on the API's built-in filtering
-      // and don't need to do client-side date filtering
       const shouldFilterClientSide = fromDateObj !== null || toDateObj !== null;
       
-      while (nextUrl) {
+      while (hasNextPage) {
         try {
-          const { data }: { data: PaginatedIncidentsResponse } = await api.get(nextUrl);
+          const response = await getIncidents({
+            ...filters,
+            page,
+          });
           
           let shouldBreak = false;
           
           // Process each incident in current page
-          for (const incident of data.results) {
+          for (const incident of response.results) {
             // If no client-side filtering needed, add all incidents
             if (!shouldFilterClientSide) {
               allIncidents.push(incident);
@@ -71,8 +81,15 @@ export function usePaginatedIncidents(
             break;
           }
           
-          // Move to next page
-          nextUrl = data.next;
+          // Check if there's a next page
+          hasNextPage = !!response.next;
+          page++;
+          
+          // Safety limit to prevent infinite loops
+          if (page > 100) {
+            console.warn('Reached page limit (100) while fetching incidents');
+            break;
+          }
         } catch (error) {
           console.error('Error fetching incidents page:', error);
           break;

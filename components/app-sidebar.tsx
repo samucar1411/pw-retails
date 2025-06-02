@@ -45,8 +45,10 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 import { useAuth } from "@/context/auth-context";
-// Office selector removed for now
 import { OfficeProvider } from "@/context/office-context";
+import { getAllOfficesComplete } from "@/services/office-service";
+import { getCompanyById } from "@/services/company-service";
+import { Company } from "@/types/company";
 
 // Restore NavItem interface
 interface NavItem {
@@ -129,13 +131,50 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { logout, userInfo } = useAuth();
   const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
+  const [company, setCompany] = React.useState<Company | null>(null);
+  const [loadingCompany, setLoadingCompany] = React.useState(true);
 
-  // helper para marcar item activo
+  // Fetch company information from offices
+  React.useEffect(() => {
+    const fetchCompanyInfo = async () => {
+      try {
+        setLoadingCompany(true);
+        
+        // Get first office to get company ID
+        const offices = await getAllOfficesComplete();
+        if (offices.length > 0) {
+          const firstOffice = offices[0];
+          if (firstOffice.Company) {
+            // Get company information
+            const companyData = await getCompanyById(firstOffice.Company.toString());
+            setCompany(companyData);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching company info:', error);
+      } finally {
+        setLoadingCompany(false);
+      }
+    };
+
+    fetchCompanyInfo();
+  }, []);
+
+  // helper para marcar item activo - más específico para evitar que padre e hijo estén activos al mismo tiempo
   const isActive = React.useCallback(
-    (path: string) =>
-      path === "/dashboard"
-        ? pathname === "/dashboard" || pathname === "/dashboard/"
-        : pathname === path || pathname.startsWith(`${path}/`),
+    (path: string, hasChildren = false) => {
+      if (path === "/dashboard") {
+        return pathname === "/dashboard" || pathname === "/dashboard/";
+      }
+      
+      if (hasChildren) {
+        // Para elementos padre con hijos, solo marcar activo si la URL coincide exactamente
+        return pathname === path;
+      } else {
+        // Para elementos hijo, solo marcar activo si la URL coincide exactamente o con una barra final
+        return pathname === path || pathname === `${path}/`;
+      }
+    },
     [pathname]
   );
 
@@ -154,9 +193,9 @@ export function AppSidebar() {
   const handleLogout = () => logout();
 
   const renderNavItem = (item: NavItem) => {
-    const isItemActive = isActive(item.url);
-    const isExpanded = expandedItems.has(item.url);
     const hasChildren = item.children && item.children.length > 0;
+    const isItemActive = isActive(item.url, hasChildren);
+    const isExpanded = expandedItems.has(item.url);
 
     return (
       <React.Fragment key={item.url}>
@@ -204,7 +243,7 @@ export function AppSidebar() {
           {item.children && (
             <CollapsibleContent className="mt-1 ml-2 pl-4 border-l-2 border-border/30 space-y-1">
               {item.children.map((child: NavItem) => {
-                const isChildActive = isActive(child.url);
+                const isChildActive = isActive(child.url, false);
                 return (
                   <Link
                     key={child.url}
@@ -235,13 +274,51 @@ export function AppSidebar() {
         {/* ── HEADER ─────────────────────────────────────── */}
         <SidebarHeader className="flex flex-col">
           <div className="flex items-center gap-3 px-4 py-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
-              <span className="text-lg font-semibold text-primary-foreground">PW</span>
-            </div>
-            <div className="flex flex-col justify-center">
-              <h2 className="text-sm font-semibold">PW Retails</h2>
-              <p className="text-xs text-muted-foreground">Sistema de gestión</p>
-            </div>
+            {loadingCompany ? (
+              // Loading state
+              <>
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted animate-pulse">
+                  <span className="text-lg font-semibold text-muted-foreground">...</span>
+                </div>
+                <div className="flex flex-col justify-center">
+                  <div className="h-4 w-20 bg-muted rounded animate-pulse mb-1"></div>
+                  <div className="h-3 w-16 bg-muted rounded animate-pulse"></div>
+                </div>
+              </>
+            ) : company ? (
+              // Company data loaded
+              <>
+                {company.image_url ? (
+                  <Avatar className="h-8 w-8 rounded-md">
+                    <AvatarImage src={company.image_url} alt={company.name} className="object-cover" />
+                    <AvatarFallback className="rounded-md bg-primary text-primary-foreground">
+                      {company.name?.substring(0, 2).toUpperCase() || 'PW'}
+                    </AvatarFallback>
+                  </Avatar>
+                ) : (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
+                    <span className="text-lg font-semibold text-primary-foreground">
+                      {company.name?.substring(0, 2).toUpperCase() || 'PW'}
+                    </span>
+                  </div>
+                )}
+                <div className="flex flex-col justify-center">
+                  <h2 className="text-sm font-semibold truncate">{company.name || 'PW Retails'}</h2>
+                  <p className="text-xs text-muted-foreground">Sistema de gestión</p>
+                </div>
+              </>
+            ) : (
+              // Fallback to default
+              <>
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
+                  <span className="text-lg font-semibold text-primary-foreground">PW</span>
+                </div>
+                <div className="flex flex-col justify-center">
+                  <h2 className="text-sm font-semibold">PW Retails</h2>
+                  <p className="text-xs text-muted-foreground">Sistema de gestión</p>
+                </div>
+              </>
+            )}
           </div>
         </SidebarHeader>
 

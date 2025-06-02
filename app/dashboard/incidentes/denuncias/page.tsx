@@ -1,14 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Download, Printer, Share2 } from 'lucide-react';
+import { Download, Printer, Share2 } from 'lucide-react';
 
 export default function PoliceReportsPage() {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState('pendientes');
 
   return (

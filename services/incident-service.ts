@@ -15,41 +15,35 @@ export async function getIncidents(
     suspect_alias?: string;
   } = {}
 ): Promise<PaginatedResponse<Incident>> {
-  // Debug the filters to see what's being sent
-  console.log("Fetching incidents with filters:", JSON.stringify(filters, null, 2));
+  // Create clean params object to avoid conflicts
+  const params: Record<string, string | number> = {};
   
-  // Check specifically for incident type filter
-  if (filters.IncidentType) {
-    console.log(`Filtering by incident type: ${filters.IncidentType}`);
-  }
+  // Always include format
+  params.format = 'json';
   
-  // Only pass parameters in the params object, not in the URL
-  const params: Record<string, string | number | boolean | undefined> = { format: 'json' };
-  
-  // Copy all filters to params - simplified approach
+  // Add filters with proper key mapping and validation
   Object.entries(filters).forEach(([key, value]) => {
-    if (key === 'fromDate' && value) {
-      params['Date_after'] = value;
-    } else if (key === 'toDate' && value) {
-      params['Date_before'] = value;
-    } else if (value !== undefined && value !== null && value !== '') {
-      // For all other parameters, use them directly (including Office)
-      params[key] = value;
+    if (value !== undefined && value !== null && value !== '') {
+      if (key === 'fromDate' && value) {
+        params.Date_after = value;
+      } else if (key === 'toDate' && value) {
+        params.Date_before = value;
+      } else if (key === 'format') {
+        // Skip - already added
+      } else {
+        // For all other parameters, use them directly (including Office)
+        params[key] = value;
+      }
     }
   });
   
   try {
-    // Debug the URL and parameters that will be sent
-    console.log(`API Request: GET /api/incidents/ with params:`, params);
-    
     const { data } = await api.get<PaginatedResponse<Incident>>('/api/incidents/', { params });
-    
-    // Debug the response to see what we're receiving
-    console.log(`Received ${data.count} incidents for the query`);
     
     return data;
   } catch (error) {
     console.error("Error fetching incidents:", error);
+    console.error("Request params were:", params);
     throw error;
   }
 }
@@ -102,7 +96,6 @@ export async function getIncidentType(id: number): Promise<IncidentType | null> 
  */
 export async function getIncidentById(id: string | number): Promise<Incident> {
   try {
-    console.log(`Fetching incident with ID: ${id}`);
     const { data } = await api.get<Incident>(`/api/incidents/${id}/`, {
       params: { format: 'json' }
     });

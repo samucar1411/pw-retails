@@ -17,14 +17,19 @@ export default function DashboardLayout({
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {  
-        staleTime: 5 * 60 * 1000,      // 5 minutes - increased from 1 minute
-        gcTime: 10 * 60 * 1000,        // 10 minutes garbage collection
-        retry: 1,                       // Reduced from default 3 to 1 retry
-        retryDelay: 2000,               // 2 seconds between retries
+        staleTime: 3 * 60 * 1000,      // 3 minutes - balanced for freshness
+        gcTime: 15 * 60 * 1000,        // 15 minutes garbage collection
+        retry: 1,                       // Only 1 retry to avoid excessive requests
+        retryDelay: (attemptIndex) => Math.min(2000 * 2 ** attemptIndex, 10000), // Progressive delay
         refetchOnWindowFocus: false,    // Prevent refetch on window focus
         refetchOnReconnect: false,      // Prevent refetch on reconnect
-        // Reduce concurrent requests
+        refetchOnMount: false,          // Don't refetch if data is still fresh
+        // Conservative network settings
         networkMode: 'offlineFirst',    // Use cache when possible
+      },
+      mutations: {
+        retry: 1,                       // Single retry for mutations
+        retryDelay: 3000,              // 3 second delay for mutation retries
       }
     }
   });

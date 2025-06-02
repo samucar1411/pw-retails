@@ -7,7 +7,6 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Image from 'next/image';
 import { ArrowLeft, Edit, User } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useEffect, useState, use } from 'react';
 import { getOffice } from '@/services/office-service';
 import { getIncidentTypeWithCache } from '@/services/incident-type-service';
@@ -23,13 +22,14 @@ import Link from 'next/link';
 import { useTheme } from 'next-themes';
 
 interface SuspectDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function SuspectDetailPage(props: SuspectDetailPageProps) {
-  const { id } = props.params;
+  const params = use(props.params);
+  const { id } = params;
   const suspectId = id;
 
   const [suspect, setSuspect] = useState<Suspect | null>(null);
@@ -52,7 +52,6 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
   const [incidentTypeNames, setIncidentTypeNames] = useState<Map<number, string>>(new Map());
   const [relatedSuspects, setRelatedSuspects] = useState<Suspect[]>([]); // Placeholder for now
   const [additionalDataLoading, setAdditionalDataLoading] = useState(true);
-  const [companyDetails, setCompanyDetails] = useState<Map<number, Company>>(new Map());
   const { resolvedTheme } = useTheme();
 
   // Define the Incident type
@@ -146,7 +145,6 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                 newCompanyDetails.set(parseInt(company.id), company);
               }
             });
-            setCompanyDetails(newCompanyDetails);
             
             fetchedOffices.forEach(office => {
               if (office && office.id) newOfficeDetails.set(office.id, office);
@@ -215,15 +213,20 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
 
   if (loading) {
     return (
-      <div className="flex-1 space-y-4 p-8 pt-6 flex items-center justify-center h-64">
-        <p>Cargando detalles del sospechoso...</p>
+      <div className="container mx-auto py-6 px-4 md:px-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Cargando detalles del sospechoso...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex-1 space-y-4 p-8 pt-6">
+      <div className="container mx-auto py-6 px-4 md:px-6">
         <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded">
           <p>{error}</p>
         </div>
@@ -233,8 +236,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
 
   if (!suspect) {
     return (
-      <div className="flex-1 space-y-4 p-8 pt-6">
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
+      <div className="container mx-auto py-6 px-4 md:px-6">
+        <div className="bg-accent/10 border border-accent/20 text-accent-foreground px-4 py-3 rounded">
           <p>No se encontró información del sospechoso.</p>
         </div>
       </div>
@@ -242,17 +245,28 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
   }
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex justify-between items-center">
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto py-6 px-4 md:px-6">
+        <div className="flex justify-between items-center mb-6">
         <div className="flex items-center space-x-4">
           <Button variant="outline" size="icon" asChild>
             <Link href="/dashboard/sospechosos">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-xl font-bold">
-            {suspect.Name || suspect.Alias || 'Sospechoso sin nombre'}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Badge className="bg-primary/10 text-primary border-primary/20">
+                  PERFIL DE SOSPECHOSO
+                </Badge>
+                <Badge variant="outline" className="bg-muted">
+                  ID: {suspectId.substring(0, 8)}...
+                </Badge>
+              </div>
+              <h1 className="text-3xl font-bold text-foreground">
+                {suspect.Alias || 'Sospechoso sin nombre'}
           </h1>
+            </div>
         </div>
         <Button asChild>
           <Link href={`/dashboard/sospechosos/${suspectId}/edit`}>
@@ -263,9 +277,9 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
 
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
         {/* Row 1, Column 1: Suspect Information */}
-        <Card className="border border-muted h-full">
-          <CardHeader className="bg-muted/30 border-b border-muted pb-3">
-            <CardTitle className="flex items-center text-base">
+          <Card className="bg-card border-border h-full">
+            <CardHeader className="bg-muted/30 border-b border-border pb-3">
+              <CardTitle className="flex items-center text-base text-foreground">
               <div className="p-1 bg-primary text-primary-foreground text-xs mr-2">FICHA</div>
               Información del Sospechoso
             </CardTitle>
@@ -273,7 +287,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
           <CardContent className="p-4">
             <div className="flex flex-col items-center mb-4">
               {suspect.PhotoUrl ? (
-                <div className="relative w-full max-w-[200px] h-[250px] border-2 border-muted overflow-hidden bg-muted/20">
+                  <div className="relative w-full max-w-[200px] h-[250px] border-2 border-border overflow-hidden bg-muted/20">
                   <div className="relative w-full h-full">
                     <Image 
                       src={suspect.PhotoUrl} 
@@ -283,53 +297,53 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                       sizes="200px"
                     />
                   </div>
-                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white text-xs p-1">
+                    <div className="absolute bottom-0 left-0 right-0 bg-background/90 text-foreground text-xs p-1">
                     ID: {suspectId.substring(0, 8)}
                   </div>
                 </div>
               ) : (
-                <div className="w-full max-w-[200px] h-[250px] border-2 border-muted flex items-center justify-center bg-muted/20">
+                  <div className="w-full max-w-[200px] h-[250px] border-2 border-border flex items-center justify-center bg-muted/20">
                   <User className="h-16 w-16 text-muted-foreground" />
                 </div>
               )}
               
               <div className="mt-4 w-full">
                 <div className="flex flex-col gap-3">
-                  <div className="border-b pb-2">
+                    <div className="border-b border-border pb-2">
                     <p className="text-xs text-muted-foreground uppercase font-semibold">ID</p>
-                    <div className="font-mono text-xs bg-muted p-1 rounded mt-1 truncate">{suspect.id}</div>
+                      <div className="font-mono text-xs bg-muted p-1 rounded mt-1 truncate text-foreground">{suspect.id}</div>
                   </div>
                   
-                  <div className="border-b pb-2">
+                    <div className="border-b border-border pb-2">
                     <p className="text-xs text-muted-foreground uppercase font-semibold">Alias</p>
-                    <p className="font-bold text-base truncate">{suspect.Alias || 'Sin alias'}</p>
+                      <p className="font-bold text-base truncate text-foreground">{suspect.Alias || 'Sin alias'}</p>
                   </div>
                   
-                  <div className="border-b pb-2">
+                    <div className="border-b border-border pb-2">
                     <p className="text-xs text-muted-foreground uppercase font-semibold">Estado</p>
                     <div className="flex items-center mt-1">
                       <Badge variant={suspect.Status === 1 ? 'default' : 'secondary'} className="mr-2">
                         {suspect.Status === 1 ? 'Activo' : 'Inactivo'}
                       </Badge>
                       {suspect.StatusDetails?.Name && (
-                        <span className="text-sm">{suspect.StatusDetails.Name}</span>
+                          <span className="text-sm text-foreground">{suspect.StatusDetails.Name}</span>
                       )}
                     </div>
                   </div>
                   
-                  <div className="border-b pb-2">
+                    <div className="border-b border-border pb-2">
                     <p className="text-xs text-muted-foreground uppercase font-semibold">Descripción Física</p>
-                    <p className="text-sm mt-1">{suspect.PhysicalDescription || 'Sin descripción'}</p>
+                      <p className="text-sm mt-1 text-foreground">{suspect.PhysicalDescription || 'Sin descripción'}</p>
                   </div>
                   
                   {/* Incident Types - Moved from separate card */}
                   {!additionalDataLoading && Object.keys(groupedIncidents).length > 0 && (
-                    <div className=" pb-2">
+                      <div className="pb-2">
                       <p className="text-xs text-muted-foreground uppercase font-semibold">Tipos de Incidentes</p>
                       <div className="space-y-1 mt-1">
                         {Object.entries(groupedIncidents).map(([typeName, count]) => (
                           <div key={typeName} className="flex justify-between items-center text-sm">
-                            <span className="truncate mr-2">{typeName}</span>
+                              <span className="truncate mr-2 text-foreground">{typeName}</span>
                             <Badge variant="outline" className="bg-primary/10 text-primary hover:bg-primary/20 whitespace-nowrap">
                               {count} {count === 1 ? 'incidente' : 'incidentes'}
                             </Badge>
@@ -346,9 +360,9 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
 
         {/* Row 1, Column 2: Offices Map */}
         {mapLocations.length > 0 && (
-          <Card className="h-full flex flex-col">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Oficinas Involucradas</CardTitle>
+            <Card className="bg-card border-border h-full flex flex-col">
+              <CardHeader className="bg-muted/30 border-b border-border pb-3">
+                <CardTitle className="text-base text-foreground">Sucursales Involucradas</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 p-0">
               <div className="w-full h-full min-h-[350px]">
@@ -371,20 +385,22 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
         )}
 
         {/* Row 2, Column 1: Incidents */}
-        <Card className="h-full">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Incidentes Relacionados</CardTitle>
+          <Card className="bg-card border-border h-full">
+            <CardHeader className="bg-muted/30 border-b border-border pb-3">
+              <CardTitle className="text-base text-foreground">Incidentes Relacionados</CardTitle>
           </CardHeader>
           <CardContent className="p-4">
             {incidentsLoading ? (
-              <p>Cargando incidentes...</p>
+                <div className="flex justify-center items-center h-32">
+                  <div className="animate-spin h-6 w-6 border-4 border-primary border-t-transparent rounded-full"></div>
+                </div>
             ) : incidents.length > 0 ? (
-              <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300">
+                <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/30">
                 {incidents.map((incident) => (
                   <Link 
                     href={`/dashboard/incidents/${incident.id}`} 
                     key={incident.id} 
-                    className="block border border-muted p-3 rounded-md hover:bg-muted/5 transition-colors no-underline"
+                      className="block border border-border p-3 rounded-md hover:bg-muted/50 transition-colors no-underline group"
                   >
                     <div className="flex justify-between items-start gap-2">
                       <div className="flex-1 min-w-0">
@@ -394,7 +410,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                               {incidentTypeNames.get(incident.IncidentType)}
                             </Badge>
                           ) : null}
-                          <span className="text-sm whitespace-nowrap">
+                            <span className="text-sm whitespace-nowrap text-muted-foreground">
                             {incident.Date && format(new Date(incident.Date), 'dd/MM/yyyy', { locale: es })}
                             {incident.Time && ` ${incident.Time.substring(0, 5)}`}
                           </span>
@@ -415,7 +431,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                       </div>
                       <div className="text-right">
                         <div className="font-medium text-destructive whitespace-nowrap">
-                          ${parseFloat(incident.TotalLoss || '0').toLocaleString()}
+                            Gs. {parseFloat(incident.TotalLoss || '0').toLocaleString('es-PY')}
                         </div>
                       </div>
                     </div>
@@ -429,13 +445,15 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
         </Card>
         
         {/* Row 2, Column 2: Related Suspects */}
-        <Card className="h-full">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Otros Sospechosos Involucrados</CardTitle>
+          <Card className="bg-card border-border h-full">
+            <CardHeader className="bg-muted/30 border-b border-border pb-3">
+              <CardTitle className="text-base text-foreground">Otros Sospechosos Involucrados</CardTitle>
           </CardHeader>
           <CardContent className="p-4">
             {additionalDataLoading ? (
-              <p className="text-muted-foreground">Buscando otros sospechosos...</p>
+                <div className="flex justify-center items-center h-32">
+                  <div className="animate-spin h-6 w-6 border-4 border-primary border-t-transparent rounded-full"></div>
+                </div>
             ) : relatedSuspects.length > 0 ? (
               <ul className="space-y-3">
                 {relatedSuspects.map(rs => (
@@ -444,7 +462,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                       {rs.PhotoUrl ? (
                         <Image 
                           src={rs.PhotoUrl} 
-                          alt={rs.Name || 'Sospechoso'}
+                            alt={rs.Alias || 'Sospechoso'}
                           width={40}
                           height={40}
                           className="object-cover"
@@ -454,8 +472,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                       )}
                     </div>
                     <div className="flex-1">
-                      <Link href={`/dashboard/sospechosos/${rs.id}`} className="font-medium hover:underline text-primary">
-                        {rs.Name || 'Sospechoso sin nombre'}
+                        <Link href={`/dashboard/sospechosos/${rs.id}`} className="font-medium hover:underline text-primary group-hover:text-primary/80">
+                          {rs.Alias || 'Sospechoso sin nombre'}
                       </Link>
                       {rs.Alias && <p className="text-xs text-muted-foreground">{rs.Alias}</p>}
                     </div>
@@ -467,6 +485,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
             )}
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );

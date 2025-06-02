@@ -38,7 +38,7 @@ export const OfficeInfo = React.memo(function OfficeInfo({ officeId }: OfficeInf
     fetchOffice();
   }, [officeId]);
   
-  if (isLoading) return <LoadingState variant="inline" size="xs" />;
+  if (isLoading) return <LoadingState variant="inline" />;
   if (error) return <span className="text-xs text-destructive">Error</span>;
   
   return (

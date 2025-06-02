@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, FileText, MapPin, Loader2 } from "lucide-react";
+import { DollarSign, FileText, MapPin, Loader2, Hash } from "lucide-react";
 import Link from "next/link";
 import { Incident, IncidentType } from "@/types/incident";
 import { Office } from "@/types/office";
@@ -323,8 +323,14 @@ export function RecentIncidentsTable({ fromDate, toDate, officeId }: RecentIncid
                   return (
                     <TableRow key={incident.id} className="hover:bg-muted/50">
                       <TableCell className="font-medium">
-                        <div className="flex items-center gap-1">
-                          <span>#{incident.id.toString().slice(-8)}</span>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Hash className="h-3.5 w-3.5 flex-shrink-0" />
+                          <Link 
+                            href={`/dashboard/incidentes/${incident.id}`}
+                            className="hover:underline hover:text-primary"
+                          >
+                            {incident.id.toString().slice(-8)}
+                          </Link>
                         </div>
                       </TableCell>
                       <TableCell>

@@ -174,7 +174,6 @@ export function SuspectProvider({ children }: { children: ReactNode }) {
   // Effect for initial data load - should run only once
   useEffect(() => {
     const fetchInitialData = async () => {
-      console.log("[SuspectContext] InitialDataLoad Effect: Fetching initial data (page 1).");
       setLoading(true);
       setError(null);
       try {

@@ -103,7 +103,6 @@ export function OfficeMap({ fromDate, toDate, officeId }: OfficeMapProps) {
       
       // Handle map load
       newMap.on('load', () => {
-        console.log('Map loaded successfully');
       });
       
       // Cleanup function to prevent memory leaks
@@ -127,114 +126,141 @@ export function OfficeMap({ fromDate, toDate, officeId }: OfficeMapProps) {
     if (!map.current || loading || !visibleIncidents || visibleIncidents.length === 0) return;
     
     const currentMap = map.current;
-    const currentMarkers = [...markers.current];
-
-    // Clear existing markers
-    currentMarkers.forEach(marker => marker.remove());
-    markers.current = [];
-
-    // Add new markers for each visible incident
-    visibleIncidents.forEach(async (incident) => {
-      try {
-        // Get office information
-        const office = await getOffice(incident.Office);
-        if (!office) return;
-        
-        // Get incident type information
-        const incidentType = await getIncidentType(incident.IncidentType);
-        
-        // Get coordinates from office
-        let lng: number | null = null;
-        let lat: number | null = null;
-
-        if (office.Geo) {
-          try {
-            const parts = office.Geo.split(',');
-            lat = parseFloat(parts[0]);
-            lng = parseFloat(parts[1]);
-          } catch (e) {
-            console.error('Error parsing coordinates:', e);
-            return;
+    
+    // Wait for map to be fully loaded before adding markers
+    if (!currentMap.loaded()) {
+      const onMapLoad = () => {
+        currentMap.off('load', onMapLoad);
+        // Retry adding markers after map is loaded
+        setTimeout(() => {
+          if (currentMap && visibleIncidents && visibleIncidents.length > 0) {
+            addMarkersToMap(currentMap, visibleIncidents);
           }
-        } else {
-          console.warn('No coordinates available for office:', office.id);
-          return;
-        }
-
-        // Skip if coordinates are invalid
-        if (!lat || !lng || isNaN(lng) || isNaN(lat)) {
-          console.warn('Invalid coordinates for office:', office);
-          return;
-        }
-
-        // Create popup content with Tailwind classes
-        const popupElement = document.createElement('div');
-        popupElement.className = 'bg-card text-card-foreground rounded-lg shadow-lg border border-border w-72 overflow-hidden';
-        
-        popupElement.innerHTML = `
-          <div class="bg-muted/50 p-4 border-b border-border">
-            <div class="flex items-center gap-2">
-              <div class="w-2 h-2 rounded-full bg-red-500"></div>
-              <h3 class="text-lg font-semibold text-foreground">${office.Name}</h3>
-            </div>
-            <p class="text-sm text-muted-foreground mt-1">${office.Address || ''}</p>
-          </div>
-          <div class="p-4 space-y-3">
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <p class="text-xs text-muted-foreground">Pérdida total</p>
-                <p class="text-sm font-medium">${incident.TotalLoss ? `GS ${Number(incident.TotalLoss).toLocaleString('es-PY')}` : 'GS 0'}</p>
-              </div>
-              <div>
-                <p class="text-xs text-muted-foreground">Fecha</p>
-                <p class="text-sm">${incident.Date}</p>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <p class="text-xs text-muted-foreground">Hora</p>
-                <p class="text-sm">${incident.Time}</p>
-              </div>
-              <div>
-                <p class="text-xs text-muted-foreground">Tipo</p>
-                <p class="text-sm">${incidentType?.Name || 'No especificado'}</p>
-              </div>
-            </div>
-            <div class="pt-2 border-t border-border">
-              <p class="text-xs text-muted-foreground mb-1">Descripción</p>
-              <p class="text-sm text-foreground">${incident.Description || 'Sin descripción'}</p>
-            </div>
-          </div>
-        `;
-
-        // Create a marker with dot and circle
-        const el = document.createElement('div');
-        el.className = 'relative w-6 h-6 flex items-center justify-center';
-        el.innerHTML = `
-          <div class="absolute w-3 h-3 bg-red-500 rounded-full"></div>
-          <div class="absolute w-5 h-5 border-2 border-red-500 rounded-full animate-ping opacity-70"></div>
-        `;
-
-        // Create marker with popup
-        const marker = new mapboxgl.Marker(el)
-          .setLngLat([lng, lat])
-          .setPopup(
-            new mapboxgl.Popup({ offset: 10 })
-              .setDOMContent(popupElement)
-          )
-          .addTo(currentMap);
-
-        markers.current.push(marker);
-      } catch (error) {
-        console.error('Error creating marker for incident:', incident, error);
-      }
-    });
-
-    // Zoom to fit all markers
-    if (markers.current.length > 0) {
-      setTimeout(() => onZoomToFit(), 500); // Small delay to ensure markers are rendered
+        }, 100);
+      };
+      currentMap.on('load', onMapLoad);
+      return;
     }
+    
+    addMarkersToMap(currentMap, visibleIncidents);
   }, [visibleIncidents, loading, onZoomToFit]);
+
+  // Helper function to add markers to the map
+  const addMarkersToMap = React.useCallback(async (currentMap: mapboxgl.Map, incidents: typeof visibleIncidents) => {
+    try {
+      const currentMarkers = [...markers.current];
+
+      // Clear existing markers
+      currentMarkers.forEach(marker => marker.remove());
+      markers.current = [];
+
+      // Add new markers for each visible incident
+      for (const incident of incidents) {
+        try {
+          // Get office information
+          const office = await getOffice(incident.Office);
+          if (!office) continue;
+          
+          // Get incident type information
+          const incidentType = await getIncidentType(incident.IncidentType);
+          
+          // Get coordinates from office
+          let lng: number | null = null;
+          let lat: number | null = null;
+
+          if (office.Geo) {
+            try {
+              const parts = office.Geo.split(',');
+              lat = parseFloat(parts[0]);
+              lng = parseFloat(parts[1]);
+            } catch (e) {
+              console.error('Error parsing coordinates:', e);
+              continue;
+            }
+          } else {
+            console.warn('No coordinates available for office:', office.id);
+            continue;
+          }
+
+          // Skip if coordinates are invalid
+          if (!lat || !lng || isNaN(lng) || isNaN(lat)) {
+            console.warn('Invalid coordinates for office:', office);
+            continue;
+          }
+          
+          // Create popup content with Tailwind classes
+          const popupElement = document.createElement('div');
+          popupElement.className = 'bg-card text-card-foreground rounded-lg shadow-lg border border-border w-72 overflow-hidden';
+          
+          popupElement.innerHTML = `
+            <div class="bg-muted/50 p-4 border-b border-border">
+              <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                <h3 class="text-lg font-semibold text-foreground">${office.Name}</h3>
+              </div>
+              <p class="text-sm text-muted-foreground mt-1">${office.Address || ''}</p>
+            </div>
+            <div class="p-4 space-y-3">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <p class="text-xs text-muted-foreground">Pérdida total</p>
+                  <p class="text-sm font-medium">${incident.TotalLoss ? `GS ${Number(incident.TotalLoss).toLocaleString('es-PY')}` : 'GS 0'}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-muted-foreground">Fecha</p>
+                  <p class="text-sm">${incident.Date}</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <p class="text-xs text-muted-foreground">Hora</p>
+                  <p class="text-sm">${incident.Time}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-muted-foreground">Tipo</p>
+                  <p class="text-sm">${incidentType?.Name || 'No especificado'}</p>
+                </div>
+              </div>
+              <div class="pt-2 border-t border-border">
+                <p class="text-xs text-muted-foreground mb-1">Descripción</p>
+                <p class="text-sm text-foreground">${incident.Description || 'Sin descripción'}</p>
+              </div>
+            </div>
+          `;
+
+          // Create a marker with dot and circle
+          const el = document.createElement('div');
+          el.className = 'relative w-6 h-6 flex items-center justify-center';
+          el.innerHTML = `
+            <div class="absolute w-3 h-3 bg-red-500 rounded-full"></div>
+            <div class="absolute w-5 h-5 border-2 border-red-500 rounded-full animate-ping opacity-70"></div>
+          `;
+
+          // Create marker with popup - only add to map if it's ready
+          if (currentMap && currentMap.getContainer() && currentMap.loaded()) {
+            const marker = new mapboxgl.Marker(el)
+              .setLngLat([lng, lat])
+              .setPopup(
+                new mapboxgl.Popup({ offset: 10 })
+                  .setDOMContent(popupElement)
+              )
+              .addTo(currentMap);
+
+            markers.current.push(marker);
+          }
+        } catch (error) {
+          console.error('Error creating marker for incident:', incident, error);
+        }
+      }
+
+      // Zoom to fit all markers
+      if (markers.current.length > 0) {
+        setTimeout(() => onZoomToFit(), 500); // Small delay to ensure markers are rendered
+      }
+    } catch (error) {
+      console.error('Error adding markers to map:', error);
+    }
+  }, [onZoomToFit]);
 
   return (
     <Card className="lg:col-span-4 border-0 shadow-lg h-full flex flex-col">

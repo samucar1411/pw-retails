@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useRef, ChangeEvent } from 'react';
+import React, { useRef, ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Loader2, UploadCloud } from 'lucide-react';
 import { toast } from 'sonner';
 import useImageUpload from '@/hooks/useImageUpload';

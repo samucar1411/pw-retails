@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Building2, TrendingUp, Loader2 } from "lucide-react";
 import { useAllIncidents } from "@/hooks/useAllIncidents";
-import { getOffice } from "@/services/office-service";
+import { useOffice } from "@/context/office-context";
 import { Office } from "@/types/office";
 
 interface OfficeRankingProps {
@@ -31,170 +31,127 @@ interface OfficeStats {
 function parseNumeric(value: string | number | undefined): number {
   if (value === undefined || value === null) return 0;
   if (typeof value === 'number') return value;
-  return parseFloat(value) || 0;
-}
-
-function formatCurrency(value: number): string {
-  return value.toLocaleString("es-PY", {
-    style: "currency",
-    currency: "PYG",
-    maximumFractionDigits: 0,
-  });
+  
+  const numericString = value.toString().replace(/[^\d.-]/g, '');
+  const parsed = parseFloat(numericString);
+  return isNaN(parsed) ? 0 : parsed;
 }
 
 export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps) {
+  // Use shared incident data - this reuses the same cache as other components
   const { 
     data: incidentsData, 
-    isLoading, 
-    error 
+    isLoading: isLoadingIncidents, 
+    error: incidentsError 
   } = useAllIncidents(fromDate, toDate, officeId);
+  
+  // Use the existing office context - this is cached and shared
+  const { 
+    offices = [], 
+    isLoading: isLoadingOffices,
+    error: officesError 
+  } = useOffice();
 
-  const incidents = incidentsData?.incidents || [];
-
-  const [officeData, setOfficeData] = React.useState<Record<number, Office>>({});
-  const [loadingOffices, setLoadingOffices] = React.useState(false);
-
-  // Fetch office details for all unique offices in incidents
-  React.useEffect(() => {
-    const fetchOfficeData = async () => {
-      if (!incidents.length) return;
-
-      setLoadingOffices(true);
-      const uniqueOfficeIds = [...new Set(incidents.map(inc => inc.Office))];
-      const officePromises = uniqueOfficeIds.map(id => getOffice(id));
-
-      try {
-        const offices = await Promise.all(officePromises);
-        const officeMap: Record<number, Office> = {};
-        offices.forEach((office, index) => {
-          if (office) {
-            officeMap[uniqueOfficeIds[index]] = office;
-          }
-        });
-        setOfficeData(officeMap);
-      } catch (error) {
-        console.error('Error fetching office data:', error);
-      } finally {
-        setLoadingOffices(false);
-      }
-    };
-
-    fetchOfficeData();
-  }, [incidents]);
-
-  const { topByCount, topByLoss } = React.useMemo(() => {
-    if (!incidents.length || loadingOffices) {
-      return { topByCount: [], topByLoss: [] };
-    }
-
-    // Build office stats
-    const officeStats: Record<number, OfficeStats> = {};
+  // Memoized calculation to avoid re-processing on every render
+  const officeStats = React.useMemo(() => {
+    if (!incidentsData?.incidents || !offices.length) return [];
     
-    incidents.forEach(incident => {
-      const officeId = incident.Office;
-      const office = officeData[officeId];
-      
-      if (!officeStats[officeId]) {
-        officeStats[officeId] = {
-          id: officeId,
-          name: office?.Name || `Sucursal ${officeId}`,
-          code: office?.Code || '',
-          address: office?.Address || '',
-          count: 0,
-          totalLoss: 0
-        };
+    // Create office lookup map for O(1) access
+    const officeMap = new Map<number, Office>();
+    offices.forEach((office: Office) => {
+      if (office.id) {
+        officeMap.set(office.id, office);
       }
-      
-      officeStats[officeId].count++;
-      officeStats[officeId].totalLoss += parseNumeric(incident.TotalLoss);
     });
-
-    const officeArray = Object.values(officeStats);
     
-    const topByCount = [...officeArray]
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 3);
+    // Group incidents by office efficiently
+    const statsMap = new Map<number, OfficeStats>();
     
-    const topByLoss = [...officeArray]
+    incidentsData.incidents.forEach((incident) => {
+      // Use the correct field name from Incident type
+      const officeId = incident.Office || incident.officeId;
+      if (!officeId) return;
+      
+      const office = officeMap.get(officeId);
+      if (!office) return;
+      
+      const currentStats = statsMap.get(officeId);
+      
+      // Try multiple strategies to get the loss value
+      const totalLossValue = incident.TotalLoss as string | undefined;
+      const montoEstimadoValue = incident.MontoEstimado as string | undefined;
+      const cashLoss = parseNumeric(incident.CashLoss);
+      const merchandiseLoss = parseNumeric(incident.MerchandiseLoss);
+      const otherLosses = parseNumeric(incident.OtherLosses);
+      const calculatedTotal = cashLoss + merchandiseLoss + otherLosses;
+      
+      let incidentLoss = 0;
+      if (totalLossValue) {
+        incidentLoss = parseNumeric(totalLossValue);
+      } else if (montoEstimadoValue) {
+        incidentLoss = parseNumeric(montoEstimadoValue);
+      } else {
+        // Calculate from individual components
+        incidentLoss = calculatedTotal;
+      }
+      
+      if (currentStats) {
+        currentStats.count += 1;
+        currentStats.totalLoss += incidentLoss;
+      } else {
+        statsMap.set(officeId, {
+          id: officeId,
+          name: office.Name || 'Sin nombre',
+          code: office.Code || 'N/A',
+          address: office.Address || 'Sin dirección',
+          count: 1,
+          totalLoss: incidentLoss,
+        });
+      }
+    });
+    
+    return Array.from(statsMap.values())
       .sort((a, b) => b.totalLoss - a.totalLoss)
-      .slice(0, 3);
+      .slice(0, 5);
+  }, [incidentsData?.incidents, offices]);
 
-    return { topByCount, topByLoss };
-  }, [incidents, officeData, loadingOffices]);
-
-  // If filtering by specific office, show message
-  if (officeId && officeId !== '') {
+  // Loading state
+  if (isLoadingIncidents || isLoadingOffices) {
     return (
-      <Card className="lg:col-span-2">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
             Ranking de Oficinas
           </CardTitle>
-          <CardDescription>Top 3 sucursales por incidentes y pérdidas totales</CardDescription>
+          <CardDescription>Oficinas con mayores pérdidas económicas</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
-            <Building2 className="h-12 w-12 mb-4 opacity-50" />
-            <p className="text-sm font-medium">Filtrado por una sucursal</p>
-            <p className="text-xs">El ranking global no aplica</p>
+          <div className="flex items-center justify-center h-32">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span className="ml-2 text-sm text-muted-foreground">
+              Cargando ranking...
+            </span>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  if (isLoading || loadingOffices) {
+  // Error state
+  if (incidentsError || officesError) {
     return (
-      <Card className="lg:col-span-2">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
             Ranking de Oficinas
           </CardTitle>
-          <CardDescription>Top 3 sucursales por incidentes y pérdidas totales</CardDescription>
+          <CardDescription>Oficinas con mayores pérdidas económicas</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-[200px]">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Ranking de Oficinas
-          </CardTitle>
-          <CardDescription>Top 3 sucursales por incidentes y pérdidas totales</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-sm text-destructive">Error al cargar datos de ranking</div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (topByCount.length === 0) {
-    return (
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Ranking de Oficinas
-          </CardTitle>
-          <CardDescription>Top 3 sucursales por incidentes y pérdidas totales</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
-            <Building2 className="h-12 w-12 mb-4 opacity-50" />
-            <p className="text-sm font-medium">Sin datos de ranking</p>
-            <p className="text-xs">No hay incidentes en este período</p>
+          <div className="text-center text-sm text-muted-foreground py-8">
+            Error al cargar los datos del ranking
           </div>
         </CardContent>
       </Card>
@@ -202,97 +159,52 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
   }
 
   return (
-    <Card className="lg:col-span-2">
+    <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Building2 className="h-5 w-5" />
           Ranking de Oficinas
         </CardTitle>
-        <CardDescription>Top 3 sucursales por incidentes y pérdidas totales</CardDescription>
+        <CardDescription>Oficinas con mayores pérdidas económicas</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Top by incident count */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/20">
-                <TrendingUp className="h-4 w-4 text-red-600 dark:text-red-400" />
-              </div>
-              <div>
-                <h4 className="font-semibold text-sm">Por incidentes</h4>
-                <p className="text-xs text-muted-foreground">Cantidad de casos</p>
-              </div>
+        <div className="space-y-2 sm:space-y-3">
+          {officeStats.length === 0 ? (
+            <div className="text-center text-sm text-muted-foreground py-8">
+              No hay datos disponibles para el período seleccionado
             </div>
-            
-            <div className="space-y-3">
-              {topByCount.map((office, index) => (
-                <div key={office.id} className="group relative">
-                  <div className="flex items-center gap-3 p-3 rounded-xl border-2 bg-gradient-to-r from-background to-muted/20 hover:shadow-md transition-all duration-200">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-red-500 to-red-600 text-white font-bold text-sm shrink-0">
-                      {index + 1}
+          ) : (
+            officeStats.map((office, index) => (
+              <div key={office.id} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border bg-card/50 hover:bg-muted/30 transition-colors">
+                <div className={`flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold text-white ${
+                  index === 0 ? 'bg-red-500' : 
+                  index === 1 ? 'bg-orange-500' : 
+                  index === 2 ? 'bg-yellow-500' : 'bg-gray-500'
+                }`}>
+                  {index + 1}
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-medium truncate">{office.name}</h4>
+                      <p className="text-xs text-muted-foreground truncate">{office.address}</p>
                     </div>
                     
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate">{office.name}</p>
-                      {office.address && (
-                        <p className="text-xs text-muted-foreground truncate">{office.address}</p>
-                      )}
-                    </div>
-                    
-                    <div className="text-right">
-                      <div className="flex items-center gap-1">
-                        <span className="text-lg font-bold text-red-600 dark:text-red-400">
-                          {office.count}
-                        </span>
+                    <div className="text-right ml-2">
+                      <div className="flex items-center gap-1 text-sm font-medium">
+                        <TrendingUp className="h-3 w-3 text-red-500" />
+                        Gs {office.totalLoss.toLocaleString('es-PY')}
                       </div>
-                      <p className="text-xs text-muted-foreground">incidentes</p>
+                      <div className="text-xs text-muted-foreground">
+                        {office.count} {office.count === 1 ? 'incidente' : 'incidentes'}
+                      </div>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Top by losses */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/20">
-                <Building2 className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               </div>
-              <div>
-                <h4 className="font-semibold text-sm">Por pérdidas</h4>
-                <p className="text-xs text-muted-foreground">Monto total</p>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              {topByLoss.map((office, index) => (
-                <div key={office.id} className="group relative">
-                  <div className="flex items-center gap-3 p-3 rounded-xl border-2 bg-gradient-to-r from-background to-muted/20 hover:shadow-md transition-all duration-200">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold text-sm shrink-0">
-                      {index + 1}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate">{office.name}</p>
-                      {office.address && (
-                        <p className="text-xs text-muted-foreground truncate">{office.address}</p>
-                      )}
-                    </div>
-                    
-                    <div className="text-right">
-                      <div className="flex items-center gap-1">
-                        <span className="text-lg font-bold text-amber-600 dark:text-amber-400">
-                          {formatCurrency(office.totalLoss)}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">pérdidas</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+            ))
+          )}
         </div>
       </CardContent>
     </Card>

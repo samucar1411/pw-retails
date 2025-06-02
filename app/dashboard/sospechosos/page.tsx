@@ -4,9 +4,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { User } from 'lucide-react';
 import { api } from '@/services/api';
+import { getSuspectStatuses } from '@/services/suspect-service';
 import {
   Table,
   TableBody,
@@ -17,9 +17,10 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, PlusCircle, Search } from 'lucide-react';
+import { Loader2, PlusCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSuspects } from '@/context/suspect-context';
+import { SuspectStatus } from '@/types/suspect';
 import {
   Pagination,
   PaginationContent,
@@ -33,7 +34,8 @@ interface SuspectUI {
   id: string;
   name: string;
   alias: string;
-  status: 'active' | 'inactive';
+  statusId: number;
+  statusName: string;
   lastSeen: string;
   incidents: number;
   photoUrl?: string;
@@ -42,8 +44,9 @@ interface SuspectUI {
 export default function SuspectsPage() {
   const router = useRouter();
   const [page, setPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState('');
   const pageSize = 10;
+  const [suspectStatuses, setSuspectStatuses] = useState<SuspectStatus[]>([]);
+  const [loadingStatuses, setLoadingStatuses] = useState(true);
 
   const {
     suspects: apiSuspects,
@@ -53,7 +56,27 @@ export default function SuspectsPage() {
     pagination
   } = useSuspects();
 
-  // Calculate total pages based on pagination data
+  // Load suspect statuses
+  useEffect(() => {
+    const loadStatuses = async () => {
+      try {
+        setLoadingStatuses(true);
+        const statuses = await getSuspectStatuses();
+        setSuspectStatuses(statuses);
+      } catch (error) {
+        console.error('Error loading suspect statuses:', error);
+        // Fallback to basic statuses
+        setSuspectStatuses([
+          { id: 1, Name: 'Libre' },
+          { id: 2, Name: 'Detenido' }
+        ]);
+      } finally {
+        setLoadingStatuses(false);
+      }
+    };
+
+    loadStatuses();
+  }, []);
 
   // State for incidents data
   const [incidentsData, setIncidentsData] = useState<Record<string, { lastSeen: string; count: number }>>({});
@@ -109,6 +132,26 @@ export default function SuspectsPage() {
     }
   }, [apiSuspects]);
 
+  // Helper function to get status name by ID
+  const getStatusName = (statusId: number): string => {
+    const status = suspectStatuses.find(s => s.id === statusId);
+    return status?.Name || `Estado ${statusId}`;
+  };
+
+  // Helper function to get status variant for Badge
+  const getStatusVariant = (statusId: number): "default" | "secondary" | "destructive" | "outline" => {
+    // You can customize this logic based on your status IDs
+    // For example: 1 = Libre (default), 2 = Detenido (destructive), etc.
+    switch (statusId) {
+      case 1:
+        return 'default'; // Libre
+      case 2:
+        return 'destructive'; // Detenido
+      default:
+        return 'secondary';
+    }
+  };
+
   // Memoize the transformation to prevent unnecessary recalculations
   const suspects: SuspectUI[] = useMemo(() => {
     return apiSuspects.map(suspect => {
@@ -119,25 +162,14 @@ export default function SuspectsPage() {
         id: suspect.id,
         name: suspect.Alias || 'Sin alias',
         alias: suspect.Alias || 'Sin alias',
-        status: suspect.Status === 1 ? 'active' : 'inactive',
+        statusId: suspect.Status || 1,
+        statusName: getStatusName(suspect.Status || 1),
         lastSeen: isLoading ? 'Cargando...' : incidentsInfo.lastSeen,
         incidents: incidentsInfo.count,
         photoUrl: suspect.PhotoUrl
       };
     });
-  }, [apiSuspects, incidentsData, loadingIncidents]);
-
-  // Handle search with debounce
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    setPage(1); // Reset to first page when searching
-    fetchSuspects({
-      page: 1,
-      pageSize,
-      search: value
-    });
-  };
+  }, [apiSuspects, incidentsData, loadingIncidents, suspectStatuses, getStatusName]);
 
   // Handle page change
   const handlePageChange = (newPage: number) => {
@@ -146,7 +178,6 @@ export default function SuspectsPage() {
     fetchSuspects({
       page: newPage,
       pageSize,
-      search: searchQuery
     });
   };
 
@@ -178,19 +209,6 @@ export default function SuspectsPage() {
           <PlusCircle className="mr-2 h-4 w-4" />
           Agregar Sospechoso
         </Button>
-      </div>
-
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Buscar sospechosos..."
-            className="w-full rounded-lg bg-background pl-8 md:w-[300px] lg:w-[400px]"
-            value={searchQuery}
-            onChange={handleSearch}
-          />
-        </div>
       </div>
 
       {apiError ? (
@@ -245,9 +263,16 @@ export default function SuspectsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={suspect.status === 'active' ? 'default' : 'secondary'}>
-                        {suspect.status === 'active' ? 'Activo' : 'Inactivo'}
-                      </Badge>
+                      {loadingStatuses ? (
+                        <div className="flex items-center">
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                          <span className="text-sm text-muted-foreground">Cargando...</span>
+                        </div>
+                      ) : (
+                        <Badge variant={getStatusVariant(suspect.statusId)}>
+                          {suspect.statusName}
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>{suspect.lastSeen}</TableCell>
                     <TableCell>{suspect.incidents}</TableCell>
@@ -265,7 +290,7 @@ export default function SuspectsPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} className="h-24 text-center">
-                    {searchQuery ? 'No se encontraron resultados' : 'No hay sospechosos registrados'}
+                    No hay sospechosos registrados
                   </TableCell>
                 </TableRow>
               )}

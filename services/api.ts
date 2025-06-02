@@ -4,7 +4,6 @@ import qs from 'qs';
 /* Instancia global ------------------------------------------------ */
 export const api = axios.create({
   baseURL: '/',                   // mismo origen; NO añade ningún prefijo
-  withCredentials: true,
   timeout: 15000,
   paramsSerializer: { serialize: (p) => qs.stringify(p, { arrayFormat: 'repeat' }) },
   headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
@@ -49,7 +48,7 @@ export interface ApiResponse<T> { data: T; status: number; }
 
 export const fetchApi = async <T>(
   url: string,
-  opts?: { method?: 'GET'|'POST'|'PUT'|'PATCH'|'DELETE'; data?: unknown; params?: any; headers?: RawAxiosRequestHeaders }
+  opts?: { method?: 'GET'|'POST'|'PUT'|'PATCH'|'DELETE'; data?: unknown; params?: Record<string, unknown>; headers?: RawAxiosRequestHeaders }
 ): Promise<ApiResponse<T>> => {
   const r: AxiosResponse<T> = await api.request({ url, method: opts?.method ?? 'GET', ...opts });
   return { data: r.data, status: r.status };

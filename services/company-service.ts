@@ -35,8 +35,10 @@ export const getCompanyById = async (id: string): Promise<Company | null> => {
 
     // Validate the response data structure
     const company = response.data;
-    if (!company.id || !company.name) {
-      console.warn("Invalid company data received:", company);
+    
+    // Fix validation - id can be number and we just need name
+    if (!company.name) {
+      console.warn("Invalid company data received - missing name:", company);
       return null;
     }
 

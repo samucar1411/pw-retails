@@ -151,10 +151,8 @@ export async function getAllOffices(): Promise<Office[]> {
   const MAX_PAGES = 10; // Safety limit to prevent infinite loops
   
   try {
-    console.log(': Starting to fetch all offices');
     
     while (page <= MAX_PAGES) { // Add safety limit
-      console.log(`: Fetching page ${page}`);
       const response = await getOffices({ page, pageSize });
       
       if (!response.results || response.results.length === 0) {
@@ -163,11 +161,9 @@ export async function getAllOffices(): Promise<Office[]> {
       }
       
       allOffices.push(...response.results);
-      console.log(`: Added ${response.results.length} offices, total now: ${allOffices.length}`);
       
       // More robust check for next page
       if (!response.next || response.results.length < pageSize) {
-        console.log(': No next page or incomplete page, breaking loop');
         break;
       }
       

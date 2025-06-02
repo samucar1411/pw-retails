@@ -40,7 +40,7 @@ export const IncidentTypeInfo = React.memo(function IncidentTypeInfo({ typeId }:
     fetchIncidentType();
   }, [typeId]);
   
-  if (isLoading) return <LoadingState variant="inline" size="xs" />;
+  if (isLoading) return <LoadingState variant="inline" />;
   if (error) return <span className="text-xs text-destructive">Error</span>;
   if (!incidentType) return <span className="text-xs text-muted-foreground">No disponible</span>;
   
@@ -54,9 +54,6 @@ export const IncidentTypeInfo = React.memo(function IncidentTypeInfo({ typeId }:
       <TooltipContent side="right" className="max-w-[300px] text-sm">
         <div className="space-y-1">
           <p className="font-semibold">{incidentType.Name}</p>
-          {incidentType.Description && (
-            <p className="text-muted-foreground">{incidentType.Description}</p>
-          )}
         </div>
       </TooltipContent>
     </Tooltip>

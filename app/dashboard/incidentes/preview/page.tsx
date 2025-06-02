@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { loadMockData } from './mock-data';
 import { PoliceReportPreview } from '@/components/police-report-preview';
+import { Incident } from '@/types/incident';
 
 type Suspect = {
   id: string;
@@ -53,7 +54,7 @@ type IncidentData = {
 
 export default function IncidentPreviewPage() {
   const router = useRouter();
-  const [incidentData, setIncidentData] = useState<IncidentData | null>(null);
+  const [incidentData, setIncidentData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [generatingPdf, setGeneratingPdf] = useState(false);
 
@@ -153,7 +154,7 @@ export default function IncidentPreviewPage() {
         </div>
       </div>
       
-      <PoliceReportPreview incidentData={incidentData} />
+      <PoliceReportPreview incidentData={incidentData} incidentTypes={[]} />
       
     </div>
   );

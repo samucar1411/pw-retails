@@ -9,8 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import Link from "next/link";
 import { useIncidents } from "@/hooks/use-incident";
 import { Incident } from "@/types/incident";
-import { Hash, Loader2, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Hash, Loader2 } from "lucide-react";
 import React, { useMemo } from "react";
 import { formatDate } from "@/lib/date-format";
 import { ErrorDisplay } from "@/components/ui/error-display";
@@ -142,16 +141,6 @@ function IncidentsTableComponent() {
 
   return (
     <div className="w-full"> 
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar incidentes..."
-            className="pl-8"
-          />
-        </div>
-      </div>
-      
       <div className="rounded-md border">
         <Table>
           <TableHeader>

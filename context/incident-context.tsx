@@ -9,6 +9,7 @@ import React, {
   ReactNode,
 } from "react";
 import { Incident, IncidentType } from "@/types/incident";
+import { SelectedSuspectFormValues } from "@/validators/incident";
 import { File } from "@/types/common";
 import {
   getIncidents,
@@ -19,6 +20,21 @@ import {
   uploadIncidentAttachments,
   getIncidentTypes,
 } from "@/services/incident-service";
+
+interface IncidentFormData {
+  officeId: number;
+  date: string;
+  time: string;
+  incidentTypeId: number;
+  description?: string;
+  cashLoss: number;
+  merchandiseLoss: number;
+  otherLosses: number;
+  totalLoss: number;
+  notes?: string;
+  selectedSuspects?: SelectedSuspectFormValues[];
+  suspects?: string[]; // Array of suspect UUIDs for direct use
+}
 
 interface IncidentContextType {
   loadIncidentsWithFilters: (filters: {
@@ -38,7 +54,7 @@ interface IncidentContextType {
   loadIncidentTypes: () => Promise<void>;
   loadIncident: (id: number) => Promise<void>;
   updateIncident: (id: number, data: Partial<Incident>) => Promise<Incident | null>;
-  createIncident: (data: FormData) => Promise<Incident | null>;
+  createIncident: (data: FormData | IncidentFormData) => Promise<Incident | null>;
   deleteIncident: (id: number) => Promise<void>;
   uploadAttachments: (id: number, files: globalThis.File[]) => Promise<void>;
   getByOffice: (officeId: number) => Promise<void>;
@@ -56,13 +72,36 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
 
   const loadIncidents = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const data = await getIncidents();
-      setIncidents(data.results);
+      // Use basic parameters to avoid potential parameter conflicts
+      const data = await getIncidents({
+        format: 'json',
+        ordering: '-Date'
+      });
+      
+      setIncidents(data.results || []);
       setError(null);
     } catch (error) {
       console.error("Error loading incidents:", error);
-      setError("Failed to load incidents");
+      
+      // More detailed error handling
+      let errorMessage = "Failed to load incidents";
+      if (error && typeof error === 'object') {
+        const errorObj = error as { status?: number; response?: { status?: number } };
+        const status = errorObj.status || errorObj.response?.status;
+        
+        if (status === 400) {
+          errorMessage = "Solicitud inválida al cargar incidentes";
+        } else if (status === 403) {
+          errorMessage = "No tiene permisos para ver los incidentes";
+        } else if (status === 500) {
+          errorMessage = "Error del servidor al cargar incidentes";
+        }
+      }
+      
+      setError(errorMessage);
+      setIncidents([]); // Set empty array to prevent undefined issues
     } finally {
       setLoading(false);
     }
@@ -120,21 +159,97 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const createIncidentHandler = useCallback(async (data: FormData) => {
+  const createIncidentHandler = useCallback(async (data: FormData | IncidentFormData) => {
     setLoading(true);
     try {
-      const incidentData: Partial<Incident> = {
-        officeId: Number(data.get('officeId')),
-        date: data.get('date') as string,
-        time: data.get('time') as string,
-        incidentTypeId: Number(data.get('incidentTypeId')),
-        description: data.get('description') as string,
-        cashLoss: Number(data.get('cashLoss')),
-        merchandiseLoss: Number(data.get('merchandiseLoss')),
-        otherLosses: Number(data.get('otherLosses')),
-        totalLoss: Number(data.get('totalLoss')),
-        notes: data.get('notes') as string,
-      };
+      // Using any to match the exact API payload structure as required
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let incidentData: any;
+      
+      if (data instanceof FormData) {
+        console.log('Processing FormData');
+        console.log('FormData entries:');
+        for (const [key, value] of data.entries()) {
+          console.log(`${key}:`, value);
+        }
+        
+        // Map form fields to exact API field names as shown in payload example
+        const description = (data.get('description') as string)?.trim();
+        const notes = (data.get('notes') as string)?.trim();
+        
+        incidentData = {
+          Office: Number(data.get('officeId')) || 0,
+          Date: (data.get('date') as string) || '',
+          Time: (data.get('time') as string) || '',
+          IncidentType: Number(data.get('incidentTypeId')) || 1,
+          // Only include Description if it has content
+          ...(description && { Description: description }),
+          CashLoss: Number(data.get('cashLoss')) || 0,
+          MerchandiseLoss: Number(data.get('merchandiseLoss')) || 0,
+          OtherLosses: Number(data.get('otherLosses')) || 0,
+          // Only include Notes if it has content
+          ...(notes && { Notes: notes }),
+          Attachments: [],
+          Report: null,
+          // For FormData, suspects would need to be handled separately as it's complex data
+          Suspects: [],
+        };
+      } else {
+        console.log('Processing direct object data:', data);
+        console.log('Selected suspects in form data:', data.selectedSuspects);
+        console.log('Direct suspects field:', data.suspects);
+        
+        // Use the suspects field directly if it exists, otherwise try to map from selectedSuspects
+        let finalSuspects: string[] = [];
+        
+        if (data.suspects && Array.isArray(data.suspects)) {
+          // Use suspects field directly - it's already formatted correctly
+          finalSuspects = data.suspects;
+          console.log('Using direct suspects field:', finalSuspects);
+        } else if (data.selectedSuspects && Array.isArray(data.selectedSuspects)) {
+          // Log each suspect individually for debugging
+          data.selectedSuspects.forEach((suspect, index) => {
+            console.log(`Suspect ${index}:`, suspect);
+            console.log(`  - apiId: ${suspect.apiId} (type: ${typeof suspect.apiId})`);
+            console.log(`  - alias: ${suspect.alias}`);
+            console.log(`  - isNew: ${suspect.isNew}`);
+          });
+          
+          // Map selectedSuspects to array of IDs
+          finalSuspects = data.selectedSuspects
+            ?.map(suspect => {
+              console.log(`Mapping suspect apiId: "${suspect.apiId}" (type: ${typeof suspect.apiId})`);
+              return suspect.apiId;
+            })
+            .filter((id): id is string => {
+              const isValidId = Boolean(id) && typeof id === 'string' && id.trim() !== '';
+              console.log(`Filtering ID "${id}": ${isValidId ? 'KEPT' : 'REMOVED'}`);
+              return isValidId;
+            }) || [];
+        }
+        
+        console.log('Final suspects array:', finalSuspects);
+        
+        incidentData = {
+          Date: data.date,
+          Time: data.time,
+          // Only include Description if it has content
+          ...(data.description?.trim() && { Description: data.description.trim() }),
+          CashLoss: data.cashLoss || 0,
+          MerchandiseLoss: data.merchandiseLoss || 0,
+          OtherLosses: data.otherLosses || 0,
+          // Only include Notes if it has content  
+          ...(data.notes?.trim() && { Notes: data.notes.trim() }),
+          Attachments: [],
+          Report: null,
+          Office: data.officeId,
+          IncidentType: data.incidentTypeId,
+          // Use the final suspects array
+          Suspects: finalSuspects,
+        };
+      }
+
+      console.log('Processed incident data:', incidentData);
 
       const created = await createIncident(incidentData);
       setIncidents(prev => [...prev, created]);
