@@ -167,12 +167,6 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
       let incidentData: any;
       
       if (data instanceof FormData) {
-        console.log('Processing FormData');
-        console.log('FormData entries:');
-        for (const [key, value] of data.entries()) {
-          console.log(`${key}:`, value);
-        }
-        
         // Map form fields to exact API field names as shown in payload example
         const description = (data.get('description') as string)?.trim();
         const notes = (data.get('notes') as string)?.trim();
@@ -195,40 +189,21 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
           Suspects: [],
         };
       } else {
-        console.log('Processing direct object data:', data);
-        console.log('Selected suspects in form data:', data.selectedSuspects);
-        console.log('Direct suspects field:', data.suspects);
-        
         // Use the suspects field directly if it exists, otherwise try to map from selectedSuspects
         let finalSuspects: string[] = [];
         
         if (data.suspects && Array.isArray(data.suspects)) {
           // Use suspects field directly - it's already formatted correctly
           finalSuspects = data.suspects;
-          console.log('Using direct suspects field:', finalSuspects);
         } else if (data.selectedSuspects && Array.isArray(data.selectedSuspects)) {
-          // Log each suspect individually for debugging
-          data.selectedSuspects.forEach((suspect, index) => {
-            console.log(`Suspect ${index}:`, suspect);
-            console.log(`  - apiId: ${suspect.apiId} (type: ${typeof suspect.apiId})`);
-            console.log(`  - alias: ${suspect.alias}`);
-            console.log(`  - isNew: ${suspect.isNew}`);
-          });
-          
           // Map selectedSuspects to array of IDs
           finalSuspects = data.selectedSuspects
-            ?.map(suspect => {
-              console.log(`Mapping suspect apiId: "${suspect.apiId}" (type: ${typeof suspect.apiId})`);
-              return suspect.apiId;
-            })
+            ?.map(suspect => suspect.apiId)
             .filter((id): id is string => {
               const isValidId = Boolean(id) && typeof id === 'string' && id.trim() !== '';
-              console.log(`Filtering ID "${id}": ${isValidId ? 'KEPT' : 'REMOVED'}`);
               return isValidId;
             }) || [];
         }
-        
-        console.log('Final suspects array:', finalSuspects);
         
         incidentData = {
           Date: data.date,
@@ -238,6 +213,7 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
           CashLoss: data.cashLoss || 0,
           MerchandiseLoss: data.merchandiseLoss || 0,
           OtherLosses: data.otherLosses || 0,
+          TotalLoss: data.totalLoss || 0, // ¡Este campo faltaba!
           // Only include Notes if it has content  
           ...(data.notes?.trim() && { Notes: data.notes.trim() }),
           Attachments: [],
@@ -248,8 +224,6 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
           Suspects: finalSuspects,
         };
       }
-
-      console.log('Processed incident data:', incidentData);
 
       const created = await createIncident(incidentData);
       setIncidents(prev => [...prev, created]);

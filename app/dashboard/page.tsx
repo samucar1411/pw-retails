@@ -17,6 +17,7 @@ import { OfficeMap } from "@/components/dashboard/incident-map"
 import { IncidentDistributionChart } from "@/components/dashboard/incident-distribution-chart"
 import { EconomicBarChart } from "@/components/dashboard/economic-bar-chart"
 import { OfficeRanking } from "@/components/dashboard/office-ranking"
+import { HistoricalComparison } from "@/components/dashboard/historical-comparison"
 import { TopRepeatSuspects } from "@/components/dashboard/top-repeat-suspects"
 
 function DashboardPage() {
@@ -121,9 +122,15 @@ function DashboardPage() {
           officeId={filters.officeId}
         />
       </div>
-      
-      {/* Office Ranking */}
-      <div className="mb-6">
+
+      {/* Historical Comparison and Office Ranking Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <HistoricalComparison 
+          fromDate={filters.fromDate}
+          toDate={filters.toDate}
+          officeId={filters.officeId}
+        />
+        
         <OfficeRanking 
           fromDate={filters.fromDate}
           toDate={filters.toDate}

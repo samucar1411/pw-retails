@@ -26,7 +26,6 @@ async function fetchAllSuspectsProgressive(): Promise<AllSuspectsResult> {
   // Return cached data if available and recent
   if (suspectsCache.has(cacheKey)) {
     const cached = suspectsCache.get(cacheKey)!;
-    console.log(`Using cached suspects: ${cached.suspects.length} items`);
     return cached;
   }
   
@@ -43,7 +42,7 @@ async function fetchAllSuspectsProgressive(): Promise<AllSuspectsResult> {
   const BACKGROUND_BATCH_SIZE = 60;
   const MAX_TOTAL_PAGES = 75; // Conservative but sufficient maximum
   
-  console.log(`Starting suspects fetch...`);
+
   
   // Phase 1: Quick initial load
   while (hasNextPage && currentPage <= INITIAL_PAGES) {
@@ -158,14 +157,13 @@ async function fetchAllSuspectsProgressive(): Promise<AllSuspectsResult> {
   // Cache final result with longer TTL
   suspectsCache.set(cacheKey, finalResult);
   
-  console.log(`Completed suspects fetch: ${allSuspects.length} suspects from ${currentPage - 1} pages`);
+
   return finalResult;
 }
 
 // Clear cache when needed
 export function clearSuspectsCache() {
   suspectsCache.clear();
-  console.log('Suspects cache cleared');
 }
 
 export function useAllSuspects() {

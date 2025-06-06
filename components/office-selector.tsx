@@ -31,7 +31,7 @@ export const OfficeSelectorCompact = () => {
   if (isLoading) {
     return (
       <Button variant="ghost" size="sm" className="h-12 w-full justify-start gap-3 px-2">
-        Cargando oficinas...
+        Cargando sucursales...
       </Button>
     );
   }
@@ -39,7 +39,7 @@ export const OfficeSelectorCompact = () => {
   if (error) {
     return (
       <Button variant="ghost" size="sm" className="h-12 w-full justify-start gap-3 px-2 text-destructive">
-        Error cargando oficinas
+        Error cargando sucursales
       </Button>
     );
   }

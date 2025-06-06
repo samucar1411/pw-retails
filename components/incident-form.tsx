@@ -104,14 +104,19 @@ export function IncidentForm() {
     resolver: zodResolver(incidentSchema),
   });
 
-  // Watch loss values to calculate total
+  // Watch only the loss fields (not totalLoss to avoid infinite loop)
   const watchedLosses = form.watch(['cashLoss', 'merchandiseLoss', 'otherLosses']);
   
-  // Auto-calculate total loss
+  // Auto-update total loss whenever any loss value changes
   useEffect(() => {
     const [cash, merchandise, other] = watchedLosses;
     const total = (cash || 0) + (merchandise || 0) + (other || 0);
-    form.setValue('totalLoss', total);
+    
+    // Only update if the calculated total is different from current totalLoss
+    const currentTotal = form.getValues('totalLoss');
+    if (currentTotal !== total) {
+      form.setValue('totalLoss', total, { shouldValidate: false });
+    }
   }, [watchedLosses, form]);
 
   // Set default incident type when types are loaded
@@ -135,9 +140,17 @@ export function IncidentForm() {
 
 
   const onSubmit = async (values: IncidentFormValues) => {
-    console.log('Form submitted with values:', values); // Debug log
+    // Calculate total loss directly from current values to ensure accuracy
+    const cashLoss = values.cashLoss || 0;
+    const merchandiseLoss = values.merchandiseLoss || 0;
+    const otherLosses = values.otherLosses || 0;
+    const calculatedTotal = cashLoss + merchandiseLoss + otherLosses;
     
-    // Extract suspect IDs from selected suspects
+    // Update form with calculated total
+    form.setValue('totalLoss', calculatedTotal);
+    
+
+    
     const suspectIds = values.selectedSuspects
       ?.filter(suspect => {
         // Include suspects that have a valid apiId (either existing or newly created)
@@ -145,11 +158,8 @@ export function IncidentForm() {
       })
       .map(suspect => suspect.apiId!) || [];
     
-    console.log('Extracted suspect IDs:', suspectIds);
-    
     // Validate that required fields are present
     if (!values.officeId) {
-      console.log('Validation failed: officeId missing');
       toast({
         title: 'Error',
         description: 'Debe seleccionar una oficina',
@@ -158,30 +168,24 @@ export function IncidentForm() {
       return;
     }
 
-    console.log('All validations passed, creating incident...');
     setLoading(true);
     try {
-      console.log('Creating incident with validated values'); // Debug log
-      
-      // Send data directly as object with suspect IDs
       const incidentData = {
         officeId: values.officeId,
         date: values.date,
         time: values.time,
         incidentTypeId: values.incidentTypeId,
-        // Only include description if it has content
-        ...(values.description?.trim() && { description: values.description.trim() }),
-        cashLoss: values.cashLoss || 0,
-        merchandiseLoss: values.merchandiseLoss || 0,
-        otherLosses: values.otherLosses || 0,
-        totalLoss: values.totalLoss || 0,
-        // Only include notes if it has content
-        ...(values.notes?.trim() && { notes: values.notes.trim() }),
-        // Include suspects array
-        ...(suspectIds.length > 0 && { suspects: suspectIds }),
+        description: values.description?.trim(),
+        cashLoss: cashLoss,
+        merchandiseLoss: merchandiseLoss,
+        otherLosses: otherLosses,
+        totalLoss: calculatedTotal, // Use the directly calculated total
+        notes: values.notes?.trim(),
+        suspects: suspectIds, // Use the suspects field directly
       };
 
-      console.log('Incident data to send:', incidentData); // Debug log
+
+
       await createIncident(incidentData);
       
       toast({ title: 'Incidente creado exitosamente' });
@@ -217,9 +221,6 @@ export function IncidentForm() {
         <Form {...form}>
           <form 
             onSubmit={form.handleSubmit(onSubmit, (errors) => {
-              console.log('Form validation errors:', errors);
-              console.log('Form values at error:', form.getValues());
-              
               // Show first validation error
               const firstError = Object.values(errors)[0];
               if (firstError) {
@@ -260,7 +261,7 @@ export function IncidentForm() {
                             {isLoadingOffices ? (
                               <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Cargando oficinas...
+                                Cargando sucursales...
                               </>
                             ) : field.value ? (
                               offices.find((office) => office.id === field.value)?.Name
@@ -400,7 +401,9 @@ export function IncidentForm() {
                       <CurrencyInput
                         label="Pérdida en Efectivo"
                         value={field.value || 0}
-                        onChange={field.onChange}
+                        onChange={(value) => {
+                          field.onChange(value);
+                        }}
                         placeholder="0"
                       />
                       <FormMessage />
@@ -415,7 +418,9 @@ export function IncidentForm() {
                       <CurrencyInput
                         label="Pérdida en Mercancía"
                         value={field.value || 0}
-                        onChange={field.onChange}
+                        onChange={(value) => {
+                          field.onChange(value);
+                        }}
                         placeholder="0"
                       />
                       <FormMessage />
@@ -430,7 +435,9 @@ export function IncidentForm() {
                       <CurrencyInput
                         label="Otras Pérdidas"
                         value={field.value || 0}
-                        onChange={field.onChange}
+                        onChange={(value) => {
+                          field.onChange(value);
+                        }}
                         placeholder="0"
                       />
                       <FormMessage />
@@ -566,12 +573,6 @@ export function IncidentForm() {
               <Button 
                 type="submit" 
                 disabled={loading}
-                onClick={() => {
-                  console.log('Submit button clicked');
-                  console.log('Current form values:', form.getValues());
-                  console.log('Form errors:', form.formState.errors);
-                  console.log('Form is valid:', form.formState.isValid);
-                }}
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Guardar Incidente

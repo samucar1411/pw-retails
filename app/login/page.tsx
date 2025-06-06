@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, LockKeyhole, User } from "lucide-react";
 import Link from "next/link";
+import { ThemeLogo } from "@/components/theme-logo";
 
 export default function LoginPage() {
   const { loginWithUserInfo, isLoading } = useAuth();
@@ -37,7 +38,10 @@ export default function LoginPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/40">
       <Card className="w-full max-w-md mx-4">
-        <CardHeader className="space-y-1">
+        <CardHeader className="space-y-4">
+          <div className="flex justify-center">
+            <ThemeLogo width={250} height={50} />
+          </div>
           <CardTitle className="text-2xl text-center">Ingresar al Sistema</CardTitle>
           <CardDescription className="text-center">
             Ingrese sus credenciales para acceder

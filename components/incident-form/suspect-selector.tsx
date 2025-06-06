@@ -56,8 +56,7 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
 
   // Debug: Log when suspectFields changes
   useEffect(() => {
-    console.log('SuspectFields updated:', suspectFields);
-    console.log('Number of suspects:', suspectFields.length);
+    // Suspects updated
   }, [suspectFields]);
 
   // Load suspect statuses on component mount
@@ -67,8 +66,7 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
         setIsLoadingStatuses(true);
         const statuses = await getSuspectStatuses();
         setSuspectStatuses(statuses);
-      } catch (error) {
-        console.error('Error loading suspect statuses:', error);
+      } catch {
         toast({
           title: 'Error',
           description: 'No se pudieron cargar los estados de sospechosos',
@@ -96,53 +94,32 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
       return;
     }
 
-    console.log('Searching for:', query);
     setIsSearching(true);
     
     try {
-      // Try search with different parameters to debug
-      console.log('Calling searchSuspectsApi...');
-      
       const response = await searchSuspectsApi(query, { 
         page: 1, 
         page_size: 50
       });
       
-      console.log('Search response:', response);
-      console.log('Response results:', response?.results);
-      console.log('Response count:', response?.count);
-      
       const results = response?.results || [];
       const count = response?.count || 0;
-      
-      console.log('Processed results:', results);
-      console.log('Results length:', results.length);
       
       setSearchResults(results);
       setTotalResults(count);
       setShowResults(true);
       
-      if (results.length === 0) {
-        console.log('No results found for query:', query);
-      }
-      
-    } catch (error) {
-      console.error('Error searching suspects:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
-      
+    } catch {
       // Try a simpler search without pagination parameters
       try {
-        console.log('Trying fallback search...');
         const fallbackResponse = await searchSuspectsApi(query);
-        console.log('Fallback response:', fallbackResponse);
         
         const results = fallbackResponse?.results || [];
         setSearchResults(results);
         setTotalResults(fallbackResponse?.count || 0);
         setShowResults(true);
         
-      } catch (fallbackError) {
-        console.error('Fallback search also failed:', fallbackError);
+      } catch {
         toast({
           title: 'Error',
           description: 'No se pudo realizar la búsqueda',
@@ -163,7 +140,6 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
-    console.log('Search query changed to:', query);
     setSearchQuery(query);
     
     if (query.trim()) {
@@ -176,7 +152,6 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
   };
 
   const handleSearchFocus = () => {
-    console.log('Search input focused, current query:', searchQuery);
     if (searchQuery.trim() && searchResults.length > 0) {
       setShowResults(true);
     }
@@ -190,15 +165,11 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
   };
 
   const handleSelectSuspect = useCallback((suspect: Suspect) => {
-    console.log('Selecting suspect:', suspect);
-    console.log('Current suspectFields before adding:', suspectFields);
-    
     // Keep the suspect ID as string (it's a UUID)
     const suspectId = suspect.id;
     
     // Check if the ID exists
     if (!suspectId) {
-      console.error('Missing suspect ID:', suspect);
       toast({
         title: 'Error',
         description: 'ID de sospechoso faltante',
@@ -209,7 +180,6 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
     
     const exists = suspectFields.some(s => s.apiId === suspectId);
     if (exists) {
-      console.log('Suspect already exists');
       // Just return without showing any notification
       return;
     }
@@ -224,27 +194,14 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
         isNew: false,
       };
       
-      console.log('Adding suspect to form:', suspectToAdd);
-      console.log('Suspect ID (should be string):', suspectToAdd.apiId, typeof suspectToAdd.apiId);
-      console.log('Suspect alias:', suspectToAdd.alias);
-      console.log('Suspect statusId:', suspectToAdd.statusId);
-      
       appendSuspect(suspectToAdd);
-      
-      console.log('Suspect added successfully, waiting for re-render...');
-      
-      // Use setTimeout to check if the state updated after the next render
-      setTimeout(() => {
-        console.log('Current suspectFields after render:', suspectFields);
-      }, 100);
       
       // Clear search and hide results
       setShowResults(false);
       setSearchQuery('');
       setSearchResults([]);
       setTotalResults(0);
-    } catch (error) {
-      console.error('Error adding suspect:', error);
+    } catch {
       // Only show error notifications for actual errors
       toast({
         title: 'Error',
@@ -317,7 +274,6 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
         const uploadResult = await uploadResponse.json();
 
         if (!uploadResponse.ok || !uploadResult.success) {
-          console.error('Image upload failed:', uploadResult.message);
           toast({
             title: 'Error de Subida',
             description: `No se pudo subir la imagen: ${uploadResult.message || 'Error desconocido'}`,
@@ -350,22 +306,14 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
           isNew: false,
         };
         
-        console.log('Adding created suspect to form:', suspectToAdd);
-        console.log('Created suspect ID (should be string):', suspectToAdd.apiId, typeof suspectToAdd.apiId);
-        console.log('Current suspectFields before adding created suspect:', suspectFields);
         appendSuspect(suspectToAdd);
-        console.log('Current suspectFields after adding created suspect:', suspectFields);
 
         // Remove the card
         removeNewSuspectCard(cardId);
-
-        // No toast notification - user doesn't like them
-        console.log(`${createdSuspect.Alias} was created and added to incident`);
       } else {
         throw new Error('No se pudo crear el sospechoso');
       }
-    } catch (error) {
-      console.error('Error creating suspect:', error);
+    } catch {
       toast({
         title: 'Error',
         description: 'No se pudo crear el sospechoso. Verifique los datos e intente nuevamente.',
@@ -452,7 +400,6 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
                         <CommandItem
                           key={suspect.id}
                           onSelect={() => {
-                            console.log('Command item selected:', suspect.id);
                             handleSelectSuspect(suspect);
                           }}
                           className="cursor-pointer"
@@ -460,7 +407,6 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
                           <div 
                             className="flex items-center gap-3 w-full"
                             onClick={(e) => {
-                              console.log('Div clicked:', suspect.id);
                               e.preventDefault();
                               e.stopPropagation();
                               handleSelectSuspect(suspect);
