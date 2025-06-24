@@ -163,15 +163,56 @@ export function OfficeMap({ fromDate, toDate, officeId }: OfficeMapProps) {
       currentMarkers.forEach(marker => marker.remove());
       markers.current = [];
 
-      // Add new markers for each visible incident
+      // Get unique office IDs and incident type IDs
+      const uniqueOfficeIds = [...new Set(incidents.map(incident => incident.Office))];
+      const uniqueIncidentTypeIds = [...new Set(incidents.map(incident => incident.IncidentType))];
+
+      // Batch fetch offices and incident types
+      const [officesMap, incidentTypesMap] = await Promise.all([
+        // Batch fetch offices
+        Promise.all(uniqueOfficeIds.map(async (officeId) => {
+          try {
+            const office = await getOffice(officeId);
+            return { id: officeId, office };
+          } catch (error) {
+            console.error(`Error fetching office ${officeId}:`, error);
+            return { id: officeId, office: null };
+          }
+        })).then(results => {
+          const map = new Map();
+          results.forEach(({ id, office }) => {
+            if (office) map.set(id, office);
+          });
+          return map;
+        }),
+        
+        // Batch fetch incident types
+        Promise.all(uniqueIncidentTypeIds.map(async (typeId) => {
+          try {
+            const incidentType = await getIncidentType(typeId);
+            return { id: typeId, incidentType };
+          } catch (error) {
+            console.error(`Error fetching incident type ${typeId}:`, error);
+            return { id: typeId, incidentType: null };
+          }
+        })).then(results => {
+          const map = new Map();
+          results.forEach(({ id, incidentType }) => {
+            if (incidentType) map.set(id, incidentType);
+          });
+          return map;
+        })
+      ]);
+
+      // Add new markers for each visible incident using cached data
       for (const incident of incidents) {
         try {
-          // Get office information
-          const office = await getOffice(incident.Office);
+          // Get office information from cache
+          const office = officesMap.get(incident.Office);
           if (!office) continue;
           
-          // Get incident type information
-          const incidentType = await getIncidentType(incident.IncidentType);
+          // Get incident type information from cache
+          const incidentType = incidentTypesMap.get(incident.IncidentType);
           
           // Get coordinates from office
           let lng: number | null = null;

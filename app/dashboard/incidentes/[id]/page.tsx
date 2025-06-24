@@ -6,16 +6,26 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import jsPDF from 'jspdf';
 import {
   ArrowLeft, DollarSign, Users, MapPin, FileText, AlertTriangle,
-  Calendar, Building, FileImage, Download, Printer, Share2, User
+  Calendar, Building, FileImage, Download, Printer, User
 } from 'lucide-react';
 
 // UI Components
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { toast } from '@/components/ui/use-toast';
 import Map from '@/components/ui/map';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 
 // Services
 import { getIncidentById } from '@/services/incident-service';
@@ -46,6 +56,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
   const [suspects, setSuspects] = useState<Suspect[]>([]);
   const [suspectsLoading, setSuspectsLoading] = useState(true);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
   
   // Fetch incident data
   useEffect(() => {
@@ -147,6 +158,237 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
   const handleBack = () => {
     router.back();
   };
+
+  // Generate PDF function
+  const generatePDF = async () => {
+    if (!incident) return;
+    setGeneratingPdf(true);
+    try {
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.width;
+      
+      // Load and add logo
+      try {
+        const logoResponse = await fetch('/logo-light.png');
+        const logoBlob = await logoResponse.blob();
+        const logoBase64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(logoBlob);
+        });
+        
+        // Add logo (positioned top-left)
+        pdf.addImage(logoBase64, 'PNG', 20, 15, 40, 15);
+      } catch {
+        console.warn('Could not load logo');
+      }
+      
+      // Header with better styling
+      pdf.setFontSize(24);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('REPORTE DE INCIDENTE', 105, 25, { align: 'center' });
+      
+      // Subtitle
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(100, 100, 100);
+      pdf.text('Informe detallado de incidente registrado', 105, 32, { align: 'center' });
+      
+      // Header line
+      pdf.setDrawColor(50, 50, 50);
+      pdf.setLineWidth(0.5);
+      pdf.line(20, 40, pageWidth - 20, 40);
+      
+      // Reset text color
+      pdf.setTextColor(0, 0, 0);
+      
+      // Document info box
+      pdf.setFillColor(248, 249, 250);
+      pdf.rect(20, 45, pageWidth - 40, 25, 'F');
+      pdf.setDrawColor(200, 200, 200);
+      pdf.rect(20, 45, pageWidth - 40, 25, 'S');
+      
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`ID del Incidente: ${incident.id}`, 25, 53);
+      pdf.text(`Fecha: ${incident.Date ? format(new Date(incident.Date), 'dd/MM/yyyy', { locale: es }) : 'No especificada'}`, 25, 60);
+      pdf.text(`Hora: ${incident.Time ? incident.Time.substring(0, 5) : 'No especificada'}`, 120, 53);
+      pdf.text(`Estado: REGISTRADO`, 120, 60);
+      if (incidentType) {
+        pdf.text(`Tipo: ${incidentType}`, 120, 67);
+      }
+      
+      // Incident details section
+      let yPos = 80;
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(50, 50, 50);
+      pdf.text('INFORMACIÓN DEL INCIDENTE', 20, yPos);
+      
+      // Section underline
+      pdf.setDrawColor(100, 100, 100);
+      pdf.setLineWidth(0.3);
+      pdf.line(20, yPos + 2, 140, yPos + 2);
+      
+      yPos += 12;
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(0, 0, 0);
+      
+      // Office information
+      if (office) {
+        pdf.text(`Sucursal: ${office.Name}`, 20, yPos);
+        yPos += 5;
+        pdf.text(`Dirección: ${office.Address || 'No especificada'}`, 20, yPos);
+        yPos += 7;
+      }
+      
+      // Incident type
+      if (incidentType) {
+        pdf.text(`Tipo de Incidente: ${incidentType}`, 20, yPos);
+        yPos += 7;
+      }
+      
+      // Time
+      if (incident.Time) {
+        pdf.text(`Hora: ${incident.Time.substring(0, 5)}`, 20, yPos);
+        yPos += 7;
+      }
+      
+      // Description
+      yPos += 5;
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('DESCRIPCIÓN DEL INCIDENTE:', 20, yPos);
+      yPos += 7;
+      
+      pdf.setFont('helvetica', 'normal');
+      const description = incident.Description || 'Sin descripción';
+      const splitDescription = pdf.splitTextToSize(description, 170);
+      pdf.text(splitDescription, 20, yPos);
+      yPos += splitDescription.length * 5 + 10;
+      
+      // Losses breakdown section
+      yPos += 8;
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(50, 50, 50);
+      pdf.text('DESGLOSE DE PÉRDIDAS', 20, yPos);
+      
+      // Section underline
+      pdf.setDrawColor(100, 100, 100);
+      pdf.setLineWidth(0.3);
+      pdf.line(20, yPos + 2, 110, yPos + 2);
+      
+      yPos += 12;
+      pdf.setFontSize(11);
+      pdf.setTextColor(0, 0, 0);
+      
+      // Losses table
+      pdf.setFillColor(248, 249, 250);
+      pdf.rect(20, yPos - 3, pageWidth - 40, 30, 'F');
+      pdf.setDrawColor(200, 200, 200);
+      pdf.rect(20, yPos - 3, pageWidth - 40, 30, 'S');
+      
+      const cashLoss = formatCurrency(incident.CashLoss || incident.cashLoss || 0);
+      const merchandiseLoss = formatCurrency(incident.MerchandiseLoss || incident.merchandiseLoss || 0);
+      const otherLosses = formatCurrency(incident.OtherLosses || incident.otherLosses || 0);
+      const totalLoss = getTotalLoss();
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Efectivo:', 25, yPos + 3);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(cashLoss, 120, yPos + 3);
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Mercadería:', 25, yPos + 9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(merchandiseLoss, 120, yPos + 9);
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Otros:', 25, yPos + 15);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(otherLosses, 120, yPos + 15);
+      
+      // Total - simple styling
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(`PÉRDIDA TOTAL: ${totalLoss}`, 25, yPos + 21);
+      
+      yPos += 35;
+      
+      // Suspects
+      if (suspects.length > 0) {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('SOSPECHOSOS INVOLUCRADOS:', 20, yPos);
+        yPos += 7;
+        
+        pdf.setFont('helvetica', 'normal');
+        suspects.forEach((suspect, index) => {
+          if (suspect.id !== 'unknown') {
+            pdf.text(`${index + 1}. ${suspect.Alias || 'Sospechoso sin nombre'}`, 20, yPos);
+            yPos += 5;
+            if (suspect.PhysicalDescription) {
+              const splitDesc = pdf.splitTextToSize(`   Descripción: ${suspect.PhysicalDescription}`, 170);
+              pdf.text(splitDesc, 20, yPos);
+              yPos += splitDesc.length * 4 + 3;
+            }
+          }
+        });
+      }
+      
+      // Additional notes
+      if (incident.Notes) {
+        yPos += 5;
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('NOTAS ADICIONALES:', 20, yPos);
+        yPos += 7;
+        
+        pdf.setFont('helvetica', 'normal');
+        const splitNotes = pdf.splitTextToSize(incident.Notes, 170);
+        pdf.text(splitNotes, 20, yPos);
+        yPos += splitNotes.length * 5;
+      }
+      
+      // Professional footer with logo reference
+      const pageHeight = pdf.internal.pageSize.height;
+      
+      // Footer line
+      pdf.setDrawColor(100, 100, 100);
+      pdf.setLineWidth(0.3);
+      pdf.line(20, pageHeight - 25, pageWidth - 20, pageHeight - 25);
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(100, 100, 100);
+      pdf.text('Documento generado automáticamente por', 105, pageHeight - 18, { align: 'center' });
+      
+      // Add small logo in footer
+      try {
+        const logoResponse = await fetch('/logo-light.png');
+        const logoBlob = await logoResponse.blob();
+        const logoBase64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(logoBlob);
+        });
+        
+        pdf.addImage(logoBase64, 'PNG', 95, pageHeight - 15, 20, 8);
+      } catch {
+        pdf.text('PW Retails', 105, pageHeight - 13, { align: 'center' });
+      }
+      
+      pdf.setFontSize(9);
+      pdf.text(`Generado el: ${new Date().toLocaleDateString('es-PY')} a las ${new Date().toLocaleTimeString('es-PY')}`, 105, pageHeight - 5, { align: 'center' });
+      
+      pdf.save(`Incidente-${incident.id}.pdf`);
+      toast({ title: "PDF generado", description: "Descarga iniciada correctamente." });
+    } catch (error) {
+      console.error('Error al generar PDF:', error);
+      toast({ title: "Error", description: "No se pudo generar el PDF.", variant: "destructive" });
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
   
   // Map location with better coordinates handling
   const mapLocations = office ? [
@@ -160,10 +402,12 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
       officeId: office.id,
       popupContent: `
         <div class="mapbox-popup-content-inner">
+          ${companyLogo ? `<img src="${companyLogo}" alt="Logo" class="h-8 mb-2 object-contain" />` : ''}
           <h3 class="mapbox-popup-title">${office.Name}</h3>
           <p class="mapbox-popup-address">${office.Address || 'Dirección no disponible'}</p>
           ${office.Phone ? `<p class="mapbox-popup-address">Tel: ${office.Phone}</p>` : ''}
           ${incident?.Date ? `<p class="mapbox-popup-address">Incidente: ${format(new Date(incident.Date), 'dd/MM/yyyy', { locale: es })}</p>` : ''}
+          <a href="/dashboard/incidentes/${incident?.id}" class="text-primary text-xs hover:underline">Ver detalles</a>
         </div>
       `
     }
@@ -198,6 +442,23 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
   return (
     <div className="min-h-screen bg-background">
     <div className="container mx-auto py-6 px-4 md:px-6">
+      {/* Breadcrumb */}
+      <div className="mb-4">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/dashboard/incidentes">Incidentes</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{incident.id.toString().slice(0, 8)}...</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+      
       {/* Header with back button and title */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
           <div className="flex items-center gap-4 mb-4 md:mb-0">
@@ -219,13 +480,18 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2">
-            <Printer className="h-4 w-4" />
-            Imprimir
-          </Button>
-          <Button variant="outline" className="gap-2">
-            <Share2 className="h-4 w-4" />
-            Compartir
+          <Button 
+            variant="outline" 
+            className="gap-2" 
+            onClick={generatePDF}
+            disabled={generatingPdf}
+          >
+            {generatingPdf ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : (
+              <Printer className="h-4 w-4" />
+            )}
+            Imprimir PDF
           </Button>
         </div>
       </div>

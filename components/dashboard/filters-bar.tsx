@@ -172,7 +172,10 @@ export function FiltersBar({
   const { data: offices = [], isLoading: isLoadingOffices } = useQuery({
     queryKey: ['all-offices-complete'],
     queryFn: getAllOfficesComplete,
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 30 * 60 * 1000, // 30 minutes - offices don't change frequently
+    gcTime: 60 * 60 * 1000, // 60 minutes - keep in cache longer
+    retry: 1, // Single retry to avoid excessive requests
+    refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 
   // Update local state when props change

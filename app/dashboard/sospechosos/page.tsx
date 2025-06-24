@@ -21,6 +21,7 @@ import { Loader2, PlusCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSuspects } from '@/context/suspect-context';
 import { SuspectStatus } from '@/types/suspect';
+import { Incident } from '@/types/incident';
 import {
   Pagination,
   PaginationContent,
@@ -82,54 +83,96 @@ export default function SuspectsPage() {
   const [incidentsData, setIncidentsData] = useState<Record<string, { lastSeen: string; count: number }>>({});
   const [loadingIncidents, setLoadingIncidents] = useState<Record<string, boolean>>({});
 
-  // Fetch incidents for each suspect
+  // Optimized fetch incidents for all suspects in batch
   useEffect(() => {
-    const fetchIncidentsForSuspects = async () => {
-      const newIncidentsData: Record<string, { lastSeen: string; count: number }> = {};
-      const newLoadingIncidents: Record<string, boolean> = {};
+    const fetchIncidentsForAllSuspects = async () => {
+      if (apiSuspects.length === 0) return;
+      
+      // Get all aliases from suspects
+      const suspectsWithAlias = apiSuspects.filter(suspect => suspect.Alias);
+      if (suspectsWithAlias.length === 0) return;
 
-      for (const suspect of apiSuspects) {
-        if (!suspect.Alias) continue;
-        
+      // Set loading for all suspects
+      const newLoadingIncidents: Record<string, boolean> = {};
+      suspectsWithAlias.forEach(suspect => {
         newLoadingIncidents[suspect.id] = true;
+      });
+      setLoadingIncidents(prev => ({ ...prev, ...newLoadingIncidents }));
+
+      try {
+        // Create batch request with all aliases
+        const aliases = suspectsWithAlias.map(suspect => suspect.Alias).join(',');
+        const response = await api.get(`/api/incidents/?suspect_alias__in=${encodeURIComponent(aliases)}&ordering=-Date`);
+        const incidents = response.data.results || [];
         
-        try {
-          const response = await api.get(`/api/incidents/?suspect_alias=${encodeURIComponent(suspect.Alias)}`);
-          const incidents = response.data.results || [];
-          
-          // Sort incidents by date to find the most recent one
-          const sortedIncidents = [...incidents].sort((a, b) => 
-            new Date(b.Date).getTime() - new Date(a.Date).getTime()
-          );
-          
-          // Get the most recent incident date if available
-          const lastIncident = sortedIncidents[0];
-          const lastSeen = lastIncident?.Date 
-            ? new Date(lastIncident.Date).toLocaleDateString()
-            : 'N/A';
+                          // Group incidents by suspect alias
+         const incidentsBySuspect: Record<string, Incident[]> = {};
+         incidents.forEach((incident: Incident) => {
+           if (incident.Suspects && Array.isArray(incident.Suspects)) {
+             incident.Suspects.forEach((suspectAlias: string) => {
+               if (!incidentsBySuspect[suspectAlias]) {
+                 incidentsBySuspect[suspectAlias] = [];
+               }
+               incidentsBySuspect[suspectAlias].push(incident);
+             });
+           }
+         });
+
+         // Process results for each suspect
+         const newIncidentsData: Record<string, { lastSeen: string; count: number }> = {};
+         const newLoadingComplete: Record<string, boolean> = {};
+
+         suspectsWithAlias.forEach(suspect => {
+           const suspectIncidents = incidentsBySuspect[suspect.Alias] || [];
+           
+           // Sort incidents by date to find the most recent one
+           const sortedIncidents = [...suspectIncidents].sort((a, b) => 
+             new Date(b.Date).getTime() - new Date(a.Date).getTime()
+           );
+           
+           // Get the most recent incident date if available
+           const lastIncident = sortedIncidents[0];
+           const lastSeen = lastIncident?.Date 
+             ? new Date(lastIncident.Date).toLocaleDateString()
+             : 'N/A';
             
           newIncidentsData[suspect.id] = {
             lastSeen,
-            count: incidents.length
+            count: suspectIncidents.length
           };
-        } catch (error) {
-          console.error(`Error fetching incidents for suspect ${suspect.id}:`, error);
-          newIncidentsData[suspect.id] = {
+          
+          newLoadingComplete[suspect.id] = false;
+        });
+        
+        setIncidentsData(prev => ({ ...prev, ...newIncidentsData }));
+        setLoadingIncidents(prev => ({ ...prev, ...newLoadingComplete }));
+        
+      } catch (error) {
+        console.error('Error fetching incidents for suspects:', error);
+        
+        // Set error state for all suspects
+        const errorData: Record<string, { lastSeen: string; count: number }> = {};
+        const errorLoading: Record<string, boolean> = {};
+        
+        suspectsWithAlias.forEach(suspect => {
+          errorData[suspect.id] = {
             lastSeen: 'Error',
             count: 0
           };
-        } finally {
-          newLoadingIncidents[suspect.id] = false;
-        }
+          errorLoading[suspect.id] = false;
+        });
+        
+        setIncidentsData(prev => ({ ...prev, ...errorData }));
+        setLoadingIncidents(prev => ({ ...prev, ...errorLoading }));
       }
-      
-      setIncidentsData(prev => ({ ...prev, ...newIncidentsData }));
-      setLoadingIncidents(prev => ({ ...prev, ...newLoadingIncidents }));
     };
     
-    if (apiSuspects.length > 0) {
-      fetchIncidentsForSuspects();
-    }
+    // Debounce the function to avoid multiple calls when suspects change rapidly
+    const timeoutId = setTimeout(() => {
+      fetchIncidentsForAllSuspects();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
   }, [apiSuspects]);
 
   // Helper function to get status name by ID

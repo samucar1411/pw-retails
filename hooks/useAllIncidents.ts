@@ -37,134 +37,128 @@ async function fetchAllIncidentsProgressive(params: AllIncidentsParams): Promise
   
   let allIncidents: Incident[] = [];
   let currentPage = 1;
-  let hasNextPage = true;
   let totalFromServer = 0;
+  let totalPages = 0;
   
-  // Phase 1: Quick initial load for immediate UI response (small batches)
-  const INITIAL_BATCH_SIZE = 25;
-  const INITIAL_PAGES = 3; // Load first 3 pages quickly
+  // Configuration
+  const PAGE_SIZE = 10; // API always returns 10 items per page
   
-  // Phase 2: Background loading with larger batches
-  const BACKGROUND_BATCH_SIZE = 75;
-  const MAX_TOTAL_PAGES = 100; // Reasonable maximum but much higher
-  
-  // Phase 1: Quick initial load
-  while (hasNextPage && currentPage <= INITIAL_PAGES) {
-    try {
-      const response = await getIncidents({ 
-        page: currentPage,
-        page_size: INITIAL_BATCH_SIZE,
-        fromDate: params.fromDate,
-        toDate: params.toDate,
-        Office: params.Office
-      });
-      
-      if (response.results && response.results.length > 0) {
-        allIncidents = [...allIncidents, ...response.results];
-      }
-      
-      totalFromServer = response.count || 0;
-      hasNextPage = !!response.next && currentPage < MAX_TOTAL_PAGES;
-      
-      // Cache intermediate results for immediate UI updates
-      const intermediateResult: AllIncidentsResult = {
+  try {
+    // First, get the first page to determine total count and pages
+    const firstResponse = await getIncidents({ 
+      page: 1,
+      page_size: PAGE_SIZE,
+      fromDate: params.fromDate,
+      toDate: params.toDate,
+      Office: params.Office
+    });
+    
+    totalFromServer = firstResponse.count || 0;
+    totalPages = Math.ceil(totalFromServer / PAGE_SIZE);
+    
+    // Add first page results
+    if (firstResponse.results && firstResponse.results.length > 0) {
+      allIncidents = [...firstResponse.results];
+    }
+    
+    // If there's only one page, return early
+    if (totalPages <= 1) {
+      const result: AllIncidentsResult = {
         incidents: allIncidents,
         total: totalFromServer,
-        hasMore: hasNextPage,
-        loadedPages: currentPage
+        hasMore: false,
+        loadedPages: 1
       };
-      incidentCache.set(cacheKey, intermediateResult);
-      
-      currentPage++;
-      
-      // Quick initial delay
-      if (hasNextPage && currentPage <= INITIAL_PAGES) {
-        await new Promise(resolve => setTimeout(resolve, adaptiveDelay(currentPage)));
-      }
-    } catch (error) {
-      console.error(`Error fetching incidents page ${currentPage}:`, error);
-      
-      // Return partial data if we have some
-      if (allIncidents.length > 0) {
-        const partialResult: AllIncidentsResult = {
-          incidents: allIncidents,
-          total: allIncidents.length,
-          hasMore: false,
-          loadedPages: currentPage - 1
-        };
-        incidentCache.set(cacheKey, partialResult);
-        return partialResult;
-      }
-      
-      throw error;
+      incidentCache.set(cacheKey, result);
+      return result;
     }
-  }
-  
-  // Phase 2: Background loading of remaining data with larger batches and delays
-  while (hasNextPage && currentPage <= MAX_TOTAL_PAGES) {
-    try {
-      const response = await getIncidents({ 
-        page: currentPage,
-        page_size: BACKGROUND_BATCH_SIZE,
-        fromDate: params.fromDate,
-        toDate: params.toDate,
-        Office: params.Office
-      });
-      
-      if (response.results && response.results.length > 0) {
-        allIncidents = [...allIncidents, ...response.results];
+    
+    // Cache initial result for immediate UI updates
+    const initialResult: AllIncidentsResult = {
+      incidents: allIncidents,
+      total: totalFromServer,
+      hasMore: totalPages > 1,
+      loadedPages: 1
+    };
+    incidentCache.set(cacheKey, initialResult);
+    
+    // Fetch remaining pages based on actual count
+    currentPage = 2;
+    while (currentPage <= totalPages) {
+      try {
+        const response = await getIncidents({ 
+          page: currentPage,
+          page_size: PAGE_SIZE,
+          fromDate: params.fromDate,
+          toDate: params.toDate,
+          Office: params.Office
+        });
         
-        // Update cache with new data
-        const updatedResult: AllIncidentsResult = {
-          incidents: allIncidents,
-          total: Math.max(totalFromServer, allIncidents.length),
-          hasMore: !!response.next && currentPage < MAX_TOTAL_PAGES,
-          loadedPages: currentPage
-        };
-        incidentCache.set(cacheKey, updatedResult);
-      }
-      
-      totalFromServer = response.count || totalFromServer;
-      hasNextPage = !!response.next && currentPage < MAX_TOTAL_PAGES;
-      currentPage++;
-      
-      // Adaptive delay based on current load
-      if (hasNextPage) {
-        await new Promise(resolve => setTimeout(resolve, adaptiveDelay(currentPage)));
-      }
-    } catch (error) {
-      console.error(`Error in background fetch page ${currentPage}:`, error);
-      
-      // If we get rate limited or blocked, stop gracefully but return what we have
-      if (error instanceof Error && (
-        error.message.includes('429') || 
-        error.message.includes('rate limit') ||
-        error.message.includes('firewall')
-      )) {
-        console.warn(`Rate limit detected at page ${currentPage}, stopping background fetch`);
+        if (response.results && response.results.length > 0) {
+          allIncidents = [...allIncidents, ...response.results];
+          
+          // Update cache with new data
+          const updatedResult: AllIncidentsResult = {
+            incidents: allIncidents,
+            total: totalFromServer,
+            hasMore: currentPage < totalPages,
+            loadedPages: currentPage
+          };
+          incidentCache.set(cacheKey, updatedResult);
+        }
+        
+        currentPage++;
+        
+        // Add delay between requests to avoid overwhelming the server
+        if (currentPage <= totalPages) {
+          await new Promise(resolve => setTimeout(resolve, adaptiveDelay(currentPage)));
+        }
+      } catch (error) {
+        console.error(`Error fetching incidents page ${currentPage}:`, error);
+        
+        // If we get rate limited or blocked, stop gracefully but return what we have
+        if (error instanceof Error && (
+          error.message.includes('429') || 
+          error.message.includes('rate limit') ||
+          error.message.includes('firewall')
+        )) {
+          console.warn(`Rate limit detected at page ${currentPage}, stopping fetch`);
+          break;
+        }
+        
+        // For other errors, try a few more times with longer delay
+        if (currentPage <= totalPages) {
+          console.warn(`Error on page ${currentPage}, retrying after delay...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Don't increment currentPage to retry the same page
+          continue;
+        }
+        
         break;
       }
-      
-      // For other errors, continue trying a few more times
-      if (currentPage <= MAX_TOTAL_PAGES - 5) {
-        console.warn(`Error on page ${currentPage}, will try to continue...`);
-        currentPage++;
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Longer delay after error
-        continue;
-      }
-      
-      break; // Stop if too many errors near the end
     }
+    
+  } catch (error) {
+    console.error('Error in initial fetch:', error);
+    
+    // Return empty result if first request fails
+    const errorResult: AllIncidentsResult = {
+      incidents: [],
+      total: 0,
+      hasMore: false,
+      loadedPages: 0
+    };
+    return errorResult;
   }
   
   const finalResult: AllIncidentsResult = {
     incidents: allIncidents,
-    total: Math.max(totalFromServer, allIncidents.length),
+    total: totalFromServer,
     hasMore: false,
-    loadedPages: currentPage - 1
+    loadedPages: Math.min(currentPage - 1, totalPages)
   };
   
-  // Cache final result with longer TTL
+  // Cache final result
   incidentCache.set(cacheKey, finalResult);
   
   return finalResult;
@@ -179,12 +173,11 @@ export function useAllIncidents(fromDate?: string, toDate?: string, officeId?: s
   return useQuery({
     queryKey: ['all-incidents-progressive', fromDate, toDate, officeId],
     queryFn: () => fetchAllIncidentsProgressive({ fromDate, toDate, Office: officeId }),
-    staleTime: 2 * 60 * 1000, // 2 minutes - shorter for more real-time feel
-    gcTime: 30 * 60 * 1000, // 30 minutes - keep in memory longer
-    retry: 2, // Allow 2 retries for better reliability
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
-    // Enable background refetch for data freshness
-    refetchOnMount: false, // Don't refetch if data is fresh
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
 } 

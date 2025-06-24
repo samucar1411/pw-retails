@@ -116,26 +116,14 @@ function DashboardPage() {
           officeId={filters.officeId}
         />
         
-        <TopRepeatSuspects 
-          fromDate={filters.fromDate}
-          toDate={filters.toDate}
-          officeId={filters.officeId}
-        />
+        <TopRepeatSuspects />
       </div>
 
       {/* Historical Comparison and Office Ranking Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <HistoricalComparison 
-          fromDate={filters.fromDate}
-          toDate={filters.toDate}
-          officeId={filters.officeId}
-        />
+        <HistoricalComparison />
         
-        <OfficeRanking 
-          fromDate={filters.fromDate}
-          toDate={filters.toDate}
-          officeId={filters.officeId}
-        />
+        <OfficeRanking />
       </div>
 
     </div>

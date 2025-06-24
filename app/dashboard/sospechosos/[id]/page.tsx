@@ -3,6 +3,14 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Image from 'next/image';
@@ -245,6 +253,23 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-6 px-4 md:px-6">
+        {/* Breadcrumb */}
+        <div className="mb-4">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href="/dashboard/sospechosos">Sospechosos</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{suspect.Alias || suspectId.substring(0, 8) + '...'}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+        
         <div className="flex justify-between items-center mb-6">
         <div className="flex items-center space-x-4">
           <Button variant="outline" size="icon" asChild>

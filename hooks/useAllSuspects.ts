@@ -31,133 +31,124 @@ async function fetchAllSuspectsProgressive(): Promise<AllSuspectsResult> {
   
   let allSuspects: Suspect[] = [];
   let currentPage = 1;
-  let hasNextPage = true;
   let totalFromServer = 0;
+  let totalPages = 0;
   
-  // Phase 1: Quick initial load for immediate UI response
-  const INITIAL_BATCH_SIZE = 20;
-  const INITIAL_PAGES = 3; // Load first 3 pages quickly
+  // Configuration
+  const PAGE_SIZE = 10; // API always returns 10 items per page
   
-  // Phase 2: Background loading with larger batches
-  const BACKGROUND_BATCH_SIZE = 60;
-  const MAX_TOTAL_PAGES = 75; // Conservative but sufficient maximum
-  
-
-  
-  // Phase 1: Quick initial load
-  while (hasNextPage && currentPage <= INITIAL_PAGES) {
-    try {
-      const response = await getAllSuspects({ 
-        page: currentPage,
-        page_size: INITIAL_BATCH_SIZE
-      });
-      
-      if (response.results && response.results.length > 0) {
-        allSuspects = [...allSuspects, ...response.results];
-      }
-      
-      totalFromServer = response.count || 0;
-      hasNextPage = !!response.next && currentPage < MAX_TOTAL_PAGES;
-      
-      // Cache intermediate results for immediate UI updates
-      const intermediateResult: AllSuspectsResult = {
+  try {
+    // First, get the first page to determine total count and pages
+    const firstResponse = await getAllSuspects({ 
+      page: 1,
+      page_size: PAGE_SIZE
+    });
+    
+    totalFromServer = firstResponse.count || 0;
+    totalPages = Math.ceil(totalFromServer / PAGE_SIZE);
+    
+    // Add first page results
+    if (firstResponse.results && firstResponse.results.length > 0) {
+      allSuspects = [...firstResponse.results];
+    }
+    
+    // If there's only one page, return early
+    if (totalPages <= 1) {
+      const result: AllSuspectsResult = {
         suspects: allSuspects,
         total: totalFromServer,
-        hasMore: hasNextPage,
-        loadedPages: currentPage
+        hasMore: false,
+        loadedPages: 1
       };
-      suspectsCache.set(cacheKey, intermediateResult);
-      
-      currentPage++;
-      
-      // Quick initial delay
-      if (hasNextPage && currentPage <= INITIAL_PAGES) {
-        await new Promise(resolve => setTimeout(resolve, adaptiveDelay(currentPage)));
-      }
-    } catch (error) {
-      console.error(`Error fetching suspects page ${currentPage}:`, error);
-      
-      // Return partial data if we have some
-      if (allSuspects.length > 0) {
-        const partialResult: AllSuspectsResult = {
-          suspects: allSuspects,
-          total: allSuspects.length,
-          hasMore: false,
-          loadedPages: currentPage - 1
-        };
-        suspectsCache.set(cacheKey, partialResult);
-        return partialResult;
-      }
-      
-      throw error;
+      suspectsCache.set(cacheKey, result);
+      return result;
     }
-  }
-  
-  // Phase 2: Background loading of remaining data with larger batches and delays
-  while (hasNextPage && currentPage <= MAX_TOTAL_PAGES) {
-    try {
-      const response = await getAllSuspects({ 
-        page: currentPage,
-        page_size: BACKGROUND_BATCH_SIZE
-      });
-      
-      if (response.results && response.results.length > 0) {
-        allSuspects = [...allSuspects, ...response.results];
+    
+    // Cache initial result for immediate UI updates
+    const initialResult: AllSuspectsResult = {
+      suspects: allSuspects,
+      total: totalFromServer,
+      hasMore: totalPages > 1,
+      loadedPages: 1
+    };
+    suspectsCache.set(cacheKey, initialResult);
+    
+    // Fetch remaining pages based on actual count
+    currentPage = 2;
+    while (currentPage <= totalPages) {
+      try {
+        const response = await getAllSuspects({ 
+          page: currentPage,
+          page_size: PAGE_SIZE
+        });
         
-        // Update cache with new data
-        const updatedResult: AllSuspectsResult = {
-          suspects: allSuspects,
-          total: Math.max(totalFromServer, allSuspects.length),
-          hasMore: !!response.next && currentPage < MAX_TOTAL_PAGES,
-          loadedPages: currentPage
-        };
-        suspectsCache.set(cacheKey, updatedResult);
-      }
-      
-      totalFromServer = response.count || totalFromServer;
-      hasNextPage = !!response.next && currentPage < MAX_TOTAL_PAGES;
-      currentPage++;
-      
-      // Adaptive delay based on current load
-      if (hasNextPage) {
-        await new Promise(resolve => setTimeout(resolve, adaptiveDelay(currentPage)));
-      }
-    } catch (error) {
-      console.error(`Error in background suspects fetch page ${currentPage}:`, error);
-      
-      // If we get rate limited or blocked, stop gracefully but return what we have
-      if (error instanceof Error && (
-        error.message.includes('429') || 
-        error.message.includes('rate limit') ||
-        error.message.includes('firewall')
-      )) {
-        console.warn(`Rate limit detected at suspects page ${currentPage}, stopping background fetch`);
+        if (response.results && response.results.length > 0) {
+          allSuspects = [...allSuspects, ...response.results];
+          
+          // Update cache with new data
+          const updatedResult: AllSuspectsResult = {
+            suspects: allSuspects,
+            total: totalFromServer,
+            hasMore: currentPage < totalPages,
+            loadedPages: currentPage
+          };
+          suspectsCache.set(cacheKey, updatedResult);
+        }
+        
+        currentPage++;
+        
+        // Add delay between requests to avoid overwhelming the server
+        if (currentPage <= totalPages) {
+          await new Promise(resolve => setTimeout(resolve, adaptiveDelay(currentPage)));
+        }
+      } catch (error) {
+        console.error(`Error fetching suspects page ${currentPage}:`, error);
+        
+        // If we get rate limited or blocked, stop gracefully but return what we have
+        if (error instanceof Error && (
+          error.message.includes('429') || 
+          error.message.includes('rate limit') ||
+          error.message.includes('firewall')
+        )) {
+          console.warn(`Rate limit detected at suspects page ${currentPage}, stopping fetch`);
+          break;
+        }
+        
+        // For other errors, try a few more times with longer delay
+        if (currentPage <= totalPages) {
+          console.warn(`Error on suspects page ${currentPage}, retrying after delay...`);
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          // Don't increment currentPage to retry the same page
+          continue;
+        }
+        
         break;
       }
-      
-      // For other errors, continue trying a few more times
-      if (currentPage <= MAX_TOTAL_PAGES - 5) {
-        console.warn(`Error on suspects page ${currentPage}, will try to continue...`);
-        currentPage++;
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Longer delay for suspects
-        continue;
-      }
-      
-      break; // Stop if too many errors near the end
     }
+    
+  } catch (error) {
+    console.error('Error in initial suspects fetch:', error);
+    
+    // Return empty result if first request fails
+    const errorResult: AllSuspectsResult = {
+      suspects: [],
+      total: 0,
+      hasMore: false,
+      loadedPages: 0
+    };
+    return errorResult;
   }
   
   const finalResult: AllSuspectsResult = {
     suspects: allSuspects,
-    total: Math.max(totalFromServer, allSuspects.length),
+    total: totalFromServer,
     hasMore: false,
-    loadedPages: currentPage - 1
+    loadedPages: Math.min(currentPage - 1, totalPages)
   };
   
-  // Cache final result with longer TTL
+  // Cache final result
   suspectsCache.set(cacheKey, finalResult);
   
-
   return finalResult;
 }
 
@@ -170,11 +161,10 @@ export function useAllSuspects() {
   return useQuery({
     queryKey: ['all-suspects-progressive'],
     queryFn: fetchAllSuspectsProgressive,
-    staleTime: 4 * 60 * 1000, // 4 minutes - suspects change less frequently
-    gcTime: 45 * 60 * 1000, // 45 minutes - keep in memory longer
-    retry: 2, // Allow 2 retries
-    retryDelay: (attemptIndex) => Math.min(1500 * 2 ** attemptIndex, 30000), // Slower exponential backoff
-    // More conservative refetch settings
+    staleTime: 4 * 60 * 1000, // 4 minutes
+    gcTime: 45 * 60 * 1000, // 45 minutes
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1500 * 2 ** attemptIndex, 30000),
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });

@@ -18,19 +18,22 @@ export default function DashboardLayout({
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {  
-        staleTime: 3 * 60 * 1000,      // 3 minutes - balanced for freshness
-        gcTime: 15 * 60 * 1000,        // 15 minutes garbage collection
+        staleTime: 5 * 60 * 1000,      // 5 minutes - balanced for freshness
+        gcTime: 20 * 60 * 1000,        // 20 minutes garbage collection - increased
         retry: 1,                       // Only 1 retry to avoid excessive requests
-        retryDelay: (attemptIndex) => Math.min(2000 * 2 ** attemptIndex, 10000), // Progressive delay
+        retryDelay: (attemptIndex) => Math.min(3000 * 2 ** attemptIndex, 15000), // More conservative delay
         refetchOnWindowFocus: false,    // Prevent refetch on window focus
         refetchOnReconnect: false,      // Prevent refetch on reconnect
         refetchOnMount: false,          // Don't refetch if data is still fresh
+        refetchInterval: false,         // Disable automatic polling
+        refetchIntervalInBackground: false, // Disable background polling
         // Conservative network settings
         networkMode: 'offlineFirst',    // Use cache when possible
       },
       mutations: {
         retry: 1,                       // Single retry for mutations
-        retryDelay: 3000,              // 3 second delay for mutation retries
+        retryDelay: 5000,              // 5 second delay for mutation retries
+        networkMode: 'offlineFirst',    // Use cache when possible for mutations too
       }
     }
   });

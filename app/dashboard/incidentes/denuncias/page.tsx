@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Download, Printer, Share2 } from 'lucide-react';
+import { Download, Printer } from 'lucide-react';
 
 export default function PoliceReportsPage() {
   const [activeTab, setActiveTab] = useState('pendientes');
@@ -18,13 +18,9 @@ export default function PoliceReportsPage() {
             <Download className="h-4 w-4" />
             Exportar
           </Button>
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}>
             <Printer className="h-4 w-4" />
-            Imprimir
-          </Button>
-          <Button variant="outline" size="sm" className="gap-2">
-            <Share2 className="h-4 w-4" />
-            Compartir
+            Imprimir PDF
           </Button>
         </div>
       </div>

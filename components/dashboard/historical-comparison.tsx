@@ -25,22 +25,26 @@ import {
 import { getIncidents } from "@/services/incident-service";
 
 interface HistoricalComparisonProps {
-  fromDate: string;
-  toDate: string;
-  officeId: string;
+  fromDate?: string;
+  toDate?: string;
+  officeId?: string;
 }
 
-export function HistoricalComparison({ officeId }: HistoricalComparisonProps) {
+export function HistoricalComparison({ officeId }: HistoricalComparisonProps = {}) {
   const currentYear = new Date().getFullYear();
   const [year1, setYear1] = React.useState(currentYear - 1);
   const [year2, setYear2] = React.useState(currentYear);
   const [year1Count, setYear1Count] = React.useState(0);
   const [year2Count, setYear2Count] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [lastFetchKey, setLastFetchKey] = React.useState('');
 
   const availableYears = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3, currentYear - 4];
 
-  const fetchYear1Data = async () => {
+  // Create a cache for historical data
+  const dataCache = React.useRef<Map<string, { year1Count: number; year2Count: number }>>(new Map());
+
+  const fetchYear1Data = React.useCallback(async () => {
     try {
       const yearFromDate = `${year1}-01-01`;
       const yearToDate = `${year1}-12-31`;
@@ -48,19 +52,22 @@ export function HistoricalComparison({ officeId }: HistoricalComparisonProps) {
       const filters = {
         fromDate: yearFromDate,
         toDate: yearToDate,
+        page_size: 1, // Only need count, not results
         ...(officeId && { Office: officeId })
       };
       
       const response = await getIncidents(filters);
       const count = response.count || 0;
       setYear1Count(count);
+      return count;
     } catch (error) {
       console.error(`Error fetching ${year1} data:`, error);
       setYear1Count(0);
+      return 0;
     }
-  };
+  }, [year1, officeId]);
 
-  const fetchYear2Data = async () => {
+  const fetchYear2Data = React.useCallback(async () => {
     try {
       const yearFromDate = `${year2}-01-01`;
       const yearToDate = `${year2}-12-31`;
@@ -68,30 +75,58 @@ export function HistoricalComparison({ officeId }: HistoricalComparisonProps) {
       const filters = {
         fromDate: yearFromDate,
         toDate: yearToDate,
+        page_size: 1, // Only need count, not results
         ...(officeId && { Office: officeId })
       };
       
       const response = await getIncidents(filters);
       const count = response.count || 0;
       setYear2Count(count);
+      return count;
     } catch (error) {
       console.error(`Error fetching ${year2} data:`, error);
       setYear2Count(0);
+      return 0;
     }
-  };
+  }, [year2, officeId]);
 
-  const loadData = async () => {
+  const loadData = React.useCallback(async () => {
+    // Create a cache key based on parameters
+    const cacheKey = `${year1}-${year2}-${officeId}`;
+    
+    // Check if we already have cached data
+    const cachedData = dataCache.current.get(cacheKey);
+    if (cachedData && cacheKey === lastFetchKey) {
+      setYear1Count(cachedData.year1Count);
+      setYear2Count(cachedData.year2Count);
+      return;
+    }
+
     setIsLoading(true);
     
-    // Fetch each year independently using the service
-    await Promise.all([fetchYear1Data(), fetchYear2Data()]);
-    
-    setIsLoading(false);
-  };
+    try {
+      // Fetch each year independently using the service with delay between requests
+      const [count1, count2] = await Promise.all([
+        fetchYear1Data(),
+        new Promise(resolve => setTimeout(resolve, 200)).then(() => fetchYear2Data()) // Small delay
+      ]);
+      
+      // Cache the results
+      dataCache.current.set(cacheKey, { year1Count: count1, year2Count: count2 });
+      setLastFetchKey(cacheKey);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [year1, year2, officeId, fetchYear1Data, fetchYear2Data, lastFetchKey]);
 
+  // Debounce the data loading to avoid excessive calls
   React.useEffect(() => {
-    loadData();
-  }, [year1, year2, officeId]);
+    const timeoutId = setTimeout(() => {
+      loadData();
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [loadData]);
 
   const difference = year2Count - year1Count;
   const percentage = year1Count > 0 ? ((difference / year1Count) * 100) : 0;

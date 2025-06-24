@@ -34,7 +34,11 @@ export function useIncidentsCount(
     },
     // Always enabled - no longer requires date filters
     enabled: true,
-    staleTime: 2 * 60 * 1000, // 2 minutes (shorter than full incidents data)
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes - longer stale time for counts
+    gcTime: 15 * 60 * 1000, // 15 minutes - keep in cache longer
+    retry: 1, // Single retry to avoid excessive requests
+    retryDelay: 2000, // 2 second delay between retries
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnMount: false, // Don't refetch if data is still fresh
   });
 } 

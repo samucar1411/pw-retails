@@ -16,9 +16,9 @@ import { getSuspect } from "@/services/suspect-service";
 import { Suspect } from "@/types/suspect";
 
 interface TopRepeatSuspectsProps {
-  fromDate: string;
-  toDate: string;
-  officeId: string;
+  fromDate?: string;
+  toDate?: string;
+  officeId?: string;
 }
 
 interface SuspectStats {
@@ -27,12 +27,12 @@ interface SuspectStats {
   suspect?: Suspect;
 }
 
-export function TopRepeatSuspects({ fromDate, toDate, officeId }: TopRepeatSuspectsProps) {
+export function TopRepeatSuspects({}: TopRepeatSuspectsProps = {}) {
   const { 
     data: incidentsData, 
     isLoading, 
     error 
-  } = useAllIncidents(fromDate, toDate, officeId);
+  } = useAllIncidents("", "", ""); // Use empty strings to get all data without date filtering
 
   const [suspectData, setSuspectData] = React.useState<Record<string, Suspect>>({});
   const [loadingSuspects, setLoadingSuspects] = React.useState(false);
