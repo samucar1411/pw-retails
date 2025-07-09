@@ -167,23 +167,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.width;
       
-      // Load and add logo
-      try {
-        const logoResponse = await fetch('/logo-light.png');
-        const logoBlob = await logoResponse.blob();
-        const logoBase64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(logoBlob);
-        });
-        
-        // Add logo (positioned top-left)
-        pdf.addImage(logoBase64, 'PNG', 20, 15, 40, 15);
-      } catch {
-        console.warn('Could not load logo');
-      }
-      
-      // Header with better styling
+      // Header with better styling (no logo at top)
       pdf.setFontSize(24);
       pdf.setFont('helvetica', 'bold');
       pdf.text('REPORTE DE INCIDENTE', 105, 25, { align: 'center' });
@@ -202,24 +186,47 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
       // Reset text color
       pdf.setTextColor(0, 0, 0);
       
-      // Document info box
+      // Document info box with better layout
       pdf.setFillColor(248, 249, 250);
-      pdf.rect(20, 45, pageWidth - 40, 25, 'F');
+      pdf.rect(20, 45, pageWidth - 40, 35, 'F');
       pdf.setDrawColor(200, 200, 200);
-      pdf.rect(20, 45, pageWidth - 40, 25, 'S');
+      pdf.rect(20, 45, pageWidth - 40, 35, 'S');
       
-      pdf.setFontSize(11);
+      pdf.setFontSize(10);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(`ID del Incidente: ${incident.id}`, 25, 53);
-      pdf.text(`Fecha: ${incident.Date ? format(new Date(incident.Date), 'dd/MM/yyyy', { locale: es }) : 'No especificada'}`, 25, 60);
-      pdf.text(`Hora: ${incident.Time ? incident.Time.substring(0, 5) : 'No especificada'}`, 120, 53);
-      pdf.text(`Estado: REGISTRADO`, 120, 60);
+      
+      // ID del incidente en su propia línea con más espacio
+      pdf.text(`ID del Incidente:`, 25, 53);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.text(`${incident.id}`, 25, 58);
+      
+      // Información en columnas separadas
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Fecha: `, 25, 65);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${incident.Date ? format(new Date(incident.Date), 'dd/MM/yyyy', { locale: es }) : 'No especificada'}`, 45, 65);
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Hora: `, 25, 72);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${incident.Time ? incident.Time.substring(0, 5) : 'No especificada'}`, 42, 72);
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Estado: `, 120, 65);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`REGISTRADO`, 145, 65);
+      
       if (incidentType) {
-        pdf.text(`Tipo: ${incidentType}`, 120, 67);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`Tipo: `, 120, 72);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`${incidentType}`, 135, 72);
       }
       
       // Incident details section
-      let yPos = 80;
+      let yPos = 90;
       pdf.setFontSize(14);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(50, 50, 50);
@@ -362,7 +369,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
       pdf.setTextColor(100, 100, 100);
       pdf.text('Documento generado automáticamente por', 105, pageHeight - 18, { align: 'center' });
       
-      // Add small logo in footer
+      // Add logo in footer (larger size)
       try {
         const logoResponse = await fetch('/logo-light.png');
         const logoBlob = await logoResponse.blob();
@@ -372,7 +379,8 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
           reader.readAsDataURL(logoBlob);
         });
         
-        pdf.addImage(logoBase64, 'PNG', 95, pageHeight - 15, 20, 8);
+        // Larger logo in footer
+        pdf.addImage(logoBase64, 'PNG', 85, pageHeight - 20, 40, 15);
       } catch {
         pdf.text('PW Retails', 105, pageHeight - 13, { align: 'center' });
       }
@@ -407,7 +415,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
           <p class="mapbox-popup-address">${office.Address || 'Dirección no disponible'}</p>
           ${office.Phone ? `<p class="mapbox-popup-address">Tel: ${office.Phone}</p>` : ''}
           ${incident?.Date ? `<p class="mapbox-popup-address">Incidente: ${format(new Date(incident.Date), 'dd/MM/yyyy', { locale: es })}</p>` : ''}
-          <a href="/dashboard/incidentes/${incident?.id}" class="text-primary text-xs hover:underline">Ver detalles</a>
+          <a href="/dashboard/sucursales/${office.id}" class="text-primary text-xs hover:underline">Ver detalles</a>
         </div>
       `
     }
@@ -453,46 +461,98 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>{incident.id.toString().slice(0, 8)}...</BreadcrumbPage>
+              <BreadcrumbPage>{incident.id}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
       </div>
       
-      {/* Header with back button and title */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
-          <div className="flex items-center gap-4 mb-4 md:mb-0">
-            <Button variant="outline" size="icon" onClick={handleBack} className="shrink-0">
-            <ArrowLeft className="h-4 w-4" />
+      {/* Header */}
+      <div className="mb-8">
+        {/* Navigation */}
+        <div className="flex items-center gap-3 mb-6">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="h-8 px-2">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver
           </Button>
-          <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Badge className="bg-primary/10 text-primary border-primary/20">
-                REPORTE DE INCIDENTE
-              </Badge>
-                <Badge variant="outline" className="bg-muted">
-                  ID: {incident.id.toString().slice(0, 8)}...
-              </Badge>
-            </div>
-              <h1 className="text-3xl font-bold text-foreground">
-              {incidentType} - {incident.Date && format(new Date(incident.Date), 'dd/MM/yyyy', { locale: es })}
-            </h1>
+          <div className="text-sm text-muted-foreground">
+            Reporte de Incidente
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            className="gap-2" 
-            onClick={generatePDF}
-            disabled={generatingPdf}
-          >
-            {generatingPdf ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-            ) : (
-              <Printer className="h-4 w-4" />
-            )}
-            Imprimir PDF
-          </Button>
+        
+        {/* Main header content */}
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+          <div className="flex-1 min-w-0">
+            {/* Title */}
+            <h1 className="text-3xl font-bold text-foreground mb-4 leading-tight">
+              {incidentType}
+            </h1>
+            
+            {/* Key metadata in clean grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+              <div>
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                  Fecha y Hora
+                </div>
+                <div className="text-sm font-medium text-foreground">
+                  {incident.Date && format(new Date(incident.Date), 'dd/MM/yyyy', { locale: es })}
+                  {incident.Time && ` • ${incident.Time.substring(0, 5)}`}
+                </div>
+              </div>
+              
+              <div>
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                  Ubicación
+                </div>
+                <div className="text-sm font-medium text-foreground">
+                  {office?.Name || `PUNTO ${incident.Office}`}
+                </div>
+              </div>
+              
+              <div>
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                  Pérdida Total
+                </div>
+                <div className="text-sm font-semibold text-destructive">
+                  {getTotalLoss()}
+                </div>
+              </div>
+            </div>
+            
+            {/* ID reference */}
+            <div className="flex items-center gap-3">
+              <div className="text-xs text-muted-foreground">ID:</div>
+              <Badge 
+                variant="outline" 
+                className="font-mono text-xs cursor-pointer hover:bg-muted/50 transition-colors" 
+                onClick={() => {
+                  navigator.clipboard.writeText(incident.id.toString());
+                  toast({ title: "ID copiado", description: "ID del incidente copiado al portapapeles" });
+                }}
+                title="Clic para copiar ID completo"
+              >
+                {incident.id}
+              </Badge>
+            </div>
+          </div>
+          
+          {/* Actions */}
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="gap-2" 
+              onClick={generatePDF}
+              disabled={generatingPdf}
+            >
+              {generatingPdf ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              ) : (
+                <Printer className="h-4 w-4" />
+              )}
+              Generar PDF
+            </Button>
+          </div>
         </div>
       </div>
       

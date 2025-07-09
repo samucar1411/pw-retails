@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { DollarSign } from "lucide-react";
 import { Incident } from "@/types/incident";
 import { parseNumeric, formatCurrency } from "@/lib/format-utils";
 
@@ -20,8 +19,7 @@ export const LossesInfo = React.memo(function LossesInfo({ incident }: LossesInf
     <div className="flex items-center gap-2">
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="flex items-center gap-1 font-medium">
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <div className="font-medium">
             <span>{formatCurrency(totalLoss)}</span>
           </div>
         </TooltipTrigger>

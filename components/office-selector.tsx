@@ -1,23 +1,13 @@
 "use client";
 
 import * as React from "react";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  Command,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandItem,
-} from "visor-ui"; // Assuming visor-ui is a UI library you are using
-
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from "@/components/ui/command";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"; // Removed AvatarImage
-// import { Branch, useBranch } from "@/hooks/use-branch"; // Commented out for now
-import { Office } from "@/types/office"; // Import Office type
-import { useOffice } from "@/context/office-context"; // Import useOffice
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Office } from "@/types/office";
+import { useOffice } from "@/context/office-context";
 
 export const OfficeSelectorCompact = () => {
   const { offices, selectedOffice, selectOffice, isLoading, error } = useOffice();

@@ -4,9 +4,7 @@ import * as React from "react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { Calendar as CalendarIcon } from "lucide-react"
-import { DateRange } from "react-day-picker"
 
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Calendar,
@@ -17,67 +15,102 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-interface CalendarDateRangePickerProps extends React.HTMLAttributes<HTMLDivElement> {
-  initialDate?: DateRange;
-  onDateChange?: (dateRange: DateRange | undefined) => void;
+interface DateRangePickerProps {
+  value?: { from?: Date; to?: Date };
+  onChange?: (range: { from?: Date; to?: Date }) => void;
+  placeholder?: string;
+  className?: string;
 }
 
-export function CalendarDateRangePicker({
-  className,
-  initialDate,
-  onDateChange,
-}: CalendarDateRangePickerProps) {
-  const [date, setDate] = React.useState<DateRange | undefined>(initialDate)
-  const [isOpen, setIsOpen] = React.useState(false);
+export function DateRangePicker({
+  value,
+  onChange,
+  placeholder = 'Seleccionar fechas',
+  className
+}: DateRangePickerProps) {
+  const [date, setDate] = React.useState<{ from?: Date; to?: Date }>(value || {});
 
-  const handleSelect = (selectedDate: DateRange | undefined) => {
-    setDate(selectedDate)
-    if (onDateChange) {
-      onDateChange(selectedDate)
+  React.useEffect(() => {
+    if (value) {
+      setDate(value);
     }
-    // Optionally close the popover after selection, or keep it open
-    // if (selectedDate?.from && selectedDate?.to) {
-    //   setIsOpen(false);
-    // }
-  }
+  }, [value]);
+
+  const handleSelect = (selectedDate: Date | undefined) => {
+    if (!selectedDate) {
+      const newRange = { from: undefined, to: undefined };
+      setDate(newRange);
+      onChange?.(newRange);
+      return;
+    }
+
+    if (!date.from || (date.from && date.to)) {
+      // Start new range
+      const newRange = { from: selectedDate, to: undefined };
+      setDate(newRange);
+      onChange?.(newRange);
+    } else if (date.from && !date.to) {
+      // Complete the range
+      const newRange = selectedDate < date.from 
+        ? { from: selectedDate, to: date.from }
+        : { from: date.from, to: selectedDate };
+      setDate(newRange);
+      onChange?.(newRange);
+    }
+  };
+
+  const formatDateRange = () => {
+    if (date.from) {
+      if (date.to) {
+        return `${format(date.from, 'dd/MM/yyyy', { locale: es })} - ${format(date.to, 'dd/MM/yyyy', { locale: es })}`;
+      }
+      return format(date.from, 'dd/MM/yyyy', { locale: es });
+    }
+    return placeholder;
+  };
 
   return (
-    <div className={cn("grid gap-2", className)}>
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <div className={className}>
+      <Popover>
         <PopoverTrigger asChild>
           <Button
-            id="date"
-            variant={"outline"}
-            className={cn(
-              "w-[300px] justify-start text-left font-normal",
-              !date && "text-muted-foreground"
-            )}
+            variant="outline"
+            className="w-full justify-start text-left font-normal"
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {date?.from ? (
-              date.to ? (
-                <>
-                  {format(date.from, "LLL dd, y", { locale: es })} -{" "}
-                  {format(date.to, "LLL dd, y", { locale: es })}
-                </>
-              ) : (
-                format(date.from, "LLL dd, y", { locale: es })
-              )
-            ) : (
-              <span>Seleccionar rango</span>
-            )}
+            {formatDateRange()}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
-            initialFocus
-            mode="range"
-            defaultMonth={date?.from}
-            selected={date}
+            mode="single"
+            selected={date.from}
             onSelect={handleSelect}
-            numberOfMonths={2}
-            locale={es} // Use Spanish locale
+            initialFocus
           />
+          {date.from && !date.to && (
+            <div className="p-3 border-t">
+              <p className="text-sm text-muted-foreground">
+                Selecciona la fecha final del rango
+              </p>
+            </div>
+          )}
+          {date.from && date.to && (
+            <div className="p-3 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const newRange = { from: undefined, to: undefined };
+                  setDate(newRange);
+                  onChange?.(newRange);
+                }}
+                className="w-full"
+              >
+                Limpiar selección
+              </Button>
+            </div>
+          )}
         </PopoverContent>
       </Popover>
     </div>

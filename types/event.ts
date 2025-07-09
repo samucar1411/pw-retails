@@ -6,11 +6,16 @@ export interface Event {
   created_at: string;
   device_name: string;
   office_name: string;
+  status?: string | null;
+  score?: string;
 }
 
 export type EventCreateInput = Omit<Event, 'id'>;
 export type EventUpdateInput = Partial<Event>;
 
 export interface EventsResponse {
-  data: Event[];
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Event[];
 } 

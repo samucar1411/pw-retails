@@ -6,14 +6,13 @@ import {
   PaginationPrevious, PaginationLink, PaginationNext
 } from "@/components/ui/pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { useIncidents } from "@/hooks/use-incident";
 import { Incident } from "@/types/incident";
-import { Hash, Loader2 } from "lucide-react";
+import { Hash, RefreshCw } from "lucide-react";
 import React, { useMemo } from "react";
-import { formatDate } from "@/lib/date-format";
-import { ErrorDisplay } from "@/components/ui/error-display";
-import { LoadingState } from "@/components/ui/loading-state";
+
+
 import { withErrorBoundary } from "@/components/error-boundary";
 
 // Import extracted components
@@ -22,44 +21,34 @@ import { IncidentTypeInfo } from "./incident-type-info";
 import { OfficeInfo } from "./office-info";
 import { LossesInfo } from "./losses-info";
 
-// Skeleton row for loading state
-const SkeletonRow = React.memo(function SkeletonRow() {
-  return (
-    <TableRow>
-      <TableCell><LoadingState variant="inline" /></TableCell>
-      <TableCell><LoadingState variant="inline" /></TableCell>
-      <TableCell><LoadingState variant="inline" /></TableCell>
-      <TableCell><LoadingState variant="inline" /></TableCell>
-      <TableCell><LoadingState variant="inline" /></TableCell>
-      <TableCell><LoadingState variant="inline" /></TableCell>
-    </TableRow>
-  );
-});
+interface IncidentsTableProps {
+  incidents: Incident[];
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => Promise<void>;
+  onRefresh: () => Promise<void>;
+}
 
-function IncidentsTableComponent() {
-  const [page, setPage] = React.useState(1);
-  const pageSize = 10;
+function IncidentsTableComponent({ 
+  incidents, 
+  currentPage, 
+  totalPages, 
+  onPageChange, 
+  onRefresh 
+}: IncidentsTableProps) {
 
-  const { data, isLoading, isError, isFetching, refetch: refetchIncidents } = useIncidents(page, pageSize);
-
-  const totalPages = Math.ceil((data?.count || 0) / pageSize);
   const tableRows = useMemo(() => {
-    if (isLoading || isFetching) {
-      return Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />);
-    }
-    
-    if (!data?.results?.length) {
+    if (!incidents?.length) {
       return (
         <TableRow>
-          <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+          <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
             No se encontraron incidentes
           </TableCell>
         </TableRow>
       );
     }
     
-    return data.results.map((inc: Incident) => {
-      const formattedDate = formatDate(inc.Date || inc.date, inc.Time || inc.time);
+    return incidents.map((inc: Incident) => {
       const officeId = inc.Office || inc.officeId;
       const incidentTypeId = inc.IncidentType || Number(inc.incidentTypeId) || 0;
       
@@ -83,11 +72,12 @@ function IncidentsTableComponent() {
           
           {/* Date */}
           <TableCell className="py-3">
-            <div className="flex flex-col">
-              <div>
-                <div className="font-medium">{formattedDate.date}</div>
-                <div className="text-sm text-muted-foreground">{formattedDate.time}</div>
-              </div>
+            <div className="font-medium">
+              {inc.Date ? new Date(inc.Date).toLocaleDateString('es-PY', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: '2-digit' 
+              }) : 'Sin fecha'}
             </div>
           </TableCell>
           
@@ -120,24 +110,13 @@ function IncidentsTableComponent() {
           </TableCell>
           
           {/* Total Loss */}
-          <TableCell className="py-3 text-right">
+          <TableCell className="py-3">
             <LossesInfo incident={inc} />
           </TableCell>
         </TableRow>
       );
     });
-  }, [data, isLoading, isFetching]);
-
-  if (isError) {
-    return (
-      <ErrorDisplay 
-        title="Error al cargar los datos" 
-        message="No se pudieron cargar los incidentes." 
-        error={new Error('Error al cargar los incidentes')} 
-        retry={refetchIncidents}
-      />
-    );
-  }
+  }, [incidents]);
 
   return (
     <div className="w-full"> 
@@ -150,7 +129,7 @@ function IncidentsTableComponent() {
               <TableHead>TIPO</TableHead>
               <TableHead>SUCURSAL</TableHead>
               <TableHead>DETALLES</TableHead>
-              <TableHead className="text-right">PÉRDIDA</TableHead>
+              <TableHead>PÉRDIDA</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>{tableRows}</TableBody>
@@ -166,9 +145,9 @@ function IncidentsTableComponent() {
                   href="#" 
                   onClick={(e) => {
                     e.preventDefault();
-                    if (page > 1) setPage(page - 1);
+                    if (currentPage > 1) onPageChange(currentPage - 1);
                   }}
-                  className={page <= 1 ? "pointer-events-none opacity-50" : ""}
+                  className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
               
@@ -179,7 +158,7 @@ function IncidentsTableComponent() {
                 if (
                   pageNum === 1 || 
                   pageNum === totalPages || 
-                  (pageNum >= page - 1 && pageNum <= page + 1)
+                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
                 ) {
                   return (
                     <PaginationItem key={pageNum}>
@@ -187,9 +166,9 @@ function IncidentsTableComponent() {
                         href="#" 
                         onClick={(e) => {
                           e.preventDefault();
-                          setPage(pageNum);
+                          onPageChange(pageNum);
                         }}
-                        isActive={page === pageNum}
+                        isActive={currentPage === pageNum}
                       >
                         {pageNum}
                       </PaginationLink>
@@ -198,11 +177,11 @@ function IncidentsTableComponent() {
                 }
                 
                 // Show ellipsis between gaps
-                if (pageNum === 2 && page > 3) {
+                if (pageNum === 2 && currentPage > 3) {
                   return <PaginationItem key="start-ellipsis"><span className="px-2">...</span></PaginationItem>;
                 }
                 
-                if (pageNum === totalPages - 1 && page < totalPages - 2) {
+                if (pageNum === totalPages - 1 && currentPage < totalPages - 2) {
                   return <PaginationItem key="end-ellipsis"><span className="px-2">...</span></PaginationItem>;
                 }
                 
@@ -214,9 +193,9 @@ function IncidentsTableComponent() {
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
-                    if (page < totalPages) setPage(page + 1);
+                    if (currentPage < totalPages) onPageChange(currentPage + 1);
                   }}
-                  className={page >= totalPages ? "pointer-events-none opacity-50" : ""}
+                  className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
             </PaginationContent>
@@ -224,14 +203,17 @@ function IncidentsTableComponent() {
         </div>
       )}
       
-      {/* Status and error indicators */}
-      <div className="text-sm flex items-center justify-end gap-2 mt-2 min-h-6">
-        {isLoading || isFetching ? (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            <span>{isLoading ? 'Cargando...' : 'Actualizando...'}</span>
-          </div>
-        ) : null}
+      {/* Refresh button */}
+      <div className="flex justify-end mt-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRefresh}
+          className="gap-2"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Actualizar
+        </Button>
       </div>
     </div>
   );

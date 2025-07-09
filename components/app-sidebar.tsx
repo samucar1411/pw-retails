@@ -14,6 +14,7 @@ import {
   LogOut,
   PlusCircle,
   List,
+  Calendar,
 } from "lucide-react";
 
 import {
@@ -96,6 +97,11 @@ const navigationItems: NavItem[] = [
         url: "/dashboard/sospechosos/nuevo",
       },
     ],
+  },
+  {
+    icon: Calendar,
+    title: "Eventos",
+    url: "/dashboard/eventos",
   },
   // {
   //   icon: Building2,

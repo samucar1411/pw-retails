@@ -6,6 +6,7 @@ import { Archivo } from "next/font/google";
 import { Toaster } from 'sonner';
 import { IncidentProvider } from "@/context/incident-context";
 import { SuspectProvider } from "@/context/suspect-context";
+import { NotificationProvider } from "@/context/notification-context";
 import { ReactQueryClientProvider } from "./providers/react-query-provider";
 
 const archivo = Archivo({
@@ -34,11 +35,13 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <AuthProvider>
-              <IncidentProvider>
-                <SuspectProvider>
-                  {children}
-                </SuspectProvider>
-              </IncidentProvider>
+              <NotificationProvider>
+                <IncidentProvider>
+                  <SuspectProvider>
+                    {children}
+                  </SuspectProvider>
+                </IncidentProvider>
+              </NotificationProvider>
             </AuthProvider>
           </ThemeProvider>
         </ReactQueryClientProvider>

@@ -19,6 +19,7 @@ import { EconomicBarChart } from "@/components/dashboard/economic-bar-chart"
 import { OfficeRanking } from "@/components/dashboard/office-ranking"
 import { HistoricalComparison } from "@/components/dashboard/historical-comparison"
 import { TopRepeatSuspects } from "@/components/dashboard/top-repeat-suspects"
+import { NotificationsPermissionBanner } from "@/components/notifications-permission-banner"
 
 function DashboardPage() {
   // Initialize with empty filters by default (no date restrictions)
@@ -51,6 +52,11 @@ function DashboardPage() {
             Nuevo Incidente
           </Link>
         </Button>
+      </div>
+
+      {/* Notifications Permission Banner */}
+      <div className="mb-6">
+        <NotificationsPermissionBanner />
       </div>
 
       {/* Filters Bar */}
@@ -123,7 +129,11 @@ function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <HistoricalComparison />
         
-        <OfficeRanking />
+        <OfficeRanking 
+          fromDate={filters.fromDate}
+          toDate={filters.toDate}
+          officeId={filters.officeId}
+        />
       </div>
 
     </div>

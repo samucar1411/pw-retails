@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, FileText, MapPin, Loader2, Hash } from "lucide-react";
+import { FileText, MapPin, Loader2, Hash } from "lucide-react";
 import Link from "next/link";
 import { Incident, IncidentType } from "@/types/incident";
 import { Office } from "@/types/office";
@@ -35,42 +35,7 @@ interface RecentIncidentsTableProps {
   officeId: string;
 }
 
-// Format date for better display
-const formatDate = (dateStr: string | undefined, timeStr: string | undefined) => {
-  if (!dateStr || !timeStr) {
-    return {
-      date: 'Fecha no disponible',
-      time: '',
-      fullDate: 'Fecha no disponible'
-    };
-  }
-  
-  try {
-    const date = new Date(dateStr);
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    };
-    
-    const formattedTime = timeStr.substring(0, 5); // HH:MM format
-    const formattedDate = date.toLocaleDateString('es-PY', options);
-    
-    return {
-      date: formattedDate,
-      time: formattedTime,
-      fullDate: `${formattedDate}, ${formattedTime}hs`
-    };
-  } catch {
-    // Fallback if date parsing fails
-    return {
-      date: dateStr,
-      time: timeStr,
-      fullDate: `${dateStr}, ${timeStr}`
-    };
-  }
-};
+
 
 // Helper to parse numeric string values
 const parseNumeric = (value: string | number | undefined): number => {
@@ -186,8 +151,7 @@ const LossesInfo = React.memo(function LossesInfo({ incident }: { incident: Inci
     <div className="flex items-center gap-2">
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="flex items-center gap-1 font-medium cursor-help">
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <div className="font-medium cursor-help">
             <span>{formatCurrency(totalLoss)}</span>
           </div>
         </TooltipTrigger>
@@ -315,10 +279,6 @@ export function RecentIncidentsTable({ fromDate, toDate, officeId }: RecentIncid
               <TableBody>
                 {recentIncidents.map((incident) => {
                   // Handle both API field names (uppercase) and local field names (lowercase)
-                  const formattedDate = formatDate(
-                    incident.Date || incident.date, 
-                    incident.Time || incident.time
-                  );
                   
                   return (
                     <TableRow key={incident.id} className="hover:bg-muted/50">
@@ -334,17 +294,13 @@ export function RecentIncidentsTable({ fromDate, toDate, officeId }: RecentIncid
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="cursor-help">
-                              <div className="text-sm font-medium">{formattedDate.date}</div>
-                              <div className="text-xs text-muted-foreground">{formattedDate.time}hs</div>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent side="top">
-                            <p>{formattedDate.fullDate}</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        <div className="text-sm font-medium">
+                          {incident.Date ? new Date(incident.Date).toLocaleDateString('es-PY', { 
+                            day: '2-digit', 
+                            month: '2-digit', 
+                            year: '2-digit' 
+                          }) : 'Sin fecha'}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {(incident.officeId || incident.Office) && 

@@ -14,7 +14,9 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Image from 'next/image';
-import { ArrowLeft, Edit, User } from 'lucide-react';
+import jsPDF from 'jspdf';
+import { ArrowLeft, Download, Edit, User } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 import { useEffect, useState, use } from 'react';
 import { getOffice } from '@/services/office-service';
 import { getIncidentTypeWithCache } from '@/services/incident-type-service';
@@ -59,6 +61,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
   const [incidentTypeNames, setIncidentTypeNames] = useState<Map<number, string>>(new Map());
   const [relatedSuspects, setRelatedSuspects] = useState<Suspect[]>([]); // Placeholder for now
   const [additionalDataLoading, setAdditionalDataLoading] = useState(true);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
   // Define the Incident type
   type Incident = {
@@ -217,6 +220,197 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
 
   const groupedIncidents = getGroupedIncidents();
 
+  // Generate PDF function for suspect profile
+  const generateSuspectPDF = async () => {
+    if (!suspect) return;
+    setGeneratingPdf(true);
+    try {
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.width;
+      
+      // Header with better styling (no logo at top)
+      pdf.setFontSize(24);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('EXPEDIENTE DE SOSPECHOSO', 105, 25, { align: 'center' });
+      
+      // Subtitle
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(100, 100, 100);
+      pdf.text('Perfil detallado de sospechoso registrado', 105, 32, { align: 'center' });
+      
+      // Header line
+      pdf.setDrawColor(50, 50, 50);
+      pdf.setLineWidth(0.5);
+      pdf.line(20, 40, pageWidth - 20, 40);
+      
+      // Reset text color
+      pdf.setTextColor(0, 0, 0);
+      
+      // Document info box with better layout
+      pdf.setFillColor(248, 249, 250);
+      pdf.rect(20, 45, pageWidth - 40, 35, 'F');
+      pdf.setDrawColor(200, 200, 200);
+      pdf.rect(20, 45, pageWidth - 40, 35, 'S');
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      
+      // ID del sospechoso en su propia línea con más espacio
+      pdf.text(`ID del Sospechoso:`, 25, 53);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.text(`${suspect.id}`, 25, 58);
+      
+      // Información en columnas separadas
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Alias: `, 25, 65);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${suspect.Alias || 'Sin alias'}`, 45, 65);
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Estado: `, 25, 72);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${suspect.Status === 1 ? 'ACTIVO' : 'INACTIVO'}`, 45, 72);
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Incidentes: `, 120, 65);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${incidents.length} registrado${incidents.length !== 1 ? 's' : ''}`, 150, 65);
+      
+      // Suspect details section
+      let yPos = 90;
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(50, 50, 50);
+      pdf.text('INFORMACIÓN DEL SOSPECHOSO', 20, yPos);
+      
+      // Section underline
+      pdf.setDrawColor(100, 100, 100);
+      pdf.setLineWidth(0.3);
+      pdf.line(20, yPos + 2, 140, yPos + 2);
+      
+      yPos += 12;
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(0, 0, 0);
+      
+      // Physical description
+      if (suspect.PhysicalDescription) {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Descripción Física:', 20, yPos);
+        yPos += 7;
+        
+        pdf.setFont('helvetica', 'normal');
+        const description = suspect.PhysicalDescription || 'Sin descripción';
+        const splitDescription = pdf.splitTextToSize(description, 170);
+        pdf.text(splitDescription, 20, yPos);
+        yPos += splitDescription.length * 5 + 10;
+      }
+      
+      // Incidents section
+      if (incidents.length > 0) {
+        yPos += 8;
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(50, 50, 50);
+        pdf.text('INCIDENTES RELACIONADOS', 20, yPos);
+        
+        // Section underline
+        pdf.setDrawColor(100, 100, 100);
+        pdf.setLineWidth(0.3);
+        pdf.line(20, yPos + 2, 125, yPos + 2);
+        
+        yPos += 12;
+        pdf.setFontSize(10);
+        pdf.setTextColor(0, 0, 0);
+        
+        // Incident types summary
+        if (Object.keys(groupedIncidents).length > 0) {
+          pdf.setFont('helvetica', 'bold');
+          pdf.text('Resumen por tipo de incidente:', 20, yPos);
+          yPos += 7;
+          
+          pdf.setFont('helvetica', 'normal');
+          Object.entries(groupedIncidents).forEach(([typeName, count]) => {
+            pdf.text(`• ${typeName}: ${count} incidente${count !== 1 ? 's' : ''}`, 25, yPos);
+            yPos += 5;
+          });
+          yPos += 5;
+        }
+        
+        // Recent incidents list (last 5)
+        const recentIncidents = incidents.slice(0, 5);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Incidentes recientes:', 20, yPos);
+        yPos += 7;
+        
+        pdf.setFont('helvetica', 'normal');
+        recentIncidents.forEach((incident, index) => {
+          const incidentTypeName = incident.IncidentType && incidentTypeNames.has(incident.IncidentType) 
+            ? incidentTypeNames.get(incident.IncidentType) 
+            : 'Tipo desconocido';
+          
+          const dateStr = incident.Date ? format(new Date(incident.Date), 'dd/MM/yyyy', { locale: es }) : 'Sin fecha';
+          
+          pdf.text(`${index + 1}. ${incidentTypeName} - ${dateStr}`, 25, yPos);
+          yPos += 4;
+          
+          if (incident.Description) {
+            const shortDesc = incident.Description.length > 80 
+              ? incident.Description.substring(0, 80) + '...' 
+              : incident.Description;
+            const splitDesc = pdf.splitTextToSize(`   ${shortDesc}`, 165);
+            pdf.text(splitDesc, 25, yPos);
+            yPos += splitDesc.length * 4 + 2;
+          }
+          yPos += 2;
+        });
+      }
+      
+      // Professional footer with logo reference
+      const pageHeight = pdf.internal.pageSize.height;
+      
+      // Footer line
+      pdf.setDrawColor(100, 100, 100);
+      pdf.setLineWidth(0.3);
+      pdf.line(20, pageHeight - 25, pageWidth - 20, pageHeight - 25);
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(100, 100, 100);
+      pdf.text('Documento generado automáticamente por', 105, pageHeight - 18, { align: 'center' });
+      
+      // Add logo in footer (larger size)
+      try {
+        const logoResponse = await fetch('/logo-light.png');
+        const logoBlob = await logoResponse.blob();
+        const logoBase64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(logoBlob);
+        });
+        
+        // Larger logo in footer
+        pdf.addImage(logoBase64, 'PNG', 85, pageHeight - 20, 40, 15);
+      } catch {
+        pdf.text('PW Retails', 105, pageHeight - 13, { align: 'center' });
+      }
+      
+      pdf.setFontSize(9);
+      pdf.text(`Generado el: ${new Date().toLocaleDateString('es-PY')} a las ${new Date().toLocaleTimeString('es-PY')}`, 105, pageHeight - 5, { align: 'center' });
+      
+      pdf.save(`Expediente-${suspect.Alias || suspectId}.pdf`);
+      toast({ title: "PDF generado", description: "Descarga del expediente iniciada correctamente." });
+    } catch (error) {
+      console.error('Error al generar PDF:', error);
+      toast({ title: "Error", description: "No se pudo generar el expediente PDF.", variant: "destructive" });
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto py-6 px-4 md:px-6">
@@ -264,39 +458,99 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>{suspect.Alias || suspectId.substring(0, 8) + '...'}</BreadcrumbPage>
+                <BreadcrumbPage>{suspect.Alias || suspectId}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
         </div>
         
-        <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center space-x-4">
-          <Button variant="outline" size="icon" asChild>
-            <Link href="/dashboard/sospechosos">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Badge className="bg-primary/10 text-primary border-primary/20">
-                  PERFIL DE SOSPECHOSO
-                </Badge>
-                <Badge variant="outline" className="bg-muted">
-                  ID: {suspectId.substring(0, 8)}...
+        {/* Header */}
+        <div className="mb-8">
+          {/* Navigation */}
+          <div className="flex items-center gap-3 mb-6">
+            <Button variant="ghost" size="sm" asChild className="h-8 px-2">
+              <Link href="/dashboard/sospechosos">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Volver
+              </Link>
+            </Button>
+            <div className="text-sm text-muted-foreground">
+              Perfil de Sospechoso
+            </div>
+          </div>
+          
+          {/* Main header content */}
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+            <div className="flex-1 min-w-0">
+              {/* Title */}
+              <h1 className="text-3xl font-bold text-foreground mb-4 leading-tight">
+                {suspect.Alias || 'Sospechoso sin nombre'}
+              </h1>
+              
+              {/* Key metadata in clean grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <div>
+                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                    Estado
+                  </div>
+                  <Badge variant={suspect.Status === 1 ? 'default' : 'secondary'} className="text-xs">
+                    {suspect.Status === 1 ? 'Activo' : 'Inactivo'}
+                  </Badge>
+                </div>
+                
+                <div>
+                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                    Incidentes Relacionados
+                  </div>
+                  <div className="text-sm font-semibold text-foreground">
+                    {incidents.length} incidente{incidents.length !== 1 ? 's' : ''}
+                  </div>
+                </div>
+                
+
+              </div>
+              
+              {/* ID reference */}
+              <div className="flex items-center gap-3">
+                <div className="text-xs text-muted-foreground">ID:</div>
+                <Badge 
+                  variant="outline" 
+                  className="font-mono text-xs cursor-pointer hover:bg-muted/50 transition-colors" 
+                  onClick={() => {
+                    navigator.clipboard.writeText(suspectId);
+                    toast({ title: "ID copiado", description: "ID del sospechoso copiado al portapapeles" });
+                  }}
+                  title="Clic para copiar ID completo"
+                >
+                  {suspectId}
                 </Badge>
               </div>
-              <h1 className="text-3xl font-bold text-foreground">
-                {suspect.Alias || 'Sospechoso sin nombre'}
-          </h1>
             </div>
+            
+            {/* Actions */}
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="gap-2" 
+                onClick={generateSuspectPDF}
+                disabled={generatingPdf}
+              >
+                {generatingPdf ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                Descargar Expediente
+              </Button>
+              <Button size="sm" asChild>
+                <Link href={`/dashboard/sospechosos/${suspectId}/edit`}>
+                  <Edit className="mr-2 h-4 w-4" /> Editar
+                </Link>
+              </Button>
+            </div>
+          </div>
         </div>
-        <Button asChild>
-          <Link href={`/dashboard/sospechosos/${suspectId}/edit`}>
-            <Edit className="mr-2 h-4 w-4" /> Editar
-          </Link>
-        </Button>
-      </div>
 
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
         {/* Row 1, Column 1: Suspect Information */}
@@ -320,8 +574,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                       sizes="200px"
                     />
                   </div>
-                    <div className="absolute bottom-0 left-0 right-0 bg-background/90 text-foreground text-xs p-1">
-                    ID: {suspectId.substring(0, 8)}
+                    <div className="absolute bottom-0 left-0 right-0 bg-background/90 text-foreground text-xs p-1 truncate">
+                    ID: {suspectId}
                   </div>
                 </div>
               ) : (
@@ -348,9 +602,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                       <Badge variant={suspect.Status === 1 ? 'default' : 'secondary'} className="mr-2">
                         {suspect.Status === 1 ? 'Activo' : 'Inactivo'}
                       </Badge>
-                      {suspect.StatusDetails?.Name && (
-                          <span className="text-sm text-foreground">{suspect.StatusDetails.Name}</span>
-                      )}
+
                     </div>
                   </div>
                   
