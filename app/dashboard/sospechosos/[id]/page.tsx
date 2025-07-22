@@ -15,8 +15,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Image from 'next/image';
 import jsPDF from 'jspdf';
-import { ArrowLeft, Download, Edit, User } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
+import { Download, Edit, User } from 'lucide-react';
 import { useEffect, useState, use } from 'react';
 import { getOffice } from '@/services/office-service';
 import { getIncidentTypeWithCache } from '@/services/incident-type-service';
@@ -27,7 +26,7 @@ import { IncidentType as IncidentTypeDetails } from '@/types/incident';
 import { default as UIMap } from '@/components/ui/map';
 import { getSuspect } from '@/services/suspect-service';
 import { Suspect } from '@/types/suspect';
-import { api } from '@/services/api'; // Import the centralized API configuration
+import { api } from '@/services/api';
 import Link from 'next/link';
 
 interface SuspectDetailPageProps {
@@ -46,22 +45,20 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [incidentsLoading, setIncidentsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // New state variables
   const [officeDetails, setOfficeDetails] = useState<Map<number, Office>>(new Map());
   const [mapLocations, setMapLocations] = useState<Array<{ 
     id: string | number; 
     lat: number; 
     lng: number; 
     title: string; 
+    description: string;
     address?: string;
     logoUrl?: string;
     officeId?: number;
   }>>([]);
   const [incidentTypeNames, setIncidentTypeNames] = useState<Map<number, string>>(new Map());
-  const [relatedSuspects, setRelatedSuspects] = useState<Suspect[]>([]); // Placeholder for now
-  const [additionalDataLoading, setAdditionalDataLoading] = useState(true);
-  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [relatedSuspects, setRelatedSuspects] = useState<Suspect[]>([]);
+  const [relatedSuspectsLoading, setRelatedSuspectsLoading] = useState(true);
 
   // Define the Incident type
   type Incident = {
@@ -83,14 +80,12 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
     async function loadSuspectAndIncidents() {
       setLoading(true);
       setIncidentsLoading(true);
-      setAdditionalDataLoading(true);
       try {
         const data = await getSuspect(suspectId);
         if (!data) {
           setError('No se pudo encontrar el sospechoso');
           setLoading(false);
           setIncidentsLoading(false);
-          setAdditionalDataLoading(false);
           return;
         }
         setSuspect(data);
@@ -138,6 +133,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
               lat: number; 
               lng: number; 
               title: string; 
+              description: string;
               address?: string;
               logoUrl?: string;
               officeId?: number;
@@ -171,6 +167,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     lat,
                     lng,
                     title: office.Name || office.Address || `Oficina ${office.id}`,
+                    description: office.Address || 'Dirección no disponible',
                     address: office.Address,
                     logoUrl,
                     officeId: office.id
@@ -181,25 +178,40 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
             setOfficeDetails(newOfficeDetails);
             setMapLocations(newMapLocations);
             
-            // Fetch related suspects (placeholder for now)
-            // This would be implemented based on your API structure
-            // For now, we'll just set an empty array
-            setRelatedSuspects([]);
-            
-            setAdditionalDataLoading(false);
+            // Después de cargar los incidentes, buscar sospechosos relacionados
+            if (fetchedIncidents.length > 0) {
+              try {
+                // Obtener IDs únicos de sospechosos relacionados de los incidentes
+                const relatedSuspectIds = [...new Set(
+                  fetchedIncidents
+                    .flatMap(inc => inc.Suspects || [])
+                    .filter(id => id !== suspectId)
+                )];
+
+                if (relatedSuspectIds.length > 0) {
+                  // Obtener detalles de cada sospechoso relacionado
+                  const suspectPromises = relatedSuspectIds.map(id => getSuspect(id));
+                  const fetchedSuspects = (await Promise.all(suspectPromises))
+                    .filter(Boolean) as Suspect[];
+                  setRelatedSuspects(fetchedSuspects);
+                }
+              } catch (error) {
+                console.error('Error loading related suspects:', error);
+              }
+              setRelatedSuspectsLoading(false);
+            }
+
           } else {
-            setAdditionalDataLoading(false);
+            setIncidentsLoading(false);
           }
         } else {
           setIncidentsLoading(false);
-          setAdditionalDataLoading(false);
         }
       } catch (error) {
         console.error('Error loading suspect details:', error);
         setError('Error al cargar los detalles del sospechoso');
         setLoading(false);
         setIncidentsLoading(false);
-        setAdditionalDataLoading(false);
       }
     }
     
@@ -223,7 +235,6 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
   // Generate PDF function for suspect profile
   const generateSuspectPDF = async () => {
     if (!suspect) return;
-    setGeneratingPdf(true);
     try {
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.width;
@@ -402,26 +413,13 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
       pdf.text(`Generado el: ${new Date().toLocaleDateString('es-PY')} a las ${new Date().toLocaleTimeString('es-PY')}`, 105, pageHeight - 5, { align: 'center' });
       
       pdf.save(`Expediente-${suspect.Alias || suspectId}.pdf`);
-      toast({ title: "PDF generado", description: "Descarga del expediente iniciada correctamente." });
     } catch (error) {
       console.error('Error al generar PDF:', error);
-      toast({ title: "Error", description: "No se pudo generar el expediente PDF.", variant: "destructive" });
-    } finally {
-      setGeneratingPdf(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="container mx-auto py-6 px-4 md:px-6">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-center">
-            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Cargando detalles del sospechoso...</p>
-          </div>
-        </div>
-      </div>
-    );
+  if (loading || !suspect) {
+    return <div className="flex items-center justify-center min-h-screen">Cargando...</div>;
   }
 
   if (error) {
@@ -446,320 +444,423 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-6 px-4 md:px-6">
+      <div className="container mx-auto p-6 space-y-6">
         {/* Breadcrumb */}
-        <div className="mb-4">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link href="/dashboard/sospechosos">Sospechosos</Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>{suspect.Alias || suspectId}</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
-        
-        {/* Header */}
-        <div className="mb-8">
-          {/* Navigation */}
-          <div className="flex items-center gap-3 mb-6">
-            <Button variant="ghost" size="sm" asChild className="h-8 px-2">
-              <Link href="/dashboard/sospechosos">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Volver
-              </Link>
-            </Button>
-            <div className="text-sm text-muted-foreground">
-              Perfil de Sospechoso
-            </div>
-          </div>
-          
-          {/* Main header content */}
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-            <div className="flex-1 min-w-0">
-              {/* Title */}
-              <h1 className="text-3xl font-bold text-foreground mb-4 leading-tight">
-                {suspect.Alias || 'Sospechoso sin nombre'}
-              </h1>
-              
-              {/* Key metadata in clean grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                <div>
-                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                    Estado
-                  </div>
-                  <Badge variant={suspect.Status === 1 ? 'default' : 'secondary'} className="text-xs">
-                    {suspect.Status === 1 ? 'Activo' : 'Inactivo'}
-                  </Badge>
-                </div>
-                
-                <div>
-                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                    Incidentes Relacionados
-                  </div>
-                  <div className="text-sm font-semibold text-foreground">
-                    {incidents.length} incidente{incidents.length !== 1 ? 's' : ''}
-                  </div>
-                </div>
-                
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/dashboard/sospechosos">Sospechosos</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{suspect.Alias || 'Detalle de sospechoso'}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
 
-              </div>
-              
-              {/* ID reference */}
-              <div className="flex items-center gap-3">
-                <div className="text-xs text-muted-foreground">ID:</div>
-                <Badge 
-                  variant="outline" 
-                  className="font-mono text-xs cursor-pointer hover:bg-muted/50 transition-colors" 
-                  onClick={() => {
-                    navigator.clipboard.writeText(suspectId);
-                    toast({ title: "ID copiado", description: "ID del sospechoso copiado al portapapeles" });
-                  }}
-                  title="Clic para copiar ID completo"
-                >
-                  {suspectId}
-                </Badge>
-              </div>
-            </div>
-            
-            {/* Actions */}
-            <div className="flex items-center gap-3">
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="gap-2" 
-                onClick={generateSuspectPDF}
-                disabled={generatingPdf}
-              >
-                {generatingPdf ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
-                Descargar Expediente
-              </Button>
-              <Button size="sm" asChild>
-                <Link href={`/dashboard/sospechosos/${suspectId}/edit`}>
-                  <Edit className="mr-2 h-4 w-4" /> Editar
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
-        {/* Row 1, Column 1: Suspect Information */}
-          <Card className="bg-card border-border h-full">
-            <CardHeader className="bg-muted/30 border-b border-border pb-3">
-              <CardTitle className="flex items-center text-base text-foreground">
-              <div className="p-1 bg-primary text-primary-foreground text-xs mr-2">FICHA</div>
-              Información del Sospechoso
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="flex flex-col items-center mb-4">
-              {suspect.PhotoUrl ? (
-                  <div className="relative w-full max-w-[200px] h-[250px] border-2 border-border overflow-hidden bg-muted/20">
-                  <div className="relative w-full h-full">
-                    <Image 
-                      src={suspect.PhotoUrl} 
-                      alt={suspect.Alias || 'Foto del sospechoso'} 
+        {/* Header Card */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-start gap-6">
+              {/* Foto y estado */}
+              <div className="flex flex-col items-center space-y-3">
+                <div className="relative w-40 h-40 overflow-hidden border-4 border-muted">
+                  {suspect.PhotoUrl ? (
+                    <Image
+                      src={suspect.PhotoUrl}
+                      alt={suspect.Alias || 'Sospechoso'}
                       fill
-                      style={{ objectFit: 'cover' }}
-                      sizes="200px"
+                      className="object-cover"
                     />
-                  </div>
-                    <div className="absolute bottom-0 left-0 right-0 bg-background/90 text-foreground text-xs p-1 truncate">
-                    ID: {suspectId}
-                  </div>
-                </div>
-              ) : (
-                  <div className="w-full max-w-[200px] h-[250px] border-2 border-border flex items-center justify-center bg-muted/20">
-                  <User className="h-16 w-16 text-muted-foreground" />
-                </div>
-              )}
-              
-              <div className="mt-4 w-full">
-                <div className="flex flex-col gap-3">
-                    <div className="border-b border-border pb-2">
-                    <p className="text-xs text-muted-foreground uppercase font-semibold">ID</p>
-                      <div className="font-mono text-xs bg-muted p-1 rounded mt-1 truncate text-foreground">{suspect.id}</div>
-                  </div>
-                  
-                    <div className="border-b border-border pb-2">
-                    <p className="text-xs text-muted-foreground uppercase font-semibold">Alias</p>
-                      <p className="font-bold text-base truncate text-foreground">{suspect.Alias || 'Sin alias'}</p>
-                  </div>
-                  
-                    <div className="border-b border-border pb-2">
-                    <p className="text-xs text-muted-foreground uppercase font-semibold">Estado</p>
-                    <div className="flex items-center mt-1">
-                      <Badge variant={suspect.Status === 1 ? 'default' : 'secondary'} className="mr-2">
-                        {suspect.Status === 1 ? 'Activo' : 'Inactivo'}
-                      </Badge>
-
-                    </div>
-                  </div>
-                  
-                    <div className="border-b border-border pb-2">
-                    <p className="text-xs text-muted-foreground uppercase font-semibold">Descripción Física</p>
-                      <p className="text-sm mt-1 text-foreground">{suspect.PhysicalDescription || 'Sin descripción'}</p>
-                  </div>
-                  
-                  {/* Incident Types - Moved from separate card */}
-                  {!additionalDataLoading && Object.keys(groupedIncidents).length > 0 && (
-                      <div className="pb-2">
-                      <p className="text-xs text-muted-foreground uppercase font-semibold">Tipos de Incidentes</p>
-                      <div className="space-y-1 mt-1">
-                        {Object.entries(groupedIncidents).map(([typeName, count]) => (
-                          <div key={typeName} className="flex justify-between items-center text-sm">
-                              <span className="truncate mr-2 text-foreground">{typeName}</span>
-                            <Badge variant="outline" className="bg-primary/10 text-primary hover:bg-primary/20 whitespace-nowrap">
-                              {count} {count === 1 ? 'incidente' : 'incidentes'}
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <User className="w-12 h-12 text-muted-foreground" />
                     </div>
                   )}
+                </div>
+                <Badge variant={suspect.Status === 1 ? "destructive" : "secondary"} className="text-sm">
+                  {suspect.Status === 1 ? "Detenido" : "Libre"}
+                </Badge>
+              </div>
+
+              {/* Información principal */}
+              <div className="flex-1 space-y-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h1 className="text-2xl font-bold">{suspect.Alias}</h1>
+                    <p className="text-muted-foreground">ID: {suspect.id}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={generateSuspectPDF}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Exportar PDF
+                    </Button>
+                    <Button asChild>
+                      <Link href={`/dashboard/sospechosos/${suspect.id}/edit`}>
+                        <Edit className="w-4 h-4 mr-2" />
+                        Editar
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Estadísticas rápidas */}
+                <div className="grid grid-cols-3 gap-4">
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-2xl font-bold">{incidents.length}</div>
+                      <p className="text-sm text-muted-foreground">Incidentes totales</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-2xl font-bold">
+                        {incidents.reduce((sum, inc) => {
+                          const total = parseFloat(inc.TotalLoss || '0');
+                          return sum + (isNaN(total) ? 0 : total);
+                        }, 0).toLocaleString('es-PY', { style: 'currency', currency: 'PYG' })}
+                      </div>
+                      <p className="text-sm text-muted-foreground">Pérdidas totales</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-2xl font-bold">
+                        {mapLocations.length}
+                      </div>
+                      <p className="text-sm text-muted-foreground">Sucursales afectadas</p>
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Row 1, Column 2: Offices Map */}
-        {mapLocations.length > 0 && (
-            <Card className="bg-card border-border h-full flex flex-col">
-              <CardHeader className="bg-muted/30 border-b border-border pb-3">
-                <CardTitle className="text-base text-foreground">Sucursales Afectadas</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 p-0">
-              <div className="w-full h-full min-h-[350px]">
-                <UIMap 
-                locations={mapLocations.map(location => ({
-                  ...location,
-                  popupContent: `
-                    <div class="mapbox-popup-content-inner">
-                      ${location.logoUrl ? `<img src="${location.logoUrl}" alt="Logo" class="h-8 mb-2 object-contain" />` : ''}
-                      <h3 class="mapbox-popup-title">${location.title}</h3>
-                      ${location.address ? `<p class="mapbox-popup-address">${location.address}</p>` : ''}
-                      ${location.officeId ? `<a href="/dashboard/offices/${location.officeId}" class="text-primary text-xs hover:underline">Ver detalles</a>` : ''}
-                    </div>
-                  `
-                }))} 
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Row 2, Column 1: Incidents */}
-          <Card className="bg-card border-border h-full">
-            <CardHeader className="bg-muted/30 border-b border-border pb-3">
-              <CardTitle className="text-base text-foreground">Incidentes Relacionados</CardTitle>
+        {/* Características */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Características</CardTitle>
           </CardHeader>
-          <CardContent className="p-4">
-            {incidentsLoading ? (
-                <div className="flex justify-center items-center h-32">
-                  <div className="animate-spin h-6 w-6 border-4 border-primary border-t-transparent rounded-full"></div>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Descripción física */}
+              {suspect.PhysicalDescription && (
+                <div>
+                  <h3 className="font-medium mb-2">Descripción física</h3>
+                  <p className="text-muted-foreground">{suspect.PhysicalDescription}</p>
                 </div>
-            ) : incidents.length > 0 ? (
-                <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/30">
-                {incidents.map((incident) => (
+              )}
+
+              {/* Tags/Características */}
+              {suspect.Tags && suspect.Tags.length > 0 && (
+                <div>
+                  <h3 className="font-medium mb-4">Características distintivas</h3>
+                  <div className="bg-card border rounded-lg p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Género */}
+                      {suspect.Tags.some(tag => ['male', 'female'].includes(tag.toLowerCase())) && (
+                        <div>
+                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Género</h4>
+                          <p className="text-sm">
+                            {suspect.Tags.find(tag => ['male', 'female'].includes(tag.toLowerCase())) === 'male' ? 'Hombre' : 'Mujer'}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Contextura */}
+                      {suspect.Tags.some(tag => ['flaco', 'normal', 'musculoso', 'sobrepeso'].includes(tag.toLowerCase())) && (
+                        <div>
+                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Contextura</h4>
+                          <p className="text-sm">
+                            {(() => {
+                              const contextura = suspect.Tags.find(tag => ['flaco', 'normal', 'musculoso', 'sobrepeso'].includes(tag.toLowerCase()));
+                              return contextura ? contextura.charAt(0).toUpperCase() + contextura.slice(1).toLowerCase() : '';
+                            })()}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Estatura */}
+                      {suspect.Tags.some(tag => ['bajo', 'normal', 'alto', 'muy_alto'].includes(tag.toLowerCase())) && (
+                        <div>
+                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Estatura</h4>
+                          <p className="text-sm">
+                            {(() => {
+                              const altura = suspect.Tags.find(tag => ['bajo', 'normal', 'alto', 'muy_alto'].includes(tag.toLowerCase()));
+                              switch(altura?.toLowerCase()) {
+                                case 'bajo': return 'Bajo (<1.60m)';
+                                case 'normal': return 'Normal (1.60m-1.75m)';
+                                case 'alto': return 'Alto (1.76m-1.85m)';
+                                case 'muy_alto': return 'Muy Alto (>1.85m)';
+                                default: return altura;
+                              }
+                            })()}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Tono de piel */}
+                      {suspect.Tags.some(tag => ['clara', 'triguena', 'oscura', 'negra'].includes(tag.toLowerCase())) && (
+                        <div>
+                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Tono de piel</h4>
+                          <p className="text-sm">
+                            {(() => {
+                              const piel = suspect.Tags.find(tag => ['clara', 'triguena', 'oscura', 'negra'].includes(tag.toLowerCase()));
+                              return piel ? piel.charAt(0).toUpperCase() + piel.slice(1).toLowerCase() : '';
+                            })()}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Piercings */}
+                      {suspect.Tags.some(tag => ['nariz', 'oreja', 'cejas', 'lengua', 'labios'].includes(tag.toLowerCase())) && (
+                        <div>
+                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Piercings</h4>
+                          <p className="text-sm">
+                            {suspect.Tags
+                              .filter(tag => ['nariz', 'oreja', 'cejas', 'lengua', 'labios'].includes(tag.toLowerCase()))
+                              .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase())
+                              .join(', ')}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Tatuajes */}
+                      {suspect.Tags.some(tag => ['brazos', 'cara', 'cuello', 'piernas', 'mano'].includes(tag.toLowerCase())) && (
+                        <div>
+                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Tatuajes</h4>
+                          <p className="text-sm">
+                            {suspect.Tags
+                              .filter(tag => ['brazos', 'cara', 'cuello', 'piernas', 'mano'].includes(tag.toLowerCase()))
+                              .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase())
+                              .join(', ')}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Accesorios */}
+                      {suspect.Tags.some(tag => ['lentes_sol', 'bolsa', 'lentes', 'casco', 'mochila'].includes(tag.toLowerCase())) && (
+                        <div>
+                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Accesorios</h4>
+                          <p className="text-sm">
+                            {suspect.Tags
+                              .filter(tag => ['lentes_sol', 'bolsa', 'lentes', 'casco', 'mochila'].includes(tag.toLowerCase()))
+                              .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase().replace('_', ' '))
+                              .join(', ')}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Comportamiento */}
+                      {suspect.Tags.some(tag => ['agresivo', 'nervioso', 'calmado', 'sospechoso'].includes(tag.toLowerCase())) && (
+                        <div>
+                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Comportamiento</h4>
+                          <p className="text-sm">
+                            {suspect.Tags
+                              .filter(tag => ['agresivo', 'nervioso', 'calmado', 'sospechoso'].includes(tag.toLowerCase()))
+                              .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase())
+                              .join(', ')}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Elementos que dificultan identificación */}
+                      {suspect.Tags.some(tag => ['gorra', 'bufanda', 'mascara', 'gafas'].includes(tag.toLowerCase())) && (
+                        <div>
+                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Dificulta identificación</h4>
+                          <p className="text-sm">
+                            {suspect.Tags
+                              .filter(tag => ['gorra', 'bufanda', 'mascara', 'gafas'].includes(tag.toLowerCase()))
+                              .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase())
+                              .join(', ')}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Última vez visto */}
+              {suspect.LastSeen && (
+                <div>
+                  <h3 className="font-medium mb-2">Última vez visto</h3>
+                  <p className="text-muted-foreground">
+                    {format(new Date(suspect.LastSeen), "d 'de' MMMM 'de' yyyy", { locale: es })}
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Sospechosos relacionados */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Sospechosos relacionados</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Otros sospechosos involucrados en los mismos incidentes
+            </p>
+          </CardHeader>
+          <CardContent>
+            {relatedSuspectsLoading ? (
+              <div className="flex justify-center items-center h-32">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+              </div>
+            ) : relatedSuspects.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {relatedSuspects.map((rs) => (
                   <Link 
-                    href={`/dashboard/incidents/${incident.id}`} 
-                    key={incident.id} 
-                      className="block border border-border p-3 rounded-md hover:bg-muted/50 transition-colors no-underline group"
+                    key={rs.id} 
+                    href={`/dashboard/sospechosos/${rs.id}`}
+                    className="group"
                   >
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-1 mb-1">
-                          {incident.IncidentType && incidentTypeNames.get(incident.IncidentType) ? (
-                            <Badge variant="outline" className="font-normal">
-                              {incidentTypeNames.get(incident.IncidentType)}
-                            </Badge>
-                          ) : null}
-                            <span className="text-sm whitespace-nowrap text-muted-foreground">
-                            {incident.Date && format(new Date(incident.Date), 'dd/MM/yyyy', { locale: es })}
-                            {incident.Time && ` ${incident.Time.substring(0, 5)}`}
-                          </span>
-                        </div>
-                        <div className="text-sm text-muted-foreground line-clamp-2">
-                          {incident.Description || 'Sin descripción'}
-                        </div>
-                        {incident.Office && officeDetails.get(incident.Office) && (
-                          <div className="mt-1 flex flex-wrap items-center gap-1">
-                            <Badge variant="outline" className="bg-primary/10 text-primary hover:bg-primary/20 text-xs">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                              </svg>
-                              <span className="truncate">{officeDetails.get(incident.Office)?.Name || `Oficina ${incident.Office}`}</span>
+                    <Card className="hover:bg-muted/50 transition-colors">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-12 h-12 overflow-hidden border-2 border-muted">
+                            {rs.PhotoUrl ? (
+                              <Image
+                                src={rs.PhotoUrl}
+                                alt={rs.Alias || 'Sospechoso'}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-muted flex items-center justify-center">
+                                <User className="w-6 h-6 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-medium group-hover:text-primary transition-colors">
+                              {rs.Alias}
+                            </p>
+                            <Badge 
+                              variant={rs.Status === 1 ? "destructive" : "secondary"}
+                              className="mt-1 text-xs"
+                            >
+                              {rs.Status === 1 ? "Detenido" : "Libre"}
                             </Badge>
                           </div>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium text-destructive whitespace-nowrap">
-                            Gs. {parseFloat(incident.TotalLoss || '0').toLocaleString('es-PY')}
                         </div>
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   </Link>
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground">No se encontraron incidentes relacionados</p>
+              <div className="text-center py-8 text-muted-foreground">
+                No se encontraron sospechosos relacionados
+              </div>
             )}
           </CardContent>
         </Card>
-        
-        {/* Row 2, Column 2: Related Suspects */}
-          <Card className="bg-card border-border h-full">
-            <CardHeader className="bg-muted/30 border-b border-border pb-3">
-              <CardTitle className="text-base text-foreground">Otros Sospechosos Involucrados</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            {additionalDataLoading ? (
-                <div className="flex justify-center items-center h-32">
-                  <div className="animate-spin h-6 w-6 border-4 border-primary border-t-transparent rounded-full"></div>
+
+        {/* Grid para mapa e historial */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Mapa de incidentes */}
+          {mapLocations.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Ubicaciones de incidentes</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0" style={{ height: '500px' }}>
+                <div className="w-full h-full">
+                  <UIMap locations={mapLocations} />
                 </div>
-            ) : relatedSuspects.length > 0 ? (
-              <ul className="space-y-3">
-                {relatedSuspects.map(rs => (
-                  <li key={rs.id} className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-                      {rs.PhotoUrl ? (
-                        <Image 
-                          src={rs.PhotoUrl} 
-                            alt={rs.Alias || 'Sospechoso'}
-                          width={40}
-                          height={40}
-                          className="object-cover"
-                        />
-                      ) : (
-                        <User className="h-5 w-5 text-muted-foreground" />
-                      )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Lista de incidentes */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl">Historial de incidentes</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {incidents.length} incidente{incidents.length !== 1 ? 's' : ''} registrado{incidents.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  {/* Resumen de pérdidas */}
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Pérdidas totales</p>
+                    <p className="text-lg font-semibold">
+                      {incidents.reduce((sum, inc) => {
+                        const total = parseFloat(inc.TotalLoss || '0');
+                        return sum + (isNaN(total) ? 0 : total);
+                      }, 0).toLocaleString('es-PY', { style: 'currency', currency: 'PYG' })}
+                    </p>
+                  </div>
+                  {/* Resumen de tipos de incidentes */}
+                  <div className="border-l pl-4">
+                    <p className="text-sm text-muted-foreground">Tipos más comunes</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {Object.entries(groupedIncidents)
+                        .sort(([,a], [,b]) => b - a)
+                        .slice(0, 2)
+                        .map(([type, count]) => (
+                          <Badge key={type} variant="outline" className="text-xs">
+                            {type}: {count}
+                          </Badge>
+                        ))}
                     </div>
-                    <div className="flex-1">
-                        <Link href={`/dashboard/sospechosos/${rs.id}`} className="font-medium hover:underline text-primary group-hover:text-primary/80">
-                          {rs.Alias || 'Sospechoso sin nombre'}
-                      </Link>
-                      {rs.Alias && <p className="text-xs text-muted-foreground">{rs.Alias}</p>}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-muted-foreground">No se encontraron otros sospechosos en estos incidentes.</p>
-            )}
-          </CardContent>
-        </Card>
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="h-[500px] overflow-auto">
+              {incidentsLoading ? (
+                <div className="flex justify-center items-center h-32">
+                  <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+                </div>
+              ) : incidents.length > 0 ? (
+                <div className="space-y-4">
+                  {incidents.map((incident) => {
+                    const office = incident.Office ? officeDetails.get(incident.Office) : null;
+                    const incidentType = incident.IncidentType ? incidentTypeNames.get(incident.IncidentType) : 'Desconocido';
+                    
+                    return (
+                      <Card key={incident.id}>
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h3 className="font-medium">{incidentType}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {format(new Date(incident.Date), "d 'de' MMMM 'de' yyyy", { locale: es })}
+                                {incident.Time && ` - ${incident.Time}`}
+                              </p>
+                            </div>
+                            <Badge variant="outline">
+                              {parseFloat(incident.TotalLoss || '0').toLocaleString('es-PY', { 
+                                style: 'currency', 
+                                currency: 'PYG' 
+                              })}
+                            </Badge>
+                          </div>
+                          {office && (
+                            <div className="text-sm text-muted-foreground mb-2">
+                              {office.Name} - {office.Address}
+                            </div>
+                          )}
+                          {incident.Description && (
+                            <p className="text-sm mt-2">{incident.Description}</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No se encontraron incidentes registrados
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

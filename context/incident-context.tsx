@@ -19,6 +19,7 @@ import {
   deleteIncident,
   uploadIncidentAttachments,
   getIncidentTypes,
+  getIncidentById,
 } from "@/services/incident-service";
 
 interface IncidentFormData {
@@ -52,11 +53,11 @@ interface IncidentContextType {
   error: string | null;
   loadIncidents: () => Promise<void>;
   loadIncidentTypes: () => Promise<void>;
-  loadIncident: (id: number) => Promise<void>;
-  updateIncident: (id: number, data: Partial<Incident>) => Promise<Incident | null>;
+  loadIncident: (id: string) => Promise<void>;
+  updateIncident: (id: string, data: Partial<Incident>) => Promise<Incident | null>;
   createIncident: (data: FormData | IncidentFormData) => Promise<Incident | null>;
-  deleteIncident: (id: number) => Promise<void>;
-  uploadAttachments: (id: number, files: globalThis.File[]) => Promise<void>;
+  deleteIncident: (id: string) => Promise<void>;
+  uploadAttachments: (id: string, files: globalThis.File[]) => Promise<void>;
   getByOffice: (officeId: number) => Promise<void>;
   getByDateRange: (startDate: string, endDate: string) => Promise<void>;
 }
@@ -121,13 +122,11 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const loadIncident = useCallback(async (id: number) => {
+  const loadIncident = useCallback(async (id: string) => {
     setLoading(true);
     try {
-      const response = await getIncidentsByOffice(id);
-      // Handle both paginated and non-paginated responses
-      const incidents = 'results' in response ? response.results : Array.isArray(response) ? response : [];
-      setSelectedIncident(incidents[0] || null);
+      const incident = await getIncidentById(id);
+      setSelectedIncident(incident);
       setError(null);
     } catch (error) {
       console.error("Error loading incident:", error);
@@ -138,7 +137,7 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const updateIncidentHandler = useCallback(async (id: number, data: Partial<Incident>) => {
+  const updateIncidentHandler = useCallback(async (id: string, data: Partial<Incident>) => {
     setLoading(true);
     try {
       const updated = await updateIncident(id, data);
@@ -238,7 +237,7 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const deleteIncidentHandler = useCallback(async (id: number) => {
+  const deleteIncidentHandler = useCallback(async (id: string) => {
     setLoading(true);
     try {
       await deleteIncident(id);
@@ -253,19 +252,24 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const uploadAttachments = useCallback(async (id: number, files: globalThis.File[]) => {
+  const uploadAttachments = useCallback(async (id: string, files: globalThis.File[]) => {
     setLoading(true);
     try {
-      const result = await uploadIncidentAttachments(id, files);
+      const response = await uploadIncidentAttachments(id, files);
       // Convert the returned attachments to the File type used in our app
-      const attachments = result.attachments.map((att: { url: string }) => ({
+      const attachments = response.attachments.map((att: { url: string }) => ({
         id: Math.floor(Math.random() * 10000),
         url: att.url,
         name: att.url.split("/").pop() || "file",
         contentType: "image/jpeg",
       }));
-      if (attachments.length > 0) {
-        await updateIncidentHandler(id, { attachments });
+      // Update the incident with the new attachments
+      const updatedIncident = await updateIncident(id, {
+        Attachments: attachments
+      });
+      if (updatedIncident) {
+        setIncidents(prev => prev.map(incident => incident.id === id ? updatedIncident : incident));
+        setSelectedIncident(prev => (prev && prev.id === id ? updatedIncident : prev));
       }
       setError(null);
     } catch (error) {
@@ -274,7 +278,7 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [updateIncidentHandler]);
+  }, []);
 
   const getByOffice = useCallback(async (officeId: number) => {
     setLoading(true);

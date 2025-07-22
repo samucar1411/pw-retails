@@ -50,7 +50,7 @@ export function HourlyIncidentsChart({ data }: HourlyIncidentsChartProps) {
 
     // Count incidents for each cell
     data.forEach(incident => {
-      const date = new Date(`${incident.date}T${incident.time}`);
+      const date = new Date(`${incident.Date}T${incident.Time || '00:00'}`);
       const day = days[date.getDay()];
       const hour = date.getHours();
       

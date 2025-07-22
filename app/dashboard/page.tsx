@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { Button } from "@/components/ui/button"
-import { PlusCircle } from "lucide-react"
+import { Plus } from "lucide-react"
 import Link from "next/link"
 import { withErrorBoundary } from "@/components/error-boundary"
 
@@ -13,7 +13,7 @@ import { KpiSuspectsIdentified } from "@/components/dashboard/kpi-suspects-ident
 import { KpiSuspectsNotIdentified } from "@/components/dashboard/kpi-suspects-not-identified"
 import { KpiBranches24h } from "@/components/dashboard/kpi-branches-24h"
 import { RecentIncidentsTable } from "@/components/dashboard/recent-incidents-table"
-import { OfficeMap } from "@/components/dashboard/incident-map"
+import { IncidentMap } from "@/components/dashboard/incident-map"
 import { IncidentDistributionChart } from "@/components/dashboard/incident-distribution-chart"
 import { EconomicBarChart } from "@/components/dashboard/economic-bar-chart"
 import { OfficeRanking } from "@/components/dashboard/office-ranking"
@@ -48,7 +48,7 @@ function DashboardPage() {
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <Button asChild>
           <Link href="/dashboard/incidentes/nuevo" className="flex items-center gap-2">
-            <PlusCircle className="h-4 w-4" />
+            <Plus className="h-4 w-4" />
             Nuevo Incidente
           </Link>
         </Button>
@@ -98,7 +98,7 @@ function DashboardPage() {
       {/* Map and Distribution Chart Row */}
       <div className="grid gap-6 lg:grid-cols-7 mb-6">
         <div className="lg:col-span-4">
-          <OfficeMap 
+          <IncidentMap 
             fromDate={filters.fromDate}
             toDate={filters.toDate}
             officeId={filters.officeId}

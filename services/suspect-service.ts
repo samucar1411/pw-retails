@@ -1,4 +1,4 @@
-import { Suspect, SuspectTableItem, SuspectStatus } from '../types/suspect';
+import { Suspect, SuspectTableItem, SuspectStatus, SuspectPartnerRelation, SuspectPartnerRelationResponse } from '../types/suspect';
 import { PaginatedResponse, ListParams } from '../types/api';
 import { api } from './api';
 
@@ -9,10 +9,7 @@ const DEFAULT_SUSPECT: Suspect = {
   PhysicalDescription: 'Información no disponible',
   PhotoUrl: '',
   Status: 0,
-  StatusDetails: {
-    id: 0,
-    Name: 'Desconocido'
-  }
+  Tags: []  // Changed to empty array to match the type
 };
 
 // API ENDPOINTS
@@ -40,13 +37,38 @@ export async function getAllSuspects(
     page?: number;
     page_size?: number;
     search?: string;
+    tags?: string | string[];
+    Status?: string | number;
+    alias?: string;
+    id?: string;
+    suspects_tags?: string | string[];
   } = {}
 ): Promise<PaginatedResponse<Suspect>> {
   // Only pass parameters in the params object, not in the URL
-  const params = { ...filters, format: 'json' };
+  const cleanParams: Record<string, string | number> = { format: 'json' };
+  
+  // Copiar los filtros válidos a cleanParams
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      if (key === 'tags' || key === 'suspects_tags') {
+        cleanParams[key] = Array.isArray(value) ? value.join(',') : value;
+      } else if (key === 'Status') {
+        // Asegurarse de que el estado se envía como número
+        cleanParams[key] = Number(value);
+      } else if (key === 'id') {
+        // Buscar por ID exacto
+        cleanParams[key] = value;
+      } else if (key === 'alias') {
+        // Buscar por alias exacto o parcial
+        cleanParams.alias__icontains = value;
+      } else {
+        cleanParams[key] = value as string | number;
+      }
+    }
+  });
   
   try {
-    const { data } = await api.get<PaginatedResponse<Suspect>>('/api/suspects/', { params });
+    const { data } = await api.get<PaginatedResponse<Suspect>>('/api/suspects/', { params: cleanParams });
     return data;
   } catch (error) {
     console.error("Error fetching suspects:", error);
@@ -199,4 +221,89 @@ export async function searchSuspects(query: string, params?: ListParams): Promis
   });
   
   return data;
+}
+
+/**
+ * Buscar sospechosos por tags
+ */
+export async function searchSuspectsByTags(
+  tags: string | string[],
+  params: ListParams = {}
+): Promise<PaginatedResponse<Suspect>> {
+  return getAllSuspects({
+    ...params,
+    tags,
+    ordering: '-created_at'
+  });
+}
+
+// SUSPECT PARTNER RELATIONS ENDPOINTS AND FUNCTIONS
+const SUSPECT_PARTNER_RELATIONS_ENDPOINT = '/api/suspectPartnerRelations/';
+
+export async function getSuspectPartnerRelations(params: ListParams = {}): Promise<SuspectPartnerRelationResponse> {
+  try {
+    const { data } = await api.get<SuspectPartnerRelationResponse>(SUSPECT_PARTNER_RELATIONS_ENDPOINT, {
+      params: { ...params, format: 'json' }
+    });
+    return data;
+  } catch (error) {
+    console.error('Error fetching suspect partner relations:', error);
+    throw error;
+  }
+}
+
+export async function createSuspectPartnerRelation(relation: Partial<SuspectPartnerRelation>): Promise<SuspectPartnerRelation> {
+  try {
+    const { data } = await api.post<SuspectPartnerRelation>(
+      SUSPECT_PARTNER_RELATIONS_ENDPOINT,
+      relation,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    return data;
+  } catch (error) {
+    console.error('Error creating suspect partner relation:', error);
+    throw error;
+  }
+}
+
+export async function updateSuspectPartnerRelation(
+  id: string,
+  relation: Partial<SuspectPartnerRelation>
+): Promise<SuspectPartnerRelation> {
+  try {
+    const { data } = await api.patch<SuspectPartnerRelation>(
+      `${SUSPECT_PARTNER_RELATIONS_ENDPOINT}${id}/`,
+      relation
+    );
+    return data;
+  } catch (error) {
+    console.error(`Error updating suspect partner relation ${id}:`, error);
+    throw error;
+  }
+}
+
+export async function deleteSuspectPartnerRelation(id: string): Promise<boolean> {
+  try {
+    await api.delete(`${SUSPECT_PARTNER_RELATIONS_ENDPOINT}${id}/`);
+    return true;
+  } catch (error) {
+    console.error(`Error deleting suspect partner relation ${id}:`, error);
+    return false;
+  }
+}
+
+export async function getSuspectPartnerRelationById(id: string): Promise<SuspectPartnerRelation | null> {
+  try {
+    const { data } = await api.get<SuspectPartnerRelation>(
+      `${SUSPECT_PARTNER_RELATIONS_ENDPOINT}${id}/`
+    );
+    return data;
+  } catch (error) {
+    console.error(`Error fetching suspect partner relation ${id}:`, error);
+    return null;
+  }
 }

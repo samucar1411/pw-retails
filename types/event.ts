@@ -1,6 +1,7 @@
 export interface Event {
   id: number;
   img_file: string | null;
+  uuid: string;
   staff_name: string;
   image_name: string;
   created_at: string;
@@ -8,6 +9,7 @@ export interface Event {
   office_name: string;
   status?: string | null;
   score?: string;
+  blacklist?: string | null;
 }
 
 export type EventCreateInput = Omit<Event, 'id'>;

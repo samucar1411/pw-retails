@@ -7,11 +7,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useIncidentsWithFilters } from '@/hooks/useIncidentsWithFilters';
-import { IncidentsTable } from "./components/incidents-table";
 import { IncidentFilters } from "@/components/incidents/incident-filters";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { LoadingState } from "@/components/ui/loading-state";
 import { withErrorBoundary } from "@/components/error-boundary";
+import { DataTable } from "@/components/ui/data-table";
+import { columns } from "./components/incidents-table/columns";
 
 interface IncidentFiltersState {
   Office?: string;
@@ -41,14 +42,20 @@ function IncidentesPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleFiltersChange = (newFilters: IncidentFiltersState) => {
-    const updatedFilters = { ...newFilters, search: searchTerm };
+    const updatedFilters = { 
+      ...newFilters, 
+      search: searchTerm
+    };
     setFilters(updatedFilters);
     applyFilters(updatedFilters);
   };
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
-    const updatedFilters = { ...filters, search: value };
+    const updatedFilters = { 
+      ...filters, 
+      search: value
+    };
     setFilters(updatedFilters);
     applyFilters(updatedFilters);
   };
@@ -58,13 +65,6 @@ function IncidentesPage() {
       handleSearchChange((e.target as HTMLInputElement).value);
     }
   };
-
-  const filtersComponent = IncidentFilters({ 
-    filters, 
-    onFiltersChange: handleFiltersChange, 
-    filterOptions 
-  });
-
   
   if (error) {
     return (
@@ -114,27 +114,42 @@ function IncidentesPage() {
 
         {/* Filters */}
         <div className="flex-shrink-0">
-          {filtersComponent.filterButton}
+          <IncidentFilters 
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            filterOptions={filterOptions}
+          />
         </div>
       </div>
 
       {/* Active Filters Row */}
-      {filtersComponent.activeFilters && (
-        <div className="w-full">
-          {filtersComponent.activeFilters}
+      <div className="w-full flex flex-wrap gap-2">
+        {Object.entries(filters).map(([key, value]) => {
+          if (!value) return null;
+          return (
+            <div key={key} className="inline-flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">{key}:</span>
+              <span className="text-sm font-medium">{value}</span>
+            </div>
+          );
+        })}
         </div>
-      )}
       
       {/* Incidents Table */}
       {loading ? (
         <LoadingState variant="skeleton" count={5} height="h-12" />
       ) : (
-        <IncidentsTable 
-          incidents={incidents}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={goToPage}
-          onRefresh={refreshIncidents}
+        <DataTable 
+          columns={columns}
+          data={incidents}
+          pageCount={totalPages}
+          pagination={{
+            pageIndex: currentPage - 1,
+            pageSize: 10
+          }}
+          onPaginationChange={({ pageIndex }) => goToPage(pageIndex + 1)}
+          loading={loading}
+          isError={!!error}
         />
       )}
     </div>

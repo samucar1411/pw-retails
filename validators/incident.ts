@@ -6,7 +6,7 @@ export const selectedSuspectSchema = z.object({
   apiId: z.string().uuid().optional().nullable(), // ID del sospechoso existente en la BD as UUID string
   alias: z.string().min(1, "El alias es requerido"),
   statusId: z.number().int().positive(),
-  description: z.string().optional(), // Removed minimum length validation for incident form context
+  notes: z.string().optional(), // Observaciones adicionales = Descripción física
   image: z.any().optional(), // Accept File, string URL, or null/undefined
   isNew: z.boolean(), // Flag para saber si es nuevo o existente
 });
@@ -36,8 +36,32 @@ export const attachmentSchema = z.object({
   contentType: z.string(),
 });
 
-export const incidentSchema = z.object({
-  id: z.number().int().positive().optional(), // Make id optional for new incidents
+export const incidentLossItemSchema = z.object({
+  id: z.number().optional(),
+  description: z.string().optional(),
+  quantity: z.union([z.string(), z.number()]).optional().transform((val) => {
+    if (!val) return 0;
+    const num = typeof val === 'string' ? Number(val) : val;
+    return num;
+  }),
+  unitPrice: z.union([z.string(), z.number()]).optional().transform((val) => {
+    if (!val) return 0;
+    const num = typeof val === 'string' ? Number(val) : val;
+    return num;
+  }),
+  type: z.enum(['mercaderia', 'material']),
+  total: z.union([z.string(), z.number()]).optional().transform((val) => {
+    if (!val) return 0;
+    const num = typeof val === 'string' ? Number(val) : val;
+    return num;
+  }),
+});
+
+export type IncidentLossItem = z.infer<typeof incidentLossItemSchema>;
+
+// Schema for form validation (accepts strings for number fields)
+export const incidentFormSchema = z.object({
+  id: z.number().int().positive().optional(),
   officeId: z.number().int().positive("Debe seleccionar una oficina"),
   date: z.string().min(1, "La fecha es requerida"),
   time: z.string().min(1, "La hora es requerida"),
@@ -45,25 +69,55 @@ export const incidentSchema = z.object({
     required_error: "Debe seleccionar un tipo de incidente",
     invalid_type_error: "Debe seleccionar un tipo de incidente válido"
   }).int().positive("Debe seleccionar un tipo de incidente"),
-  description: z.string().min(10, "La descripción debe tener al menos 10 caracteres").optional(),
-  cashLoss: z.number().min(0).optional(),
-  merchandiseLoss: z.number().min(0).optional(),
-  otherLosses: z.number().min(0).optional(),
-  totalLoss: z.number().min(0).optional(),
+  description: z.string().min(10, "La descripción debe tener al menos 10 caracteres"),
+  cashLoss: z.union([z.string(), z.number()]).optional().transform((val) => {
+    if (typeof val === 'string') return Number(val) || 0;
+    if (typeof val === 'number') return val;
+    return 0;
+  }),
+  merchandiseLoss: z.union([z.string(), z.number()]).optional().transform((val) => {
+    if (typeof val === 'string') return Number(val) || 0;
+    if (typeof val === 'number') return val;
+    return 0;
+  }),
+  otherLosses: z.union([z.string(), z.number()]).optional().transform((val) => {
+    if (typeof val === 'string') return Number(val) || 0;
+    if (typeof val === 'number') return val;
+    return 0;
+  }),
+  totalLoss: z.union([z.string(), z.number()]).optional().transform((val) => {
+    if (typeof val === 'string') return Number(val) || 0;
+    if (typeof val === 'number') return val;
+    return 0;
+  }),
   notes: z.string().optional(),
   attachments: z.array(attachmentSchema).optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
-  // Array de IDs de sospechosos para enviar al backend
   suspects: z.array(z.string().uuid()).optional(),
-  // Renamed suspects to selectedSuspects for form handling only (not sent to API)
-  selectedSuspects: z.array(selectedSuspectSchema).optional(), 
+  selectedSuspects: z.array(selectedSuspectSchema).optional(),
+  incidentLossItem: z.array(incidentLossItemSchema).default([]),
 });
 
-export type IncidentFormValues = z.infer<typeof incidentSchema>;
+// Schema for API payload (transforms strings to numbers)
+export const incidentSchema = incidentFormSchema.transform((data) => ({
+  ...data,
+  cashLoss: data.cashLoss ? Number(data.cashLoss) : 0,
+  merchandiseLoss: data.merchandiseLoss ? Number(data.merchandiseLoss) : 0,
+  otherLosses: data.otherLosses ? Number(data.otherLosses) : 0,
+  totalLoss: data.totalLoss ? Number(data.totalLoss) : 0,
+}));
+
+export type IncidentFormValues = z.infer<typeof incidentFormSchema>;
 
 // Schema for the payload sent to create incident API (without selectedSuspects, only suspectIds)
-export const incidentPayloadSchema = incidentSchema.omit({ selectedSuspects: true });
+export const incidentPayloadSchema = incidentFormSchema.omit({ selectedSuspects: true }).transform((data) => ({
+  ...data,
+  cashLoss: data.cashLoss ? Number(data.cashLoss) : 0,
+  merchandiseLoss: data.merchandiseLoss ? Number(data.merchandiseLoss) : 0,
+  otherLosses: data.otherLosses ? Number(data.otherLosses) : 0,
+  totalLoss: data.totalLoss ? Number(data.totalLoss) : 0,
+}));
 
 export type IncidentPayload = z.infer<typeof incidentPayloadSchema>;
 
@@ -75,10 +129,10 @@ export interface Incident {
   time: string;
   incidentTypeId: number;
   description?: string;
-  cashLoss?: number;
-  merchandiseLoss?: number;
-  otherLosses?: number;
-  totalLoss?: number;
+  cashLoss?: string;
+  merchandiseLoss?: string;
+  otherLosses?: string;
+  totalLoss?: string;
   notes?: string;
   attachments?: z.infer<typeof attachmentSchema>[];
   suspects?: string[];

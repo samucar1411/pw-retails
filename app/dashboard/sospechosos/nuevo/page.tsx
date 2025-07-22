@@ -4,8 +4,10 @@ import { SuspectForm } from '@/components/suspect-form';
 
 export default function NewSuspectPage() {
   return (
-    <div className="container mx-auto px-4">
+    <div className="flex min-h-screen p-4 md:p-6">
+      <div className="flex-1 pr-4 md:pr-6 pb-24">
       <SuspectForm />
+      </div>
     </div>
   );
 }

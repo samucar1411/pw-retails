@@ -14,8 +14,8 @@ export function useRealTimeEvents(enabled: boolean = false, pollingInterval: num
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
       
       const eventsResponse = await getAllEvents({
-        date_from: oneHourAgo.toISOString().split('T')[0],
-        date_to: now.toISOString().split('T')[0]
+        startDate: oneHourAgo.toISOString().split('T')[0],
+        endDate: now.toISOString().split('T')[0]
       });
 
       const events = eventsResponse.results || [];
@@ -56,7 +56,7 @@ export function useRealTimeEvents(enabled: boolean = false, pollingInterval: num
   const initializeLastEventId = useCallback(async () => {
     try {
       const eventsResponse = await getAllEvents({
-        page_size: 1 // Get just the latest event
+        page: '1' // Get just the latest event
       });
       
       const events = eventsResponse.results || [];

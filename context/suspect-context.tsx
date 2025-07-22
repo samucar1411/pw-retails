@@ -21,13 +21,21 @@ interface PaginationState {
   totalPages: number;
 }
 
+interface SuspectFilters {
+  Status?: string | number;
+  alias?: string;
+  id?: string;
+  suspects_tags?: string[];
+  search?: string;
+}
+
 interface SuspectContextType {
   suspects: Suspect[];
   suspectStatuses: SuspectStatus[];
   loading: boolean;
   error: string | null;
   pagination: PaginationState;
-  fetchSuspects: (params?: { page?: number; pageSize?: number; search?: string }) => Promise<void>;
+  fetchSuspects: (params?: { page?: number; pageSize?: number } & SuspectFilters) => Promise<void>;
   fetchSuspectStatuses: () => Promise<void>;
   addSuspect: (suspect: Partial<Suspect>) => Promise<Suspect | null>;
   updateSuspect: (id: string, suspect: Partial<Suspect>) => Promise<Suspect | null>;
@@ -53,7 +61,7 @@ export function SuspectProvider({ children }: { children: ReactNode }) {
     totalPages: 1,
   });
 
-  const fetchSuspects = useCallback(async (params?: { page?: number; pageSize?: number; search?: string }) => {
+  const fetchSuspects = useCallback(async (params?: { page?: number; pageSize?: number } & SuspectFilters) => {
     setLoading(true);
     setError(null);
     try {
@@ -69,6 +77,10 @@ export function SuspectProvider({ children }: { children: ReactNode }) {
         page: pageToFetch,
         page_size: pageSizeToFetch,
         search: effectiveSearchTerm,
+        Status: params?.Status,
+        alias: params?.alias,
+        id: params?.id,
+        suspects_tags: params?.suspects_tags
       });
       
       setSuspects(response.results);

@@ -1,451 +1,489 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Filter, X, Calendar as CalendarIcon, Building, Tag, CheckIcon, ChevronsUpDownIcon, User, ArrowLeft } from 'lucide-react';
+import { Filter, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { getAllOfficesComplete } from '@/services/office-service';
+import { Office } from '@/types/office';
+import { format } from 'date-fns';
 
-interface IncidentFilters {
+interface IncidentFiltersState {
   Office?: string;
   IncidentType?: string;
   suspect_alias?: string;
+  id?: string;
   fromDate?: string;
   toDate?: string;
   search?: string;
 }
 
-interface FilterOption {
+interface FilterGroup {
   id: string;
   label: string;
-  icon: React.ElementType;
-  type: 'select' | 'date-range';
-  options?: Array<{ value: string; label: string }>;
-}
-
-interface ActiveFilter {
-  id: string;
-  label: string;
-  value: string | { from?: Date; to?: Date };
-  displayValue: string;
+  fields: Array<{
+    key: keyof IncidentFiltersState;
+    label: string;
+    type: 'select' | 'date-range' | 'text' | 'date';
+    placeholder?: string;
+    options?: Array<{ value: string; label: string; description?: string }>;
+  }>;
 }
 
 interface IncidentFiltersProps {
-  filters: IncidentFilters;
-  onFiltersChange: (filters: IncidentFilters) => void;
+  filters: IncidentFiltersState;
+  onFiltersChange: (filters: IncidentFiltersState) => void;
   filterOptions: {
-    offices: Array<{ id: string; name: string }>;
-    incidentTypes: Array<{ id: string; name: string }>;
+    incidentTypes: Array<{ id: string; Name: string }>;
     suspects: Array<{ alias: string }>;
   };
 }
 
-export function IncidentFilters({ filters, onFiltersChange, filterOptions }: IncidentFiltersProps) {
-  const [isMainOpen, setIsMainOpen] = useState(false);
-  const [selectedFilterType, setSelectedFilterType] = useState<string>('');
-  const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
-  const [pendingFilterValue, setPendingFilterValue] = useState<string | { from?: Date; to?: Date } | null>(null);
-
-  // Date range states
-  const [fromDate, setFromDate] = useState<Date | undefined>(undefined);
-  const [toDate, setToDate] = useState<Date | undefined>(undefined);
-
-  // Combobox states for each filter type
-  const [officeOpen, setOfficeOpen] = useState(false);
-  const [incidentTypeOpen, setIncidentTypeOpen] = useState(false);
-  const [suspectOpen, setSuspectOpen] = useState(false);
-
-  const availableFilters: FilterOption[] = [
-    {
-      id: 'Office',
-      label: 'Sucursal',
-      icon: Building,
-      type: 'select',
-      options: filterOptions.offices.map(office => ({ value: office.id, label: office.name }))
-    },
-    {
-      id: 'IncidentType',
-      label: 'Tipo de Incidente',
-      icon: Tag,
-      type: 'select',
-      options: filterOptions.incidentTypes.map(type => ({ value: type.id, label: type.name }))
-    },
-    {
-      id: 'suspect_alias',
-      label: 'Sospechoso',
-      icon: User,
-      type: 'select',
-      options: filterOptions.suspects.map(suspect => ({ value: suspect.alias, label: suspect.alias }))
-    },
-    {
-      id: 'date_range',
-      label: 'Rango de fechas',
-      icon: CalendarIcon,
-      type: 'date-range'
-    }
-  ];
-
-  // Update pending filter value when dates change
-  React.useEffect(() => {
-    if (selectedFilterType === 'date_range' && (fromDate || toDate)) {
-      setPendingFilterValue({ from: fromDate, to: toDate });
-    }
-  }, [fromDate, toDate, selectedFilterType]);
-
-  const handlePendingValueChange = (value: string | { from?: Date; to?: Date }) => {
-    setPendingFilterValue(value);
-  };
-
-  const handleApplyFilter = () => {
-    if (!selectedFilterType || !pendingFilterValue) return;
-
-    const filterId = selectedFilterType;
-    const value = pendingFilterValue;
-    const filterOption = availableFilters.find(f => f.id === filterId);
-    if (!filterOption) return;
-
-    let displayValue = '';
-    const newFilters = { ...filters };
-
-    if (filterId === 'date_range' && typeof value === 'object') {
-      if (value.from && value.to) {
-        displayValue = `${value.from.toLocaleDateString('es-ES')} - ${value.to.toLocaleDateString('es-ES')}`;
-        newFilters.fromDate = value.from.toISOString().split('T')[0];
-        newFilters.toDate = value.to.toISOString().split('T')[0];
-      } else if (value.from) {
-        displayValue = `Desde ${value.from.toLocaleDateString('es-ES')}`;
-        newFilters.fromDate = value.from.toISOString().split('T')[0];
+const filterGroups: FilterGroup[] = [
+  {
+    id: 'location',
+    label: 'Ubicación',
+    fields: [
+      {
+        key: 'Office',
+        label: 'Sucursal',
+        type: 'select',
+        placeholder: 'Seleccionar sucursal...'
       }
-    } else if (typeof value === 'string' && value) {
-      // For select filters, find the display label
-      if (filterId === 'Office') {
-        const office = filterOptions.offices.find(o => o.id === value);
-        displayValue = office?.name || value;
-        newFilters.Office = value;
-      } else if (filterId === 'IncidentType') {
-        const incidentType = filterOptions.incidentTypes.find(t => t.id === value);
-        displayValue = incidentType?.name || value;
-        newFilters.IncidentType = value;
-      } else if (filterId === 'suspect_alias') {
-        displayValue = value;
-        newFilters.suspect_alias = value;
+    ]
+  },
+  {
+    id: 'incident',
+    label: 'Incidente',
+    fields: [
+      {
+        key: 'IncidentType',
+        label: 'Tipo de Incidente',
+        type: 'select',
+        placeholder: 'Seleccionar tipo...'
+      },
+      {
+        key: 'id',
+        label: 'ID del Incidente',
+        type: 'text',
+        placeholder: 'Buscar por ID...'
       }
-    }
+    ]
+  },
+  {
+    id: 'suspect',
+    label: 'Sospechoso',
+    fields: [
+      {
+        key: 'suspect_alias',
+        label: 'Alias del Sospechoso',
+        type: 'select',
+        placeholder: 'Seleccionar sospechoso...'
+      }
+    ]
+  },
+  {
+    id: 'dates',
+    label: 'Fechas',
+    fields: [
+      {
+        key: 'fromDate',
+        label: 'Fecha de inicio',
+        type: 'date',
+        placeholder: 'Seleccionar fecha de inicio...'
+      },
+      {
+        key: 'toDate',
+        label: 'Fecha final',
+        type: 'date',
+        placeholder: 'Seleccionar fecha final...'
+      }
+    ]
+  },
+  {
+    id: 'search',
+    label: 'Búsqueda',
+    fields: [
+      {
+        key: 'search',
+        label: 'Búsqueda general',
+        type: 'text',
+        placeholder: 'Buscar...'
+      }
+    ]
+  }
+];
 
-    if (displayValue) {
-      const newActiveFilter: ActiveFilter = {
-        id: filterId,
-        label: filterOption.label,
-        value,
-        displayValue
-      };
+export function IncidentFilters({
+  filters,
+  onFiltersChange,
+  filterOptions
+}: IncidentFiltersProps) {
+  const [open, setOpen] = useState(false);
+  const [step, setStep] = useState<'groups' | 'fields'>('groups');
+  const [selectedGroup, setSelectedGroup] = useState<FilterGroup | null>(null);
+  const [tempFilters, setTempFilters] = useState<IncidentFiltersState>({});
+  const [originalGroupFilters, setOriginalGroupFilters] = useState<IncidentFiltersState>({});
+  const [datePopovers, setDatePopovers] = useState<{ [key: string]: boolean }>({});
 
-      // Remove existing filter of same type
-      const updatedActiveFilters = activeFilters.filter(f => f.id !== filterId);
-      updatedActiveFilters.push(newActiveFilter);
-      setActiveFilters(updatedActiveFilters);
+  // Fetch all offices
+  const { data: offices = [] } = useQuery<Office[], Error>({
+    queryKey: ['all-offices-complete'],
+    queryFn: getAllOfficesComplete,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
-      onFiltersChange(newFilters);
-    }
-
-    // Reset state
-    setSelectedFilterType('');
-    setPendingFilterValue(null);
-    setFromDate(undefined);
-    setToDate(undefined);
-    setIsMainOpen(false);
+  const getActiveFiltersCount = () => {
+    return Object.values(filters).filter(
+      (value) => value !== undefined && value !== null && value !== ""
+    ).length;
   };
 
-  const handleCancelFilter = () => {
-    setSelectedFilterType('');
-    setPendingFilterValue(null);
-    setFromDate(undefined);
-    setToDate(undefined);
+  const getGroupActiveCount = (groupId: string) => {
+    const group = filterGroups.find(g => g.id === groupId);
+    if (!group) return 0;
+    return group.fields.filter(field => {
+      const value = filters[field.key];
+      return value !== undefined && value !== null && value !== "";
+    }).length;
   };
 
-  const handleBackToFilterTypes = () => {
-    setSelectedFilterType('');
-    setPendingFilterValue(null);
-    setFromDate(undefined);
-    setToDate(undefined);
+  const getCurrentGroupTempCount = () => {
+    return Object.values(tempFilters).filter(
+      (value) => value !== undefined && value !== null && value !== ""
+    ).length;
   };
 
-  const removeFilter = (filterId: string) => {
-    const updatedActiveFilters = activeFilters.filter(f => f.id !== filterId);
-    setActiveFilters(updatedActiveFilters);
+  const handleSelectGroup = (group: FilterGroup) => {
+    setSelectedGroup(group);
+    
+    // Cargar filtros existentes para el grupo seleccionado
+    const groupFilters: IncidentFiltersState = {};
+    group.fields.forEach(field => {
+      const currentValue = filters[field.key];
+      if (currentValue !== undefined && currentValue !== null && currentValue !== "") {
+        groupFilters[field.key] = currentValue;
+      }
+    });
+    
+    setOriginalGroupFilters(groupFilters);
+    setTempFilters(groupFilters);
+    setStep('fields');
+  };
 
+  const handleBackToGroups = () => {
+    setStep('groups');
+    setSelectedGroup(null);
+    setTempFilters({});
+    setOriginalGroupFilters({});
+  };
+
+  const handleSaveFilters = () => {
+    // Aplicar filtros temporales a los filtros reales
     const newFilters = { ...filters };
-    if (filterId === 'date_range') {
-      delete newFilters.fromDate;
-      delete newFilters.toDate;
-    } else if (filterId === 'Office') {
-      delete newFilters.Office;
-    } else if (filterId === 'IncidentType') {
-      delete newFilters.IncidentType;
-    } else if (filterId === 'suspect_alias') {
-      delete newFilters.suspect_alias;
+    
+    // Primero limpiar los campos del grupo actual
+    if (selectedGroup) {
+      selectedGroup.fields.forEach(field => {
+        delete newFilters[field.key];
+      });
     }
-
+    
+    // Luego añadir los nuevos valores
+    Object.entries(tempFilters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        newFilters[key as keyof IncidentFiltersState] = value;
+      }
+    });
+    
     onFiltersChange(newFilters);
+    handleBackToGroups();
   };
 
-  const clearAllFilters = () => {
-    setActiveFilters([]);
-    onFiltersChange({});
+  const handleDiscardFilters = () => {
+    setTempFilters(originalGroupFilters);
+    handleBackToGroups();
   };
 
-  const renderComboboxSelect = (filterId: string, options: Array<{ value: string; label: string }>, placeholder: string, open: boolean, setOpen: (open: boolean) => void) => {
-    const currentValue = filterId === 'Office' ? filters.Office : 
-                        filterId === 'IncidentType' ? filters.IncidentType : 
-                        filterId === 'suspect_alias' ? filters.suspect_alias : '';
+  const handleClearGroup = () => {
+    setTempFilters({});
+  };
 
-    const currentOption = options.find(option => option.value === currentValue);
+  const handleFilterChange = (key: keyof IncidentFiltersState, value: string | undefined) => {
+    const newValue = value === "" || value === "none" ? undefined : value;
+    const newTempFilters = { ...tempFilters, [key]: newValue };
+    if (newValue === undefined) {
+      delete newTempFilters[key];
+    }
+    setTempFilters(newTempFilters);
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (!newOpen) {
+      setStep('groups');
+      setSelectedGroup(null);
+    }
+  };
+
+  const renderField = (field: FilterGroup['fields'][0]) => {
+    const value = tempFilters[field.key];
+
+    if (field.type === 'select') {
+      let options: Array<{ value: string; label: string; description?: string }> = [];
+      
+      // Mapear las opciones según el tipo de campo
+      if (field.key === 'Office') {
+        options = offices.map((office: Office) => ({
+          value: office.id.toString(),
+          label: `${office.Name} (${office.Code})`,
+          description: office.Address
+        }));
+      } else if (field.key === 'IncidentType') {
+        options = filterOptions.incidentTypes.map((type) => ({
+          value: type.id,
+          label: type.Name
+        }));
+      } else if (field.key === 'suspect_alias') {
+        options = filterOptions.suspects.map((suspect) => ({
+          value: suspect.alias,
+          label: suspect.alias
+        }));
+      }
+
+      return (
+        <div key={field.key} className="space-y-2">
+          <Label>{field.label}</Label>
+          <Select
+            value={value || "none"}
+            onValueChange={(newValue) => handleFilterChange(field.key, newValue)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={field.placeholder} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Todos</SelectItem>
+              {options.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  <div className="flex flex-col">
+                    <span>{option.label}</span>
+                    {option.description && (
+                      <span className="text-xs text-muted-foreground">
+                        {option.description}
+                      </span>
+                    )}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      );
+    }
+
+    if (field.type === 'date') {
+      const currentDate = tempFilters[field.key] ? new Date(tempFilters[field.key]!) : undefined;
+      const isOpen = datePopovers[field.key] || false;
+      
+      return (
+        <div key={field.key} className="space-y-2">
+          <Label>{field.label}</Label>
+          <Popover 
+            open={isOpen} 
+            onOpenChange={(open) => setDatePopovers(prev => ({ ...prev, [field.key]: open }))}
+          >
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left font-normal"
+              >
+                {currentDate ? format(currentDate, 'dd/MM/yyyy') : field.placeholder}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={currentDate}
+                onSelect={(date) => {
+                  if (date) {
+                    handleFilterChange(field.key, format(date, 'yyyy-MM-dd'));
+                  } else {
+                    handleFilterChange(field.key, undefined);
+                  }
+                  setDatePopovers(prev => ({ ...prev, [field.key]: false }));
+                }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+      );
+    }
+
+    if (field.type === 'date-range') {
+      const fromDate = tempFilters.fromDate ? new Date(tempFilters.fromDate) : undefined;
+      const toDate = tempFilters.toDate ? new Date(tempFilters.toDate) : undefined;
+      
+      return (
+        <div key={field.key} className="space-y-2">
+          <Label>{field.label}</Label>
+          <Calendar
+            mode="range"
+            selected={{
+              from: fromDate,
+              to: toDate
+            }}
+            onSelect={(range) => {
+              if (range?.from) {
+                handleFilterChange('fromDate', format(range.from, 'yyyy-MM-dd'));
+                if (range.to) {
+                  handleFilterChange('toDate', format(range.to, 'yyyy-MM-dd'));
+                } else {
+                  handleFilterChange('toDate', undefined);
+                }
+              } else {
+                handleFilterChange('fromDate', undefined);
+                handleFilterChange('toDate', undefined);
+              }
+            }}
+            className="rounded-md border"
+            numberOfMonths={2}
+          />
+        </div>
+      );
+    }
 
     return (
-      <div className="space-y-3">
-        <label className="text-sm font-medium">
-          {availableFilters.find(f => f.id === filterId)?.label}
-        </label>
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={open}
-              className="w-full justify-between"
-            >
-              {currentOption?.label || placeholder}
-              <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[300px] p-0">
-            <Command>
-              <CommandInput placeholder={`Buscar ${placeholder.toLowerCase()}...`} />
-              <CommandList>
-                <CommandEmpty>No se encontraron resultados.</CommandEmpty>
-                <CommandGroup>
-                  {options.map((option) => (
-                    <CommandItem
-                      key={option.value}
-                      value={option.value}
-                      onSelect={(value) => {
-                        handlePendingValueChange(value);
-                        setOpen(false);
-                      }}
-                    >
-                      <CheckIcon
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          currentValue === option.value ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      {option.label}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+      <div key={field.key} className="space-y-2">
+        <Label>{field.label}</Label>
+        <Input
+          placeholder={field.placeholder}
+          value={value || ""}
+          onChange={(e) => handleFilterChange(field.key, e.target.value)}
+        />
       </div>
     );
   };
 
-  const renderDateRangeFilter = () => {
-    return (
-      <div className="space-y-4">
-        <label className="text-sm font-medium">Rango de fechas</label>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Fecha inicio */}
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground">Fecha inicio</label>
-            <Calendar
-              mode="single"
-              selected={fromDate}
-              onSelect={setFromDate}
-              className="rounded-md border shadow-sm"
-              captionLayout="dropdown"
-            />
-          </div>
+  const activeFiltersCount = getActiveFiltersCount();
 
-          {/* Fecha fin */}
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground">Fecha fin</label>
-            <Calendar
-              mode="single"
-              selected={toDate}
-              onSelect={setToDate}
-              className="rounded-md border shadow-sm"
-              captionLayout="dropdown"
-              disabled={(date) => fromDate ? date < fromDate : false}
-            />
-          </div>
-        </div>
-
-        {/* Preview */}
-        {(fromDate || toDate) && (
-          <div className="p-3 bg-muted/50 rounded-lg border-2 border-dashed">
-            <p className="text-sm text-muted-foreground">
-              Rango seleccionado: {' '}
-              {fromDate ? fromDate.toLocaleDateString('es-ES') : '---'} - {' '}
-              {toDate ? toDate.toLocaleDateString('es-ES') : '---'}
-            </p>
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className="relative">
+          <Filter className="h-4 w-4 mr-2" />
+          Filtros
+          {activeFiltersCount > 0 && (
+            <Badge className="ml-2 px-1.5 py-0.5 text-xs">
+              {activeFiltersCount}
+            </Badge>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-0" align="start">
+        {step === 'groups' ? (
+          // Paso 1: Seleccionar Grupo
+          <Command>
+            <CommandInput placeholder="Buscar filtros..." />
+            <CommandList>
+              <CommandEmpty>No se encontraron filtros.</CommandEmpty>
+              <CommandGroup>
+                {filterGroups.map((group) => {
+                  const activeCount = getGroupActiveCount(group.id);
+                  return (
+                    <CommandItem
+                      key={group.id}
+                      onSelect={() => handleSelectGroup(group)}
+                      className="flex items-center justify-between cursor-pointer"
+                    >
+                      <span className="truncate">{group.label}</span>
+                      {activeCount > 0 && (
+                        <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                          {activeCount}
+                        </Badge>
+                      )}
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        ) : (
+          // Paso 2: Configurar Campos
+          <div>
+            <div className="flex items-center border-b p-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDiscardFilters}
+                className="p-1 h-auto mr-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <h3 className="font-medium text-sm flex-1">{selectedGroup?.label}</h3>
+              {getCurrentGroupTempCount() > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs h-6"
+                  onClick={handleClearGroup}
+                >
+                  Limpiar
+                </Button>
+              )}
+            </div>
+            <div className="p-4 space-y-4 max-h-80 overflow-y-auto">
+              {selectedGroup?.fields.map(renderField)}
+            </div>
+            
+            {/* Botones de Acción */}
+            <div className="border-t p-3 flex gap-2 justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDiscardFilters}
+              >
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSaveFilters}
+              >
+                Guardar Filtros
+              </Button>
+            </div>
           </div>
         )}
-      </div>
-    );
-  };
 
-  const renderFilterInput = () => {
-    const filterOption = availableFilters.find(f => f.id === selectedFilterType);
-    if (!filterOption) return null;
-
-    switch (filterOption.type) {
-      case 'select':
-        if (selectedFilterType === 'Office') {
-          return renderComboboxSelect('Office', filterOption.options || [], 'Seleccionar sucursal', officeOpen, setOfficeOpen);
-        } else if (selectedFilterType === 'IncidentType') {
-          return renderComboboxSelect('IncidentType', filterOption.options || [], 'Seleccionar tipo', incidentTypeOpen, setIncidentTypeOpen);
-        } else if (selectedFilterType === 'suspect_alias') {
-          return renderComboboxSelect('suspect_alias', filterOption.options || [], 'Seleccionar sospechoso', suspectOpen, setSuspectOpen);
-        }
-        break;
-
-      case 'date-range':
-        return renderDateRangeFilter();
-
-      default:
-        return null;
-    }
-  };
-
-  return {
-    filterButton: (
-      <Popover open={isMainOpen} onOpenChange={setIsMainOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="gap-2">
-            <Filter className="h-4 w-4" />
-            Filtros
-            <ChevronsUpDownIcon className="h-4 w-4" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className={cn(
-          "p-0",
-          selectedFilterType === 'date_range' ? "w-[600px]" : "w-64"
-        )}>
-          {!selectedFilterType ? (
-            // Step 1: Select filter type using Command
-            <Command>
-              <CommandInput placeholder="Buscar tipo de filtro..." />
-              <CommandList>
-                <CommandEmpty>No se encontraron filtros.</CommandEmpty>
-                <CommandGroup heading="Tipos de filtro">
-                  {availableFilters.map((filter) => {
-                    const Icon = filter.icon;
-                    const isDisabled = activeFilters.some(af => af.id === filter.id);
-                    
-                    return (
-                      <CommandItem
-                        key={filter.id}
-                        value={filter.label}
-                        onSelect={() => {
-                          if (!isDisabled) {
-                            setSelectedFilterType(filter.id);
-                          }
-                        }}
-                        disabled={isDisabled}
-                        className={cn(
-                          "flex items-center gap-3 p-3",
-                          isDisabled && "opacity-50 cursor-not-allowed"
-                        )}
-                      >
-                        <Icon className="h-4 w-4" />
-                        <div className="flex-1">
-                          <div className="font-medium">{filter.label}</div>
-                          {isDisabled && (
-                            <div className="text-xs text-muted-foreground">Ya aplicado</div>
-                          )}
-                        </div>
-                      </CommandItem>
-                    );
-                  })}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          ) : (
-            // Step 2: Configure filter
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleBackToFilterTypes}
-                  className="flex items-center gap-2"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Volver
-                </Button>
-                <h4 className="font-medium">Configurar filtro</h4>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCancelFilter}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              {renderFilterInput()}
-              
-              {/* Action Buttons */}
-              <div className="flex gap-2 mt-4 pt-4 border-t">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCancelFilter}
-                  className="flex-1"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleApplyFilter}
-                  className="flex-1"
-                  disabled={!pendingFilterValue}
-                >
-                  Guardar
-                </Button>
-              </div>
+        {/* Footer con estadísticas generales */}
+        {activeFiltersCount > 0 && step === 'groups' && (
+          <div className="border-t p-3 bg-muted/30">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">
+                {activeFiltersCount} filtro{activeFiltersCount > 1 ? 's' : ''} aplicado{activeFiltersCount > 1 ? 's' : ''}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-6"
+                onClick={() => onFiltersChange({})}
+              >
+                Limpiar todos
+              </Button>
             </div>
-          )}
-        </PopoverContent>
-      </Popover>
-    ),
-    activeFilters: activeFilters.length > 0 ? (
-      <div className="flex items-center gap-2 flex-wrap">
-        {/* Active filters */}
-        {activeFilters.map((filter) => (
-          <Badge key={filter.id} variant="secondary" className="gap-1">
-            {filter.label}: {filter.displayValue}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-4 w-4 p-0 hover:bg-transparent"
-              onClick={() => removeFilter(filter.id)}
-            >
-              <X className="h-3 w-3" />
-            </Button>
-          </Badge>
-        ))}
-
-        {/* Clear all button */}
-        <Button variant="outline" size="sm" onClick={clearAllFilters}>
-          Limpiar todos
-        </Button>
-      </div>
-    ) : null
-  };
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
 } 

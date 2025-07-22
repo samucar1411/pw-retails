@@ -34,7 +34,7 @@
     ".next/types/**/*.ts",
     "next-env.d.ts",
     "out/types/**/*.ts"
-  ],
+, ".next/types/app/dashboard/incidentes/nuevo/page.ts"  ],
   "exclude": [
     "node_modules"
   ]

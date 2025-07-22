@@ -7,11 +7,10 @@ import {
 } from "@/components/ui/pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { Incident } from "@/types/incident";
-import { Hash, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import React, { useMemo } from "react";
-
+import { IdCell } from "@/components/ui/id-cell";
 
 import { withErrorBoundary } from "@/components/error-boundary";
 
@@ -36,7 +35,6 @@ function IncidentsTableComponent({
   onPageChange, 
   onRefresh 
 }: IncidentsTableProps) {
-
   const tableRows = useMemo(() => {
     if (!incidents?.length) {
       return (
@@ -49,8 +47,8 @@ function IncidentsTableComponent({
     }
     
     return incidents.map((inc: Incident) => {
-      const officeId = inc.Office || inc.officeId;
-      const incidentTypeId = inc.IncidentType || Number(inc.incidentTypeId) || 0;
+      const officeId = inc.Office;
+      const incidentTypeId = inc.IncidentType;
       
       return (
         <TableRow 
@@ -59,15 +57,7 @@ function IncidentsTableComponent({
         >
           {/* ID */}
           <TableCell className="py-3">
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Hash className="h-3.5 w-3.5 flex-shrink-0" />
-              <Link 
-                href={`/dashboard/incidentes/${inc.id}`}
-                className="hover:underline hover:text-primary"
-              >
-                {inc.id.toString().slice(-8)}
-              </Link>
-            </div>
+            <IdCell id={inc.id} basePath="incidentes" />
           </TableCell>
           
           {/* Date */}
@@ -95,7 +85,7 @@ function IncidentsTableComponent({
           <TableCell className="py-3">
             <div className="space-y-1.5">
               <div className="text-sm line-clamp-2">
-                {inc.Description || inc.description || "Sin descripción"}
+                {inc.Description || "Sin descripción"}
               </div>
               {inc.Suspects?.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
@@ -124,20 +114,20 @@ function IncidentsTableComponent({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>FECHA Y HORA</TableHead>
-              <TableHead>TIPO</TableHead>
-              <TableHead>SUCURSAL</TableHead>
-              <TableHead>DETALLES</TableHead>
-              <TableHead>PÉRDIDA</TableHead>
+              <TableHead>Id</TableHead>
+              <TableHead>Fecha y hora</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Sucursal</TableHead>
+              <TableHead>Detalles</TableHead>
+              <TableHead>Pérdida</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>{tableRows}</TableBody>
         </Table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="mt-6">
+      <div className="flex items-center justify-between mt-6">
+        {totalPages > 1 && (
           <Pagination>
             <PaginationContent>
               <PaginationItem>
@@ -176,13 +166,16 @@ function IncidentsTableComponent({
                   );
                 }
                 
-                // Show ellipsis between gaps
-                if (pageNum === 2 && currentPage > 3) {
-                  return <PaginationItem key="start-ellipsis"><span className="px-2">...</span></PaginationItem>;
-                }
-                
-                if (pageNum === totalPages - 1 && currentPage < totalPages - 2) {
-                  return <PaginationItem key="end-ellipsis"><span className="px-2">...</span></PaginationItem>;
+                // Show ellipsis for gaps
+                if (
+                  pageNum === 2 || 
+                  pageNum === totalPages - 1
+                ) {
+                  return (
+                    <PaginationItem key={pageNum}>
+                      <span className="px-4">...</span>
+                    </PaginationItem>
+                  );
                 }
                 
                 return null;
@@ -190,7 +183,7 @@ function IncidentsTableComponent({
               
               <PaginationItem>
                 <PaginationNext 
-                  href="#"
+                  href="#" 
                   onClick={(e) => {
                     e.preventDefault();
                     if (currentPage < totalPages) onPageChange(currentPage + 1);
@@ -200,11 +193,8 @@ function IncidentsTableComponent({
               </PaginationItem>
             </PaginationContent>
           </Pagination>
-        </div>
-      )}
-      
-      {/* Refresh button */}
-      <div className="flex justify-end mt-4">
+        )}
+
         <Button
           variant="outline"
           size="sm"
@@ -219,5 +209,4 @@ function IncidentsTableComponent({
   );
 }
 
-// Export the component wrapped with error boundary
 export const IncidentsTable = withErrorBoundary(IncidentsTableComponent);

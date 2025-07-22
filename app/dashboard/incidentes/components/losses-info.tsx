@@ -10,10 +10,10 @@ interface LossesInfoProps {
 }
 
 export const LossesInfo = React.memo(function LossesInfo({ incident }: LossesInfoProps) {
-  const cashLoss = parseNumeric(incident.CashLoss || incident.cashLoss);
-  const merchandiseLoss = parseNumeric(incident.MerchandiseLoss || incident.merchandiseLoss);
-  const otherLosses = parseNumeric(incident.OtherLosses || incident.otherLosses);
-  const totalLoss = parseNumeric(incident.TotalLoss || incident.totalLoss);
+  const cashLoss = parseNumeric(incident.CashLoss);
+  const merchandiseLoss = parseNumeric(incident.MerchandiseLoss);
+  const otherLosses = parseNumeric(incident.OtherLosses);
+  const totalLoss = parseNumeric(incident.TotalLoss);
   
   return (
     <div className="flex items-center gap-2">

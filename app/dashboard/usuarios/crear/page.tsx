@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, User, Contact, Shield } from "lucide-react";
+import { ArrowLeft, User, Contact, Shield, Plus } from "lucide-react";
 
 import { userService } from "@/services/user-service";
 import type { UserCreateInput } from "@/types/user";
@@ -87,11 +87,16 @@ export default function CreateUserPage() {
         </Button>
       </div>
 
-      <div className="space-y-2 mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Nuevo Usuario</h1>
-        <p className="text-muted-foreground">
-          Complete todos los campos requeridos para crear un nuevo usuario
-        </p>
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Plus className="h-6 w-6" />
+            Nuevo Usuario
+          </h1>
+          <p className="text-muted-foreground">
+            Complete todos los campos requeridos para crear un nuevo usuario
+          </p>
+        </div>
       </div>
 
       <Form {...form}>

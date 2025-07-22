@@ -34,7 +34,14 @@ export function KpiBranches24h({ officeId }: KpiBranches24hProps) {
   const affectedOfficesCount = React.useMemo(() => {
     const uniqueOffices = new Set<number>();
     incidents.forEach(incident => {
-      uniqueOffices.add(incident.Office);
+      const officeId = typeof incident.Office === 'number' 
+        ? incident.Office 
+        : typeof incident.Office === 'object' && incident.Office !== null 
+          ? incident.Office.id 
+          : null;
+      if (officeId !== null) {
+        uniqueOffices.add(officeId);
+      }
     });
     return uniqueOffices.size;
   }, [incidents]);

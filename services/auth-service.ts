@@ -1,116 +1,89 @@
-// Importamos axios directamente para evitar problemas con el proxy
-import axios from 'axios';
+import { api } from './api';
 
 interface AuthResponse {
   token: string;
   user_id?: number;
   email?: string;
-  firts_name?: string; // Note the typo in the API response
+  firts_name?: string;
   last_name?: string;
 }
 
+const TOKEN_KEY = 'auth_token';
+
 const getToken = (): string | null => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('auth_token');
-    return token;
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
   }
-  return null;
 };
 
 const setToken = (token: string) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('auth_token', token);
-    document.cookie = `auth_token=${token}; path=/; secure; samesite=strict`;
+  try {
+    const cleanToken = token.replace(/^(Bearer|Token)\s+/i, '').trim();
+    localStorage.setItem(TOKEN_KEY, cleanToken);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('[Auth] Error setting token:', error.message);
+    }
+  }
+};
+
+const clearAuthData = () => {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('[Auth] Error clearing auth data:', error.message);
+    }
   }
 };
 
 const authenticateUser = async (username: string, password: string): Promise<AuthResponse> => {
   try {
-    const endpoint = `/api-token-auth2/`; // Path for Next.js proxy
-    
-    console.log(`[Auth] Intentando autenticar al usuario: ${username} en endpoint: ${endpoint}`);
-    
-    // Use a direct axios.post call, not getConfiguredAxios() or an instance with httpsAgent
-    const response = await axios.post(endpoint, 
-      { username, password },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        timeout: 15000 // 15 segundos de timeout
-      }
-    );
+    const response = await api.post('auth/token/', { username, password }, {
+      baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://sys.adminpy.com:18001',
+    });
 
-    console.log('[Auth] Respuesta de autenticación:', response.data);
-
-    if (!response.data.token) {
-      console.error('[Auth] No se encontró token en la respuesta:', response.data);
-      throw new Error('Invalid response format - no token in response');
+    if (!response.data?.token) {
+      throw new Error('Invalid response format - no token found');
     }
 
-    const token = response.data.token.replace(/^(Bearer|Token)\s+/i, '');
-    const authResponse: AuthResponse = {
-      ...response.data,
-      token: token
-    };
-
-    console.log('[Auth] Autenticación exitosa, token obtenido');
-    return authResponse;
+    return response.data;
   } catch (error) {
-    console.error('[Auth] Error en authenticateUser:', error);
+    console.error('[Auth] Authentication error:', error);
     throw error;
   }
 };
 
 const login = async (username: string, password: string): Promise<boolean> => {
   try {
-    console.log('[Auth] Iniciando login básico');
     const data = await authenticateUser(username, password);
     setToken(data.token);
-    console.log('[Auth] Login básico exitoso');
     return true;
-  } catch (error) {
-    console.error('[Auth] Error en login básico:', error);
+  } catch {
+    clearAuthData();
     return false;
   }
 };
 
-// No need for AuthResponseWithTypo anymore since we're using the typo in the main interface
-
 const loginWithUserInfo = async (username: string, password: string): Promise<AuthResponse> => {
   try {
-    console.log('[Auth] Iniciando login con info de usuario');
     const data = await authenticateUser(username, password);
     setToken(data.token);
-    
-    console.log('[Auth] Login con info exitoso, datos de usuario:', data);
     return data;
   } catch (error) {
-    console.error('[Auth] Error en loginWithUserInfo:', error);
+    clearAuthData();
     throw error;
   }
 };
 
 const logout = () => {
-  if (typeof window !== 'undefined') {
-    console.log('[Auth] Cerrando sesión del usuario');
-    // Clear localStorage
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_info');
-    
-    // Clear the auth cookie
-    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict';
-    
-    // Clear any other auth-related data
-    sessionStorage.clear();
-    console.log('[Auth] Sesión cerrada correctamente');
-  }
+  clearAuthData();
 };
 
 const isAuthenticated = (): boolean => {
   const token = getToken();
-  console.log(`[Auth] Verificando autenticación. Token existe: ${!!token}`);
   return !!token;
 };
 

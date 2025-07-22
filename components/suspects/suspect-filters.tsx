@@ -7,16 +7,17 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SuspectStatus } from '@/types/suspect';
 
-interface EventFilters {
-  office_name?: string;
-  staff_name?: string;
-  device_name?: string;
-  date_from?: string;
-  date_to?: string;
+type FilterValue = string | string[] | undefined;
+
+interface SuspectFiltersState {
+  Status?: string;
+  alias?: string;
+  id?: string;
+  suspects_tags?: string[];
   search?: string;
 }
 
@@ -24,97 +25,96 @@ interface FilterGroup {
   id: string;
   label: string;
   fields: Array<{
-    key: keyof EventFilters;
+    key: keyof SuspectFiltersState;
     label: string;
-    type: 'select' | 'date-range' | 'text';
+    type: 'select' | 'text' | 'tags';
     placeholder?: string;
     options?: Array<{ value: string; label: string }>;
+    tagGroups?: {
+      [category: string]: Array<{ value: string; label: string }>;
+    };
   }>;
 }
 
-interface ComboboxFiltersProps {
-  filters: EventFilters;
-  onFiltersChange: (filters: EventFilters) => void;
+interface SuspectFiltersProps {
+  filters: SuspectFiltersState;
+  onFiltersChange: (filters: SuspectFiltersState) => void;
   filterOptions: {
-    offices: string[];
-    staff: string[];
-    devices: string[];
+    statuses: SuspectStatus[];
+  };
+  selectedTags: string[];
+  onTagSelect: (tag: string) => void;
+  tagOptions: {
+    [category: string]: {
+      value: string;
+      label: string;
+    }[];
   };
 }
 
 const filterGroups: FilterGroup[] = [
   {
-    id: 'location',
-    label: 'Ubicación',
+    id: 'suspect',
+    label: 'Sospechoso',
     fields: [
       {
-        key: 'office_name',
-        label: 'Sucursal',
-        type: 'select',
-        placeholder: 'Seleccionar sucursal...'
-      }
-    ]
-  },
-  {
-    id: 'personnel',
-    label: 'Personal',
-    fields: [
-      {
-        key: 'staff_name',
-        label: 'Personal',
-        type: 'select',
-        placeholder: 'Seleccionar personal...'
-      }
-    ]
-  },
-  {
-    id: 'devices',
-    label: 'Dispositivos',
-    fields: [
-      {
-        key: 'device_name',
-        label: 'Dispositivo',
-        type: 'select',
-        placeholder: 'Seleccionar dispositivo...'
-      }
-    ]
-  },
-  {
-    id: 'dates',
-    label: 'Fechas',
-    fields: [
-      {
-        key: 'date_from',
-        label: 'Rango de fechas',
-        type: 'date-range',
-        placeholder: 'Seleccionar fechas...'
-      }
-    ]
-  },
-  {
-    id: 'search',
-    label: 'Búsqueda',
-    fields: [
-      {
-        key: 'search',
-        label: 'Búsqueda general',
+        key: 'id',
+        label: 'ID',
         type: 'text',
-        placeholder: 'Buscar...'
+        placeholder: 'Buscar por ID...'
+      },
+      {
+        key: 'alias',
+        label: 'Alias',
+        type: 'text',
+        placeholder: 'Buscar por alias...'
+      }
+    ]
+  },
+  {
+    id: 'status',
+    label: 'Estado',
+    fields: [
+      {
+        key: 'Status',
+        label: 'Estado',
+        type: 'select',
+        placeholder: 'Seleccionar estado...'
+      }
+    ]
+  },
+  {
+    id: 'characteristics',
+    label: 'Características',
+    fields: [
+      {
+        key: 'suspects_tags',
+        label: 'Características',
+        type: 'tags',
+        placeholder: 'Seleccionar características...'
       }
     ]
   }
 ];
 
-export function ComboboxFilters({ filters, onFiltersChange, filterOptions }: ComboboxFiltersProps) {
+export function SuspectFilters({
+  filters,
+  onFiltersChange,
+  filterOptions,
+  selectedTags,
+  onTagSelect,
+  tagOptions
+}: SuspectFiltersProps) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<'groups' | 'fields'>('groups');
   const [selectedGroup, setSelectedGroup] = useState<FilterGroup | null>(null);
-  const [tempFilters, setTempFilters] = useState<EventFilters>({});
-  const [originalGroupFilters, setOriginalGroupFilters] = useState<EventFilters>({});
+  const [tempFilters, setTempFilters] = useState<SuspectFiltersState>({});
+  const [originalGroupFilters, setOriginalGroupFilters] = useState<SuspectFiltersState>({});
 
   const getActiveFiltersCount = () => {
     return Object.values(filters).filter(
-      (value) => value !== undefined && value !== null && value !== ""
+      (value) => value !== undefined && value !== null && value !== "" && 
+      (Array.isArray(value) ? value.length > 0 : true)
     ).length;
   };
 
@@ -123,13 +123,15 @@ export function ComboboxFilters({ filters, onFiltersChange, filterOptions }: Com
     if (!group) return 0;
     return group.fields.filter(field => {
       const value = filters[field.key];
-      return value !== undefined && value !== null && value !== "";
+      return value !== undefined && value !== null && value !== "" &&
+        (Array.isArray(value) ? value.length > 0 : true);
     }).length;
   };
 
   const getCurrentGroupTempCount = () => {
     return Object.values(tempFilters).filter(
-      (value) => value !== undefined && value !== null && value !== ""
+      (value) => value !== undefined && value !== null && value !== "" &&
+      (Array.isArray(value) ? value.length > 0 : true)
     ).length;
   };
 
@@ -137,11 +139,22 @@ export function ComboboxFilters({ filters, onFiltersChange, filterOptions }: Com
     setSelectedGroup(group);
     
     // Cargar filtros existentes para el grupo seleccionado
-    const groupFilters: EventFilters = {};
+    const groupFilters: SuspectFiltersState = {};
     group.fields.forEach(field => {
       const currentValue = filters[field.key];
-      if (currentValue !== undefined && currentValue !== null && currentValue !== "") {
-        groupFilters[field.key] = currentValue;
+      if (currentValue !== undefined && currentValue !== null && currentValue !== "" &&
+          (Array.isArray(currentValue) ? currentValue.length > 0 : true)) {
+        switch (field.key) {
+          case 'suspects_tags':
+            groupFilters[field.key] = Array.isArray(currentValue) ? currentValue : typeof currentValue === 'string' ? [currentValue] : undefined;
+            break;
+          case 'Status':
+          case 'alias':
+          case 'id':
+          case 'search':
+            groupFilters[field.key] = typeof currentValue === 'string' ? currentValue : undefined;
+            break;
+        }
       }
     });
     
@@ -170,8 +183,9 @@ export function ComboboxFilters({ filters, onFiltersChange, filterOptions }: Com
     
     // Luego añadir los nuevos valores
     Object.entries(tempFilters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
-        newFilters[key as keyof EventFilters] = value;
+      if (value !== undefined && value !== null && value !== "" &&
+          (Array.isArray(value) ? value.length > 0 : true)) {
+        newFilters[key as keyof SuspectFiltersState] = value;
       }
     });
     
@@ -188,12 +202,25 @@ export function ComboboxFilters({ filters, onFiltersChange, filterOptions }: Com
     setTempFilters({});
   };
 
-  const handleFilterChange = (key: keyof EventFilters, value: string | undefined) => {
-    const newValue = value === "" || value === "none" ? undefined : value;
-    const newTempFilters = { ...tempFilters, [key]: newValue };
-    if (newValue === undefined) {
+  const handleFilterChange = (key: keyof SuspectFiltersState, value: FilterValue) => {
+    const newTempFilters = { ...tempFilters };
+    
+    if (value === undefined || value === "") {
       delete newTempFilters[key];
+    } else {
+      switch (key) {
+        case 'suspects_tags':
+          newTempFilters[key] = Array.isArray(value) ? value : typeof value === 'string' ? [value] : undefined;
+          break;
+        case 'Status':
+        case 'alias':
+        case 'id':
+        case 'search':
+          newTempFilters[key] = typeof value === 'string' ? value : undefined;
+          break;
+      }
     }
+    
     setTempFilters(newTempFilters);
   };
 
@@ -209,32 +236,21 @@ export function ComboboxFilters({ filters, onFiltersChange, filterOptions }: Com
     const value = tempFilters[field.key];
 
     if (field.type === 'select') {
-      let options: Array<{ value: string; label: string }> = [];
-      
-      // Mapear las opciones según el tipo de campo
-      if (field.key === 'office_name') {
-        options = filterOptions.offices.map(office => ({ value: office, label: office }));
-      } else if (field.key === 'staff_name') {
-        options = filterOptions.staff.map(staff => ({ value: staff, label: staff }));
-      } else if (field.key === 'device_name') {
-        options = filterOptions.devices.map(device => ({ value: device, label: device }));
-      }
-
       return (
         <div key={field.key} className="space-y-2">
           <Label>{field.label}</Label>
           <Select
-            value={value || "none"}
-            onValueChange={(newValue) => handleFilterChange(field.key, newValue)}
+            value={value as string || "none"}
+            onValueChange={(newValue) => handleFilterChange(field.key, newValue === "none" ? undefined : newValue)}
           >
             <SelectTrigger>
               <SelectValue placeholder={field.placeholder} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">Todos</SelectItem>
-              {options.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
+              {filterOptions.statuses.map((status) => (
+                <SelectItem key={status.id} value={status.id.toString()}>
+                  {status.Name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -243,21 +259,27 @@ export function ComboboxFilters({ filters, onFiltersChange, filterOptions }: Com
       );
     }
 
-    if (field.type === 'date-range') {
+    if (field.type === 'tags') {
       return (
-        <div key={field.key} className="space-y-2">
+        <div key={field.key} className="space-y-4">
           <Label>{field.label}</Label>
-          <DateRangePicker
-            onChange={(range) => {
-              if (range?.from) {
-                handleFilterChange('date_from', range.from.toISOString().split('T')[0]);
-                if (range.to) {
-                  handleFilterChange('date_to', range.to.toISOString().split('T')[0]);
-                }
-              }
-            }}
-            placeholder={field.placeholder}
-          />
+          {Object.entries(tagOptions).map(([category, tags]) => (
+            <div key={category} className="space-y-2">
+              <Label className="text-sm text-muted-foreground">{category}</Label>
+              <div className="flex flex-wrap gap-1">
+                {tags.map(tag => (
+                  <Badge
+                    key={tag.value}
+                    variant={selectedTags.includes(tag.value) ? 'default' : 'outline'}
+                    className="cursor-pointer"
+                    onClick={() => onTagSelect(tag.value)}
+                  >
+                    {tag.label}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       );
     }
@@ -267,7 +289,7 @@ export function ComboboxFilters({ filters, onFiltersChange, filterOptions }: Com
         <Label>{field.label}</Label>
         <Input
           placeholder={field.placeholder}
-          value={value || ""}
+          value={value as string || ""}
           onChange={(e) => handleFilterChange(field.key, e.target.value)}
         />
       </div>

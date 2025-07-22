@@ -60,13 +60,11 @@ export const SuspectInfo = React.memo(function SuspectInfo({ suspectId }: Suspec
             {suspect.PhysicalDescription && (
               <p className="text-muted-foreground">{suspect.PhysicalDescription}</p>
             )}
-            {suspect.StatusDetails && (
-              <div className="mt-1">
-                <Badge variant={suspect.Status === 1 ? 'destructive' : 'outline'} className="text-xs">
-                  {suspect.StatusDetails.Name}
-                </Badge>
-              </div>
-            )}
+            <div className="mt-1">
+              <Badge variant={suspect.Status === 1 ? 'destructive' : 'outline'} className="text-xs">
+                {suspect.Status === 1 ? 'Activo' : 'Inactivo'}
+              </Badge>
+            </div>
           </div>
         </TooltipContent>
       </Tooltip>

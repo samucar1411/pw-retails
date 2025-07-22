@@ -5,7 +5,7 @@ import { useFieldArray, Control } from 'react-hook-form';
 import debounce from 'lodash/debounce';
 import Image from 'next/image';
 import { toast } from '@/components/ui/use-toast';
-import { searchSuspects as searchSuspectsApi, createSuspect, getSuspectStatuses } from '@/services/suspect-service';
+import { createSuspect, getSuspectStatuses, getAllSuspects } from '@/services/suspect-service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -94,12 +94,26 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
       return;
     }
 
+    console.log('🔍 Buscando sospechosos con query:', query);
     setIsSearching(true);
     
     try {
-      const response = await searchSuspectsApi(query, { 
-        page: 1, 
-        page_size: 50
+      // Usar solo getAllSuspects con parámetros de búsqueda
+      const searchParams = {
+        page: 1,
+        page_size: 25,
+        search: query, // Búsqueda general que incluye alias y descripción
+        format: 'json'
+      };
+      
+      console.log('📡 Enviando parámetros:', searchParams);
+      
+      const response = await getAllSuspects(searchParams);
+      
+      console.log('✅ Respuesta recibida:', {
+        count: response?.count,
+        results: response?.results?.length,
+        firstResult: response?.results?.[0]
       });
       
       const results = response?.results || [];
@@ -109,17 +123,28 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
       setTotalResults(count);
       setShowResults(true);
       
-    } catch {
-      // Try a simpler search without pagination parameters
+    } catch (error) {
+      console.error('❌ Error searching suspects:', error);
+      
+      // Fallback: intentar búsqueda más simple
       try {
-        const fallbackResponse = await searchSuspectsApi(query);
+        console.log('🔄 Intentando fallback con búsqueda simple...');
+        const fallbackResponse = await getAllSuspects({
+          search: query,
+          page: 1,
+          page_size: 50,
+          format: 'json'
+        });
         
         const results = fallbackResponse?.results || [];
+        console.log('✅ Fallback exitoso:', results.length, 'resultados');
+        
         setSearchResults(results);
         setTotalResults(fallbackResponse?.count || 0);
         setShowResults(true);
         
-      } catch {
+      } catch (fallbackError) {
+        console.error('❌ Fallback también falló:', fallbackError);
         toast({
           title: 'Error',
           description: 'No se pudo realizar la búsqueda',
@@ -343,11 +368,11 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
 
       {/* Search Controls */}
       <div className="space-y-4">
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar sospechoso por alias o descripción..."
+              placeholder="Buscar por alias, descripción o tags..."
               value={searchQuery}
               onChange={handleSearchChange}
               onFocus={handleSearchFocus}
@@ -360,14 +385,13 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
               </div>
             )}
           </div>
-
-          <Button 
+          <Button
             type="button"
-            variant="outline" 
-            className="shrink-0"
+            variant="outline"
             onClick={addNewSuspectCard}
+            className="flex items-center gap-2"
           >
-            <UserPlus className="mr-2 h-4 w-4" />
+            <Plus className="h-4 w-4" />
             Agregar Nuevo
           </Button>
         </div>
@@ -377,15 +401,22 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
           <div className="relative">
             <div className="absolute z-10 w-full rounded-md border bg-popover shadow-lg">
               <Command>
-                <CommandList className="max-h-60">
+                <CommandList className="max-h-80">
                   {searchResults.length === 0 ? (
                     <CommandEmpty>
-                      <div className="flex flex-col items-center py-6 text-center">
-                        <User className="h-8 w-8 text-muted-foreground mb-2" />
-                        <p className="font-medium">No se encontraron sospechosos</p>
-                        <p className="text-sm text-muted-foreground">
-                          Intente con otros términos de búsqueda
+                      <div className="flex flex-col items-center py-8 text-center">
+                        <div className="rounded-full bg-muted p-3 mb-3">
+                          <Search className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                        <p className="font-medium text-foreground mb-2">No se encontraron sospechosos</p>
+                        <p className="text-sm text-muted-foreground mb-3 max-w-sm">
+                          Intente buscar por alias, descripción física o tags específicos
                         </p>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <p>• Ejemplo: &quot;Juan&quot; para buscar por alias</p>
+                          <p>• Ejemplo: &quot;alto&quot; para buscar en descripción</p>
+                          <p>• Ejemplo: &quot;tatuaje&quot; para buscar en tags</p>
+                        </div>
                       </div>
                     </CommandEmpty>
                   ) : (
@@ -394,6 +425,11 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
                         <div className="px-3 py-2 text-xs text-muted-foreground bg-muted/50 border-b">
                           Mostrando {searchResults.length} de {totalResults} resultados. 
                           Refine su búsqueda para ver más específicos.
+                        </div>
+                      )}
+                      {searchResults.length > 0 && (
+                        <div className="px-3 py-2 text-xs text-muted-foreground bg-blue-50 border-b">
+                          🔍 Búsqueda realizada por alias, descripción y tags
                         </div>
                       )}
                       {searchResults.map((suspect) => (
@@ -405,33 +441,95 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
                           className="cursor-pointer"
                         >
                           <div 
-                            className="flex items-center gap-3 w-full"
+                            className="flex items-center gap-3 w-full p-2"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
                               handleSelectSuspect(suspect);
                             }}
                           >
-                            {suspect.PhotoUrl ? (
-                              <Image
-                                src={suspect.PhotoUrl}
-                                alt={suspect.Alias}
-                                width={40}
-                                height={40}
-                                className="h-10 w-10 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                                <User className="h-5 w-5 text-muted-foreground" />
-                              </div>
-                            )}
-                            <div className="flex-1">
-                              <p className="font-medium">{suspect.Alias}</p>
-                              <p className="text-xs text-muted-foreground line-clamp-1">
-                                {suspect.PhysicalDescription || 'Sin descripción'}
-                              </p>
+                            {/* Foto del sospechoso */}
+                            <div className="flex-shrink-0">
+                              {suspect.PhotoUrl ? (
+                                <Image
+                                  src={suspect.PhotoUrl}
+                                  alt={suspect.Alias}
+                                  width={48}
+                                  height={48}
+                                  className="h-12 w-12 rounded-full object-cover border-2 border-border"
+                                />
+                              ) : (
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted border-2 border-border">
+                                  <User className="h-6 w-6 text-muted-foreground" />
+                                </div>
+                              )}
                             </div>
-                            <Plus className="h-4 w-4 text-muted-foreground" />
+
+                            {/* Información del sospechoso */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-semibold text-sm text-foreground truncate">
+                                  {suspect.Alias}
+                                </p>
+                                {suspect.IncidentsCount && suspect.IncidentsCount > 0 && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {suspect.IncidentsCount} incidente{suspect.IncidentsCount !== 1 ? 's' : ''}
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              {/* Descripción física */}
+                              {suspect.PhysicalDescription && (
+                                <p className="text-xs text-muted-foreground line-clamp-2 mb-1">
+                                  {suspect.PhysicalDescription}
+                                </p>
+                              )}
+                              
+                              {/* Última vez visto */}
+                              {suspect.LastSeen && (
+                                <p className="text-xs text-muted-foreground mb-1">
+                                  Última vez visto: {new Date(suspect.LastSeen).toLocaleDateString('es-ES')}
+                                </p>
+                              )}
+                              
+                              {/* Tags */}
+                              {suspect.Tags && suspect.Tags.length > 0 && (
+                                <div className="space-y-1">
+                                  {suspect.Tags.slice(0, 3).map((tag, index) => (
+                                    <div key={index} className="flex items-center gap-2 text-xs">
+                                      <span className="text-muted-foreground font-medium">
+                                        •
+                                      </span>
+                                      <span className="text-foreground font-medium truncate">
+                                        {tag}
+                                      </span>
+                                    </div>
+                                  ))}
+                                  {suspect.Tags.length > 3 && (
+                                    <div className="text-xs text-muted-foreground pt-1 border-t border-border/30">
+                                      +{suspect.Tags.length - 3} características más
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Botón de agregar */}
+                            <div className="flex-shrink-0">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 hover:bg-primary/10"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleSelectSuspect(suspect);
+                                }}
+                              >
+                                <Plus className="h-4 w-4 text-primary" />
+                              </Button>
+                            </div>
                           </div>
                         </CommandItem>
                       ))}
@@ -662,9 +760,9 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
                   )}
                   <div>
                     <p className="font-medium">{field.alias}</p>
-                    {field.description && (
+                    {field.notes && (
                       <p className="text-sm text-muted-foreground line-clamp-1">
-                        {field.description}
+                        {field.notes}
                       </p>
                     )}
                     <div className="flex items-center gap-2 mt-1">

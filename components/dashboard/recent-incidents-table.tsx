@@ -141,18 +141,20 @@ const IncidentTypeInfo = React.memo(function IncidentTypeInfo({ typeId }: { type
 
 // Component to display loss information with tooltip
 const LossesInfo = React.memo(function LossesInfo({ incident }: { incident: Incident }) {
-  // Handle both API field names (uppercase) and local field names (lowercase)
-  const cashLoss = parseNumeric(incident.CashLoss || incident.cashLoss);
-  const merchandiseLoss = parseNumeric(incident.MerchandiseLoss || incident.merchandiseLoss);
-  const otherLosses = parseNumeric(incident.OtherLosses || incident.otherLosses);
-  const totalLoss = parseNumeric(incident.TotalLoss || incident.totalLoss);
+  const cashLoss = parseNumeric(incident.CashLoss);
+  const merchandiseLoss = parseNumeric(incident.MerchandiseLoss);
+  const otherLosses = parseNumeric(incident.OtherLosses);
+  const totalLoss = parseNumeric(incident.TotalLoss);
   
+  const calculatedTotal = cashLoss + merchandiseLoss + otherLosses;
+  const displayTotal = totalLoss || calculatedTotal;
+
   return (
     <div className="flex items-center gap-2">
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="font-medium cursor-help">
-            <span>{formatCurrency(totalLoss)}</span>
+            <span>{formatCurrency(displayTotal)}</span>
           </div>
         </TooltipTrigger>
         <TooltipContent side="left" className="text-sm space-y-1">
@@ -168,7 +170,7 @@ const LossesInfo = React.memo(function LossesInfo({ incident }: { incident: Inci
             
             <div className="col-span-2 border-t mt-1 pt-1 flex justify-between font-medium">
               <span>Total:</span>
-              <span>{formatCurrency(totalLoss)}</span>
+              <span>{formatCurrency(displayTotal)}</span>
             </div>
           </div>
         </TooltipContent>
@@ -303,12 +305,12 @@ export function RecentIncidentsTable({ fromDate, toDate, officeId }: RecentIncid
                         </div>
                       </TableCell>
                       <TableCell>
-                        {(incident.officeId || incident.Office) && 
-                          <OfficeInfo officeId={incident.officeId || incident.Office} />}
+                        {incident.Office && 
+                          <OfficeInfo officeId={typeof incident.Office === 'number' ? incident.Office : incident.Office.id} />}
                       </TableCell>
                       <TableCell>
-                        {(incident.incidentTypeId || incident.IncidentType) && 
-                          <IncidentTypeInfo typeId={incident.incidentTypeId || incident.IncidentType} />}
+                        {incident.IncidentType && 
+                          <IncidentTypeInfo typeId={incident.IncidentType} />}
                       </TableCell>
                       <TableCell>
                         <LossesInfo incident={incident} />

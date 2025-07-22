@@ -1,110 +1,77 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import axios from "axios";
+import { useState } from 'react';
+import { useAuth } from '@/context/auth-context';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
-import { useAuth } from "@/context/auth-context";
-
-const formSchema = z.object({
-  username: z.string().min(2, {
-    message: "El nombre de usuario debe tener al menos 2 caracteres.",
-  }),
-  password: z.string().min(6, {
-    message: "La contraseña debe tener al menos 6 caracteres.",
-  }),
-});
+interface ApiError {
+  data?: {
+    non_field_errors?: string[];
+  };
+  message?: string;
+}
 
 export function LoginForm() {
-  const { loginWithUserInfo } = useAuth();
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-    },
-  });
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
+  const { toast } = useToast();
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
     try {
-      await loginWithUserInfo(values.username, values.password);
-      toast.success("¡Inicio de sesión exitoso!");
-    } catch (err) {
-      console.error("Error de inicio de sesión:", err);
-      let errorMessage =
-        "Error al iniciar sesión. Por favor, verifica tus credenciales.";
-
-      if (axios.isAxiosError(err)) {
-        errorMessage = err.response?.data?.detail || err.message;
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
+      const success = await login(username, password);
+      if (!success) {
+        toast({
+          title: 'Error de autenticación',
+          description: 'Usuario o contraseña incorrectos',
+          variant: 'destructive',
+        });
       }
-
-      toast.error(errorMessage);
+    } catch (error) {
+      const apiError = error as ApiError;
+      const errorMessage = apiError?.data?.non_field_errors?.[0] || 
+                         apiError?.message || 
+                         'Ocurrió un error al intentar iniciar sesión';
+      
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="username"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nombre de usuario</FormLabel>
-              <FormControl>
-                <Input placeholder="Ingrese su nombre de usuario" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+    <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-sm">
+      <div className="space-y-2">
+        <Input
+          type="text"
+          placeholder="Usuario"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          disabled={isLoading}
+          required
         />
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Contraseña</FormLabel>
-              <FormControl>
-                <Input
-                  type="password"
-                  placeholder="Ingrese su contraseña"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+        <Input
+          type="password"
+          placeholder="Contraseña"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          disabled={isLoading}
+          required
         />
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={form.formState.isSubmitting}
-        >
-          {form.formState.isSubmitting ? (
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              Iniciando sesión...
-            </div>
-          ) : (
-            "Iniciar sesión"
-          )}
-        </Button>
-      </form>
-    </Form>
+      </div>
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+      </Button>
+    </form>
   );
 }

@@ -13,7 +13,7 @@ import { Office } from "@/types/office";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { clearIncidentsCache } from "@/hooks/useAllIncidents";
-import { clearSuspectsCache } from "@/hooks/useAllSuspects";
+import { useClearSuspectsCache } from "@/hooks/useAllSuspects";
 
 interface FiltersBarProps {
   fromDate: string;
@@ -167,6 +167,7 @@ export function FiltersBar({
   const [localOfficeId, setLocalOfficeId] = React.useState(officeId === "" ? "all" : officeId);
   const [open, setOpen] = React.useState(false);
   const [sheetOpen, setSheetOpen] = React.useState(false);
+  const clearSuspectsCache = useClearSuspectsCache();
 
   // Fetch all offices using the new endpoint
   const { data: offices = [], isLoading: isLoadingOffices } = useQuery({

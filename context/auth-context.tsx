@@ -1,139 +1,82 @@
-'use client'
+'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { authService } from '@/services/auth-service';
 
-interface UserInfo {
-  user_id?: number;
-  email?: string;
-  first_name?: string; // This is the normalized field name we use in the app
-  firts_name?: string; // This is the actual field name from the API with typo
-  last_name?: string;
-}
-
 interface AuthContextType {
   isAuthenticated: boolean;
-  userInfo: UserInfo | null;
-  login: (username: string, password: string) => Promise<void>;
-  loginWithUserInfo: (username: string, password: string) => Promise<void>;
+  userInfo: {
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+  } | null;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
-  isLoading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [userInfo, setUserInfo] = useState<AuthContextType['userInfo']>(null);
   const router = useRouter();
   const pathname = usePathname();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const initAuth = () => {
-      const token = authService.getToken();
-      const storedUserInfo = localStorage.getItem('user_info');
-      
-      if (token) {
-        setIsAuthenticated(true);
-        if (storedUserInfo) {
-          setUserInfo(JSON.parse(storedUserInfo));
-        }
-      } else {
-        setIsAuthenticated(false);
-        setUserInfo(null);
+    // Verificar autenticación inicial
+    const checkAuth = () => {
+      const isAuth = authService.isAuthenticated();
+      setIsAuthenticated(isAuth);
+
+      // Si no está autenticado y no estamos en login, redirigir
+      if (!isAuth && pathname !== '/login') {
+        router.push('/login');
       }
-      setIsLoading(false);
     };
 
-    initAuth();
-  }, []);
+    checkAuth();
+  }, [pathname, router]);
 
-  useEffect(() => {
-    if (!isLoading) {
-      const authPages = ['/login', '/forgot-password', '/register'];
-      const isAuthPage = authPages.includes(pathname);
-
-      if (!isAuthenticated && pathname.startsWith('/dashboard')) {
-        router.replace('/login');
-      } else if (isAuthenticated && isAuthPage) {
-        router.replace('/dashboard');
+  const login = async (username: string, password: string): Promise<boolean> => {
+    try {
+      const data = await authService.loginWithUserInfo(username, password);
+      if (data.token) {
+        setIsAuthenticated(true);
+        setUserInfo({
+          first_name: data.firts_name, // Note: API has a typo in the field name
+          last_name: data.last_name,
+          email: data.email
+        });
+        router.push('/dashboard');
+        return true;
       }
-    }
-  }, [isAuthenticated, isLoading, pathname, router]);
-
-  const login = useCallback(async (username: string, password: string) => {
-    try {
-      const success = await authService.login(username, password);
-      if (!success) {
-        throw new Error('Login failed');
-      }
-      setIsAuthenticated(true);
-      router.push('/dashboard');
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
-    }
-  }, [router]);
-
-  const loginWithUserInfo = useCallback(async (username: string, password: string) => {
-    try {
-      const response = await authService.loginWithUserInfo(username, password);
-      const userInfo = {
-        user_id: response.user_id,
-        email: response.email,
-        first_name: response.firts_name, // Using the correct field name with the typo
-        last_name: response.last_name,
-      };
-      localStorage.setItem('user_info', JSON.stringify(userInfo));
-      setUserInfo(userInfo);
-      setIsAuthenticated(true);
-      router.push('/dashboard');
-    } catch (error) {
-      console.error('Login with user info error:', error);
-      throw error;
-    }
-  }, [router]);
-
-  const logout = useCallback(async () => {
-    try {
-      // First clear all auth data
-      authService.logout();
-      
-      // Then update the state
+      return false;
+    } catch {
       setIsAuthenticated(false);
       setUserInfo(null);
-      
-      // Force a router replace instead of push to prevent back navigation
-      router.replace('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Even if there's an error, we should still clear the local state
-      setIsAuthenticated(false);
-      setUserInfo(null);
-      router.replace('/login');
+      return false;
     }
-  }, [router]);
+  };
+
+  const logout = () => {
+    authService.logout();
+    setIsAuthenticated(false);
+    setUserInfo(null);
+    router.push('/login');
+  };
 
   return (
-    <AuthContext.Provider value={{ 
-      isAuthenticated, 
-      userInfo, 
-      login, 
-      loginWithUserInfo, 
-      logout,
-      isLoading 
-    }}>
+    <AuthContext.Provider value={{ isAuthenticated, userInfo, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}; 
+} 

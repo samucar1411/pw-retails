@@ -1,7 +1,7 @@
 /**
  * Helper to parse numeric string values
  */
-export const parseNumeric = (value: string | number | undefined): number => {
+export const parseNumeric = (value: string | number | undefined | null): number => {
   if (value === undefined || value === null) return 0;
   if (typeof value === 'number') return value;
   return parseFloat(value) || 0;

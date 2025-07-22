@@ -6,7 +6,7 @@ import { getOffice } from "@/services/office-service";
 import { LoadingState } from "@/components/ui/loading-state";
 
 interface OfficeInfoProps {
-  officeId: number;
+  officeId: number | Office;
 }
 
 export const OfficeInfo = React.memo(function OfficeInfo({ officeId }: OfficeInfoProps) {
@@ -25,8 +25,12 @@ export const OfficeInfo = React.memo(function OfficeInfo({ officeId }: OfficeInf
       setError(null);
       
       try {
-        const data = await getOffice(officeId);
-        setOffice(data);
+        if (typeof officeId === 'number') {
+          const data = await getOffice(officeId);
+          setOffice(data);
+        } else {
+          setOffice(officeId);
+        }
       } catch (error) {
         console.error("Error fetching office:", error);
         setError(error instanceof Error ? error : new Error("Error fetching office"));
@@ -43,7 +47,7 @@ export const OfficeInfo = React.memo(function OfficeInfo({ officeId }: OfficeInf
   
   return (
     <div className="font-medium">
-      {office?.Name || `Sucursal ${officeId}`}
+      {office?.Name || (typeof officeId === 'number' ? `Sucursal ${officeId}` : 'Sin sucursal')}
     </div>
   );
 });

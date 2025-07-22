@@ -6,13 +6,15 @@ import { getAllSuspects } from '@/services/suspect-service';
 
 interface IncidentFilters {
   Office?: string;
-  IncidentType?: string;
+  IncidentType?: string | number;
   suspect_alias?: string;
   fromDate?: string;
   toDate?: string;
   search?: string;
   page?: number;
   page_size?: number;
+  id?: string;
+  ordering?: string;
 }
 
 export interface UseIncidentsWithFiltersReturn {
@@ -24,7 +26,7 @@ export interface UseIncidentsWithFiltersReturn {
   totalPages: number;
   filterOptions: {
     offices: Array<{ id: string; name: string }>;
-    incidentTypes: Array<{ id: string; name: string }>;
+    incidentTypes: Array<{ id: string; Name: string }>;
     suspects: Array<{ alias: string }>;
   };
   refreshIncidents: () => Promise<void>;
@@ -41,7 +43,7 @@ export function useIncidentsWithFilters(pageSize: number = 10): UseIncidentsWith
   const [currentFilters, setCurrentFilters] = useState<IncidentFilters>({});
   const [filterOptions, setFilterOptions] = useState({
     offices: [] as Array<{ id: string; name: string }>,
-    incidentTypes: [] as Array<{ id: string; name: string }>,
+    incidentTypes: [] as Array<{ id: string; Name: string }>,
     suspects: [] as Array<{ alias: string }>,
   });
 
@@ -50,12 +52,19 @@ export function useIncidentsWithFilters(pageSize: number = 10): UseIncidentsWith
       setLoading(true);
       setError(null);
       
-      const response = await getIncidents({
+      // Preparar los filtros para el backend
+      const preparedFilters = {
         ...filters,
         page: filters.page || currentPage,
         page_size: pageSize,
-        ordering: '-Date' // Order by date descending
-      });
+        ordering: '-Date', // Order by date descending
+        // Convertir IncidentType a número si existe
+        IncidentType: filters.IncidentType ? Number(filters.IncidentType) : undefined,
+        // Incluir ID si existe
+        id: filters.id
+      };
+      
+      const response = await getIncidents(preparedFilters);
       
       setIncidents(response.results || []);
       setTotalCount(response.count || 0);
@@ -81,7 +90,7 @@ export function useIncidentsWithFilters(pageSize: number = 10): UseIncidentsWith
       const incidentTypesResponse = await getIncidentTypes({ page_size: 100 });
       const incidentTypes = incidentTypesResponse.results.map(type => ({
         id: type.id.toString(),
-        name: type.Name
+        Name: type.Name
       }));
 
       // Fetch suspects (get unique aliases)

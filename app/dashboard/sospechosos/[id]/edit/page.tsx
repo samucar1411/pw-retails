@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useState, useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,14 +12,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { createSuspect, getSuspectStatuses } from '@/services/suspect-service';
+import { getSuspectById, updateSuspect, getSuspectStatuses } from '@/services/suspect-service';
 import { Suspect, SuspectStatus } from '@/types/suspect';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUploader } from '@/components/ImageUploader';
 import { Checkbox } from '@/components/ui/checkbox';
+import Link from 'next/link';
 
-// Opciones para los tags
+// Opciones para los tags (same as create form)
 const genderOptions = [
   { label: 'Hombre', value: 'male' },
   { label: 'Mujer', value: 'female' },
@@ -142,32 +143,14 @@ interface ApiError {
   };
 }
 
-export function SuspectForm() {
+export default function EditSuspectPage() {
   const router = useRouter();
+  const params = useParams();
   const [statuses, setStatuses] = useState<SuspectStatus[]>([]);
   const [loadingStatuses, setLoadingStatuses] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [tags, setTags] = useState<Record<string, unknown>>({});
-
-  // Fetch statuses on mount
-  useEffect(() => {
-    getSuspectStatuses()
-      .then(setStatuses)
-      .catch(error => {
-        console.error('Error fetching statuses:', error);
-        toast({
-          title: 'Error',
-          description: 'No se pudieron cargar los estados',
-          variant: 'destructive',
-        });
-      })
-      .finally(() => setLoadingStatuses(false));
-  }, []);
-
-  const statusOptions = statuses.map(s => ({
-    value: s.id.toString(),
-    label: s.Name
-  }));
 
   const form = useForm<SuspectFormValues>({
     resolver: zodResolver(suspectFormSchema),
@@ -178,6 +161,47 @@ export function SuspectForm() {
       Status: 1,
     },
   });
+
+  // Fetch suspect and statuses on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [suspectData, statusesData] = await Promise.all([
+          getSuspectById(params.id as string),
+          getSuspectStatuses()
+        ]);
+
+        if (suspectData) {
+          form.reset({
+            Alias: suspectData.Alias || '',
+            PhysicalDescription: suspectData.PhysicalDescription || '',
+            PhotoUrl: suspectData.PhotoUrl || '',
+            Status: suspectData.Status || 1,
+          });
+          setTags(suspectData.Tags ? { tags: suspectData.Tags } : {});
+        }
+
+        setStatuses(statusesData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast({
+          title: 'Error',
+          description: 'No se pudieron cargar los datos',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoadingStatuses(false);
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [params.id, form]);
+
+  const statusOptions = statuses.map(s => ({
+    value: s.id.toString(),
+    label: s.Name
+  }));
 
   // Functions to handle tags
   function getTagValue(key: string): string {
@@ -199,31 +223,31 @@ export function SuspectForm() {
     setLoading(true);
 
     try {
-      // Prepare suspect data for creation
-      const suspectDataToCreate: Partial<Suspect> = {
+      // Prepare suspect data for update
+      const suspectDataToUpdate: Partial<Suspect> = {
         Alias: values.Alias,
         PhysicalDescription: values.PhysicalDescription,
         Status: Number(values.Status),
         PhotoUrl: values.PhotoUrl,
-        Tags: Object.values(tags).filter(value => typeof value === 'string') as string[],
+        Tags: Array.isArray(tags.tags) ? tags.tags : [],
       };
 
-      // Create the suspect
-      const newSuspect = await createSuspect(suspectDataToCreate);
+      // Update the suspect
+      const updatedSuspect = await updateSuspect(params.id as string, suspectDataToUpdate);
 
-      if (newSuspect?.id) {
+      if (updatedSuspect?.id) {
         toast({
           title: 'Éxito',
-          description: 'Sospechoso creado exitosamente.',
+          description: 'Sospechoso actualizado exitosamente.',
         });
-        router.push('/dashboard/sospechosos');
+        router.push(`/dashboard/sospechosos/${params.id}`);
       } else {
-        throw new Error('La creación del sospechoso no devolvió un resultado exitoso.');
+        throw new Error('La actualización del sospechoso no devolvió un resultado exitoso.');
       }
     } catch (error) {
-      console.error('Error submitting suspect form:', error);
+      console.error('Error updating suspect:', error);
       
-      // Manejar errores de validación del backend
+      // Handle backend validation errors
       const axiosError = error as AxiosError<ApiError>;
       if (axiosError.response?.data) {
         const backendErrors = axiosError.response.data;
@@ -245,19 +269,29 @@ export function SuspectForm() {
     } finally {
       setLoading(false);
     }
-  }, [router, tags, form]);
+  }, [router, tags, form, params.id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="h-5 w-5" />
+          <Button variant="ghost" size="icon" asChild>
+            <Link href={`/dashboard/sospechosos/${params.id}`}>
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
           </Button>
           <div>
-            <h1 className="text-xl font-semibold">Registrar Sospechoso</h1>
-            <p className="text-sm text-muted-foreground">Información detallada del sospechoso</p>
+            <h1 className="text-xl font-semibold">Editar Sospechoso</h1>
+            <p className="text-sm text-muted-foreground">ID: {params.id}</p>
           </div>
         </div>
       </div>
@@ -319,6 +353,11 @@ export function SuspectForm() {
                 <FormLabel>Fotos del sospechoso</FormLabel>
                 <div className="rounded-lg border border-dashed border-border bg-muted/10 p-6 flex flex-col items-center justify-center">
                   <ImageUploader
+                    onImageUpload={async (file) => {
+                      // Por ahora solo simularemos la carga
+                      const url = URL.createObjectURL(file);
+                      form.setValue('PhotoUrl', url);
+                    }}
                     onUploadComplete={url => form.setValue('PhotoUrl', url)}
                     maxSizeMB={5}
                     className="w-full"
@@ -522,32 +561,28 @@ export function SuspectForm() {
             </CardContent>
           </Card>
 
-          {/* Fixed button bar */}
-          <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 md:p-6">
-            <div className="container mx-auto flex justify-between items-center">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.back()}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Volver
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={loading || loadingStatuses}
-                className="flex items-center gap-2"
-              >
-                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                Guardar sospechoso
-              </Button>
-            </div>
+          <div className="flex justify-end gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.back()}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                'Guardar cambios'
+              )}
+            </Button>
           </div>
         </form>
       </Form>
     </div>
   );
-}
-
-export default SuspectForm;
+} 

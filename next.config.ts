@@ -1,33 +1,17 @@
-import type { NextConfig } from "next";
+import { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   images: {
+    domains: [
+      'asset.cloudinary.com',
+      'res.cloudinary.com'
+    ],
     remotePatterns: [
       {
-        protocol: "https",
-        hostname: "sys.adminpy.com",
-        port: "18001",
-        pathname: "/media/**",
-      },
-      {
-        protocol: "https",
-        hostname: "sys.adminpy.com",
-        pathname: "/media/**",
-      },
-      {
-        protocol: "https",
-        hostname: "res.cloudinary.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "asset.cloudinary.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "randomuser.me",
-        pathname: "/api/portraits/**",
+        protocol: 'https',
+        hostname: 'sys.adminpy.com',
+        port: '18001',
+        pathname: '/media/**',
       },
     ],
   },
@@ -58,41 +42,36 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://sys.adminpy.com:18001';
     return [
       {
         source: "/api/:path*",
-        destination: "https://sys.adminpy.com:18001/api/:path*/",
-        // Configuración para manejar problemas de SSL
-        basePath: false,
+        destination: `${API_URL}/api/:path*/`,
       },
       {
         source: "/api-token-auth2",
-        destination: "https://sys.adminpy.com:18001/api-token-auth2/",
-        // Configuración para manejar problemas de SSL
-        basePath: false,
+        destination: `${API_URL}/api-token-auth2/`,
       },
     ];
   },
-  // Configuración para manejar problemas de SSL tanto en cliente como en servidor
+  // Ignore SSL certificate errors in dev (DO NOT USE IN PROD!)
   serverRuntimeConfig: {
     https: {
-      rejectUnauthorized: false,
-    },
+      rejectUnauthorized: false
+    }
   },
-  publicRuntimeConfig: {
-    https: {
-      rejectUnauthorized: false,
-    },
-  },
+
   webpack: (config, { dev }) => {
     if (dev) {
+      // Ignore SSL certificate errors for axios/fetch in dev
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
       config.ignoreWarnings = [
         { module: /node_modules\/axios/ },
-        { module: /node_modules\/https-proxy-agent/ },
+        { module: /node_modules\/https-proxy-agent/ }
       ];
     }
     return config;
-  },
+  }
 };
 
 export default nextConfig;

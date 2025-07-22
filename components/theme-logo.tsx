@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useTheme } from 'next-themes';
 import Image from 'next/image';
+import { useTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
 
 interface ThemeLogoProps {
   width?: number;
@@ -10,32 +10,21 @@ interface ThemeLogoProps {
   className?: string;
 }
 
-export function ThemeLogo({ width = 120, height = 40, className }: ThemeLogoProps) {
-  const { resolvedTheme } = useTheme();
+export function ThemeLogo({ width = 200, height = 40, className = '' }: ThemeLogoProps) {
+  const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   
-  // Avoid hydration mismatch
+  // Asegurar que el componente esté montado antes de usar el tema
   useEffect(() => {
     setMounted(true);
   }, []);
   
-  if (!mounted) {
-    // Return default logo during SSR
-    return (
-      <Image
-        src="/logo-dark.png"
-        alt="PowerVision Logo"
-        width={width}
-        height={height}
-        className={className}
-        priority
-      />
-    );
-  }
+  // Usar resolvedTheme para obtener el tema actual (dark/light)
+  const currentTheme = mounted ? (resolvedTheme || theme || 'light') : 'light';
   
-  // Determine which logo to show
-  const logoSrc = resolvedTheme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
-  
+  // Seleccionar el logo apropiado según el tema
+  const logoSrc = currentTheme === 'dark' ? '/logo-light.png' : '/logo-dark.png';
+
   return (
     <Image
       src={logoSrc}

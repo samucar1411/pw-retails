@@ -12,7 +12,7 @@ cloudinary.config({
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    const imageFile = formData.get('image') as File | null; // Assumes form field name is 'image'
+    const imageFile = formData.get('file') as File | null; // Changed from 'image' to 'file'
 
     if (!imageFile) {
       return NextResponse.json({ success: false, message: 'No image file found in form data.' }, { status: 400 });
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     const uploadResult = await new Promise<UploadApiResponse | UploadApiErrorResponse>((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
-          folder: 'suspect_photos',
+          folder: 'incident_photos', // Changed from 'suspect_photos' to 'incident_photos'
           // Cloudinary can often infer resource_type and format.
           // You can specify them if needed, e.g., based on imageFile.type
           // resource_type: 'image',

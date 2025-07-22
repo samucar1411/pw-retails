@@ -10,16 +10,19 @@ export async function getIncidents(
     ordering?: string;
     page?: number;
     page_size?: number;
-    IncidentType?: string;
-    Office?: string; // Backend expects Office parameter directly
+    IncidentType?: string | number;
+    Office?: string;
     suspect_alias?: string;
+    suspects_tags?: string | string[]; // Añadido para filtrar por tags de sospechosos
+    id?: string; // Añadido para búsqueda por ID
   } = {}
 ): Promise<PaginatedResponse<Incident>> {
   // Create clean params object to avoid conflicts
   const params: Record<string, string | number> = {};
   
-  // Always include format
+  // Always include format and expand Office
   params.format = 'json';
+  params.expand = 'Office';
   
   // Add filters with proper key mapping and validation
   Object.entries(filters).forEach(([key, value]) => {
@@ -28,8 +31,17 @@ export async function getIncidents(
         params.Date_after = value;
       } else if (key === 'toDate' && value) {
         params.Date_before = value;
-      } else if (key === 'format') {
+      } else if (key === 'suspects_tags') {
+        // Si es un array, lo unimos con comas
+        params.suspects_tags = Array.isArray(value) ? value.join(',') : value;
+      } else if (key === 'format' || key === 'expand') {
         // Skip - already added
+      } else if (key === 'id') {
+        // Si es un ID, usarlo directamente
+        params.id = value;
+      } else if (key === 'IncidentType') {
+        // Asegurarse de que el tipo de incidente se envía como número
+        params[key] = Number(value);
       } else {
         // For all other parameters, use them directly (including Office)
         params[key] = value;
@@ -65,12 +77,12 @@ export async function createIncident(incident: Partial<Incident>): Promise<Incid
   return data;
 }
 
-export async function updateIncident(id: number, incident: Partial<Incident>): Promise<Incident> {
+export async function updateIncident(id: string, incident: Partial<Incident>): Promise<Incident> {
   const { data } = await api.put<Incident>(`/api/incidents/${id}/`, incident);
   return data;
 }
 
-export async function deleteIncident(id: number): Promise<void> {
+export async function deleteIncident(id: string): Promise<void> {
   await api.delete(`/api/incidents/${id}/`);
 }
 
@@ -106,7 +118,7 @@ export async function getIncidentById(id: string | number): Promise<Incident> {
   }
 }
 
-export async function uploadIncidentAttachments(id: number, files: File[]): Promise<{ attachments: { url: string }[] }> {
+export async function uploadIncidentAttachments(id: string, files: File[]): Promise<{ attachments: { url: string }[] }> {
   const formData = new FormData();
   files.forEach((file) => {
     formData.append('attachments', file);
@@ -153,6 +165,20 @@ export async function deleteIncidentType(id: number): Promise<void> {
 export async function getLatestIncidents(params: ListParams = {}): Promise<PaginatedResponse<Incident>> {
   return getIncidents({
     ...params,
+    ordering: '-created_at'
+  });
+}
+
+/**
+ * Buscar incidentes por tags de sospechosos
+ */
+export async function searchIncidentsBySuspectTags(
+  tags: string | string[],
+  params: ListParams = {}
+): Promise<PaginatedResponse<Incident>> {
+  return getIncidents({
+    ...params,
+    suspects_tags: tags,
     ordering: '-created_at'
   });
 }

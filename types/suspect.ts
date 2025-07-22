@@ -6,14 +6,30 @@ export interface SuspectStatus {
 }
 
 export interface Suspect {
-  // Basic Information
   id: string;
   Alias: string;
-  PhysicalDescription: string;
-  PhotoUrl: string;
-  Status: number; // This should be the ID of the status
-  StatusDetails?: SuspectStatus; // Optional details about the status
+  Status: number;
+  PhotoUrl?: string;
+  LastSeen?: string;
+  IncidentsCount?: number;
+  PhysicalDescription?: string;
+  Tags?: string[];
 }
 
 // For table display
 export type SuspectTableItem = Suspect; 
+
+export interface SuspectPartnerRelation {
+  id?: string;
+  notes: string;
+  tags: string[] | null;
+  suspect: string | null;  // ID of the main suspect
+  partners: string[];      // Array of partner suspect IDs
+}
+
+export interface SuspectPartnerRelationResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: SuspectPartnerRelation[];
+} 

@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Incident } from '@/types/incident';
 import { Suspect } from '@/types/suspect';
+import { Office } from '@/types/office';
 
 // TODO: Move this to a shared constants file
 const branchOptions = [
@@ -32,8 +33,11 @@ interface PoliceReportPreviewProps {
 }
 
 // Helper functions
-const getBranchName = (officeId: number | string) => {
-  const id = typeof officeId === 'string' ? parseInt(officeId, 10) : officeId;
+const getBranchName = (office: number | string | Office) => {
+  if (typeof office === 'object' && office !== null) {
+    return office.Name || `Oficina ${office.id}`;
+  }
+  const id = typeof office === 'string' ? parseInt(office, 10) : office;
   const branch = branchOptions.find((branch: {value: string, label: string}) => parseInt(branch.value, 10) === id);
   return branch ? branch.label : `Oficina ${id}`;
 };
@@ -200,7 +204,6 @@ export function PoliceReportPreview({ incidentData, suspects = [], incidentTypes
           <div className="bg-muted/10 p-4 rounded-md">
             <p>{incidentData.Notes}</p>
           </div>
-          <p className="text-sm">{incidentData.notes}</p>
         </div>
       )}
       

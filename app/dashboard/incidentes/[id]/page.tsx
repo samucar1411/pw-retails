@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import {
-  ArrowLeft, DollarSign, Users, MapPin, FileText, AlertTriangle,
+  DollarSign, Users, MapPin, FileText, AlertTriangle,
   Calendar, Building, FileImage, Download, Printer, User
 } from 'lucide-react';
 
@@ -26,6 +26,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import { IdCell } from '@/components/ui/id-cell';
 
 // Services
 import { getIncidentById } from '@/services/incident-service';
@@ -56,7 +57,6 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
   const [suspects, setSuspects] = useState<Suspect[]>([]);
   const [suspectsLoading, setSuspectsLoading] = useState(true);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
-  const [generatingPdf, setGeneratingPdf] = useState(false);
   
   // Fetch incident data
   useEffect(() => {
@@ -74,7 +74,8 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
         
         // Fetch office data
         if (data.Office) {
-          const officeData = await getOffice(data.Office);
+          const officeId = typeof data.Office === 'number' ? data.Office : data.Office.id;
+          const officeData = await getOffice(officeId);
           setOffice(officeData);
           
           // Fetch company logo if office has company
@@ -125,7 +126,6 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
     if (!incident) return 'Gs. 0';
     
     if (incident.TotalLoss) return formatCurrency(incident.TotalLoss);
-    if (incident.totalLoss) return formatCurrency(incident.totalLoss);
     
     // Calculate from individual components if available
     let total = 0;
@@ -133,22 +133,16 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
     // Handle CashLoss
     if (incident.CashLoss) {
       total += parseFloat(incident.CashLoss);
-    } else if (incident.cashLoss !== undefined) {
-      total += typeof incident.cashLoss === 'string' ? parseFloat(incident.cashLoss) : (incident.cashLoss || 0);
     }
     
     // Handle MerchandiseLoss
     if (incident.MerchandiseLoss) {
       total += parseFloat(incident.MerchandiseLoss);
-    } else if (incident.merchandiseLoss !== undefined) {
-      total += typeof incident.merchandiseLoss === 'string' ? parseFloat(incident.merchandiseLoss) : (incident.merchandiseLoss || 0);
     }
     
     // Handle OtherLosses
     if (incident.OtherLosses) {
       total += parseFloat(incident.OtherLosses);
-    } else if (incident.otherLosses !== undefined) {
-      total += typeof incident.otherLosses === 'string' ? parseFloat(incident.otherLosses) : (incident.otherLosses || 0);
     }
     
     return formatCurrency(total);
@@ -162,7 +156,6 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
   // Generate PDF function
   const generatePDF = async () => {
     if (!incident) return;
-    setGeneratingPdf(true);
     try {
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.width;
@@ -198,203 +191,32 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
       // ID del incidente en su propia línea con más espacio
       pdf.text(`ID del Incidente:`, 25, 53);
       pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(9);
-      pdf.text(`${incident.id}`, 25, 58);
+      pdf.text(incident.id.toString(), 70, 53);
       
-      // Información en columnas separadas
-      pdf.setFontSize(10);
+      // Fecha y hora
       pdf.setFont('helvetica', 'bold');
-      pdf.text(`Fecha: `, 25, 65);
+      pdf.text(`Fecha y Hora:`, 25, 60);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`${incident.Date ? format(new Date(incident.Date), 'dd/MM/yyyy', { locale: es }) : 'No especificada'}`, 45, 65);
+      pdf.text(`${format(new Date(incident.Date), 'dd/MM/yyyy')} ${incident.Time ? `• ${incident.Time}` : ''}`, 70, 60);
       
+      // Tipo de incidente
       pdf.setFont('helvetica', 'bold');
-      pdf.text(`Hora: `, 25, 72);
+      pdf.text(`Tipo:`, 25, 67);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`${incident.Time ? incident.Time.substring(0, 5) : 'No especificada'}`, 42, 72);
+      pdf.text(incidentType || 'No especificado', 70, 67);
       
+      // Sucursal
       pdf.setFont('helvetica', 'bold');
-      pdf.text(`Estado: `, 120, 65);
+      pdf.text(`Sucursal:`, 25, 74);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`REGISTRADO`, 145, 65);
+      pdf.text(office?.Name || 'No especificada', 70, 74);
       
-      if (incidentType) {
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(`Tipo: `, 120, 72);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(`${incidentType}`, 135, 72);
-      }
-      
-      // Incident details section
-      let yPos = 90;
-      pdf.setFontSize(14);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(50, 50, 50);
-      pdf.text('INFORMACIÓN DEL INCIDENTE', 20, yPos);
-      
-      // Section underline
-      pdf.setDrawColor(100, 100, 100);
-      pdf.setLineWidth(0.3);
-      pdf.line(20, yPos + 2, 140, yPos + 2);
-      
-      yPos += 12;
-      pdf.setFontSize(11);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(0, 0, 0);
-      
-      // Office information
-      if (office) {
-        pdf.text(`Sucursal: ${office.Name}`, 20, yPos);
-        yPos += 5;
-        pdf.text(`Dirección: ${office.Address || 'No especificada'}`, 20, yPos);
-        yPos += 7;
-      }
-      
-      // Incident type
-      if (incidentType) {
-        pdf.text(`Tipo de Incidente: ${incidentType}`, 20, yPos);
-        yPos += 7;
-      }
-      
-      // Time
-      if (incident.Time) {
-        pdf.text(`Hora: ${incident.Time.substring(0, 5)}`, 20, yPos);
-        yPos += 7;
-      }
-      
-      // Description
-      yPos += 5;
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('DESCRIPCIÓN DEL INCIDENTE:', 20, yPos);
-      yPos += 7;
-      
-      pdf.setFont('helvetica', 'normal');
-      const description = incident.Description || 'Sin descripción';
-      const splitDescription = pdf.splitTextToSize(description, 170);
-      pdf.text(splitDescription, 20, yPos);
-      yPos += splitDescription.length * 5 + 10;
-      
-      // Losses breakdown section
-      yPos += 8;
-      pdf.setFontSize(14);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(50, 50, 50);
-      pdf.text('DESGLOSE DE PÉRDIDAS', 20, yPos);
-      
-      // Section underline
-      pdf.setDrawColor(100, 100, 100);
-      pdf.setLineWidth(0.3);
-      pdf.line(20, yPos + 2, 110, yPos + 2);
-      
-      yPos += 12;
-      pdf.setFontSize(11);
-      pdf.setTextColor(0, 0, 0);
-      
-      // Losses table
-      pdf.setFillColor(248, 249, 250);
-      pdf.rect(20, yPos - 3, pageWidth - 40, 30, 'F');
-      pdf.setDrawColor(200, 200, 200);
-      pdf.rect(20, yPos - 3, pageWidth - 40, 30, 'S');
-      
-      const cashLoss = formatCurrency(incident.CashLoss || incident.cashLoss || 0);
-      const merchandiseLoss = formatCurrency(incident.MerchandiseLoss || incident.merchandiseLoss || 0);
-      const otherLosses = formatCurrency(incident.OtherLosses || incident.otherLosses || 0);
-      const totalLoss = getTotalLoss();
-      
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Efectivo:', 25, yPos + 3);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(cashLoss, 120, yPos + 3);
-      
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Mercadería:', 25, yPos + 9);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(merchandiseLoss, 120, yPos + 9);
-      
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Otros:', 25, yPos + 15);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(otherLosses, 120, yPos + 15);
-      
-      // Total - simple styling
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(`PÉRDIDA TOTAL: ${totalLoss}`, 25, yPos + 21);
-      
-      yPos += 35;
-      
-      // Suspects
-      if (suspects.length > 0) {
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('SOSPECHOSOS INVOLUCRADOS:', 20, yPos);
-        yPos += 7;
-        
-        pdf.setFont('helvetica', 'normal');
-        suspects.forEach((suspect, index) => {
-          if (suspect.id !== 'unknown') {
-            pdf.text(`${index + 1}. ${suspect.Alias || 'Sospechoso sin nombre'}`, 20, yPos);
-            yPos += 5;
-            if (suspect.PhysicalDescription) {
-              const splitDesc = pdf.splitTextToSize(`   Descripción: ${suspect.PhysicalDescription}`, 170);
-              pdf.text(splitDesc, 20, yPos);
-              yPos += splitDesc.length * 4 + 3;
-            }
-          }
-        });
-      }
-      
-      // Additional notes
-      if (incident.Notes) {
-        yPos += 5;
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('NOTAS ADICIONALES:', 20, yPos);
-        yPos += 7;
-        
-        pdf.setFont('helvetica', 'normal');
-        const splitNotes = pdf.splitTextToSize(incident.Notes, 170);
-        pdf.text(splitNotes, 20, yPos);
-        yPos += splitNotes.length * 5;
-      }
-      
-      // Professional footer with logo reference
-      const pageHeight = pdf.internal.pageSize.height;
-      
-      // Footer line
-      pdf.setDrawColor(100, 100, 100);
-      pdf.setLineWidth(0.3);
-      pdf.line(20, pageHeight - 25, pageWidth - 20, pageHeight - 25);
-      
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(100, 100, 100);
-      pdf.text('Documento generado automáticamente por', 105, pageHeight - 18, { align: 'center' });
-      
-      // Add logo in footer (larger size)
-      try {
-        const logoResponse = await fetch('/logo-light.png');
-        const logoBlob = await logoResponse.blob();
-        const logoBase64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(logoBlob);
-        });
-        
-        // Larger logo in footer
-        pdf.addImage(logoBase64, 'PNG', 85, pageHeight - 20, 40, 15);
-      } catch {
-        pdf.text('PW Retails', 105, pageHeight - 13, { align: 'center' });
-      }
-      
-      pdf.setFontSize(9);
-      pdf.text(`Generado el: ${new Date().toLocaleDateString('es-PY')} a las ${new Date().toLocaleTimeString('es-PY')}`, 105, pageHeight - 5, { align: 'center' });
-      
-      pdf.save(`Incidente-${incident.id}.pdf`);
-      toast({ title: "PDF generado", description: "Descarga iniciada correctamente." });
+      // Save the PDF
+      pdf.save(`incidente-${incident.id}.pdf`);
+      toast({ title: "PDF generado", description: "El PDF se ha descargado correctamente" });
     } catch (error) {
-      console.error('Error al generar PDF:', error);
-      toast({ title: "Error", description: "No se pudo generar el PDF.", variant: "destructive" });
-    } finally {
-      setGeneratingPdf(false);
+      console.error('Error generating PDF:', error);
+      toast({ title: "Error", description: "No se pudo generar el PDF", variant: "destructive" });
     }
   };
   
@@ -405,6 +227,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
       lat: office.Geo ? parseFloat(office.Geo.split(',')[0]) : -25.2637, // Use actual coordinates or default to Asunción
       lng: office.Geo ? parseFloat(office.Geo.split(',')[1]) : -57.5759,
       title: office.Name,
+      description: office.Address || 'Dirección no disponible',
       address: office.Address || 'Dirección no disponible',
       logoUrl: companyLogo || undefined,
       officeId: office.id,
@@ -415,7 +238,6 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
           <p class="mapbox-popup-address">${office.Address || 'Dirección no disponible'}</p>
           ${office.Phone ? `<p class="mapbox-popup-address">Tel: ${office.Phone}</p>` : ''}
           ${incident?.Date ? `<p class="mapbox-popup-address">Incidente: ${format(new Date(incident.Date), 'dd/MM/yyyy', { locale: es })}</p>` : ''}
-          <a href="/dashboard/sucursales/${office.id}" class="text-primary text-xs hover:underline">Ver detalles</a>
         </div>
       `
     }
@@ -449,113 +271,106 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
   
   return (
     <div className="min-h-screen bg-background">
-    <div className="container mx-auto py-6 px-4 md:px-6">
+      <div className="container mx-auto p-6 space-y-6">
       {/* Breadcrumb */}
-      <div className="mb-4">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link href="/dashboard/incidentes">Incidentes</Link>
-              </BreadcrumbLink>
+              <BreadcrumbLink href="/dashboard/incidentes">Incidentes</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>{incident.id}</BreadcrumbPage>
+              <BreadcrumbPage>{incident?.id || 'Detalle de incidente'}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-      </div>
       
-      {/* Header */}
-      <div className="mb-8">
-        {/* Navigation */}
-        <div className="flex items-center gap-3 mb-6">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="h-8 px-2">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
-          </Button>
-          <div className="text-sm text-muted-foreground">
-            Reporte de Incidente
-          </div>
-        </div>
-        
-        {/* Main header content */}
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-          <div className="flex-1 min-w-0">
-            {/* Title */}
-            <h1 className="text-3xl font-bold text-foreground mb-4 leading-tight">
-              {incidentType}
-            </h1>
-            
-            {/* Key metadata in clean grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              <div>
-                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                  Fecha y Hora
+        {/* Header Card */}
+        <Card>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+              {/* Tipo de incidente y estado */}
+              <div className="flex flex-col items-center space-y-3">
+                <div className="relative w-32 h-32 sm:w-40 sm:h-40 overflow-hidden border-4 border-muted flex items-center justify-center bg-muted">
+                  {companyLogo ? (
+                    <Image
+                      src={companyLogo}
+                      alt="Logo de la empresa"
+                      fill
+                      className="object-contain p-4"
+                    />
+                  ) : (
+                    <AlertTriangle className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground" />
+                  )}
                 </div>
-                <div className="text-sm font-medium text-foreground">
-                  {incident.Date && format(new Date(incident.Date), 'dd/MM/yyyy', { locale: es })}
-                  {incident.Time && ` • ${incident.Time.substring(0, 5)}`}
-                </div>
+                <Badge variant="secondary" className="text-sm">
+                  {incidentType || 'Tipo no especificado'}
+                </Badge>
               </div>
               
+              {/* Información principal */}
+              <div className="flex-1 space-y-4 text-center sm:text-left">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start sm:justify-between gap-4 sm:gap-2">
               <div>
-                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                  Ubicación
+                    <div className="flex items-center gap-2 justify-center sm:justify-start">
+                      <h2 className="text-xl sm:text-2xl font-bold">Incidente</h2>
+                      {incident?.id && <IdCell id={incident.id} basePath="incidentes" />}
+                    </div>
+                    <p className="text-base sm:text-lg text-muted-foreground mt-1">
+                      {incident?.Date && format(new Date(incident.Date), "d 'de' MMMM 'de' yyyy", { locale: es })}
+                      {incident?.Time && ` - ${incident.Time}`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={generatePDF} className="h-9 px-3 sm:h-10 sm:px-4">
+                      <Download className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">Descargar PDF</span>
+                      <span className="sm:hidden">PDF</span>
+                    </Button>
+                    <Button asChild className="h-9 px-3 sm:h-10 sm:px-4">
+                      <Link href={`/dashboard/incidentes/${id}/edit`}>
+                        <Printer className="h-4 w-4 mr-2" />
+                        <span className="hidden sm:inline">Imprimir</span>
+                        <span className="sm:hidden">Imprimir</span>
+                      </Link>
+                    </Button>
                 </div>
-                <div className="text-sm font-medium text-foreground">
-                  {office?.Name || `PUNTO ${incident.Office}`}
                 </div>
-              </div>
-              
-              <div>
-                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                  Pérdida Total
+
+                {/* KPIs */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mt-4 sm:mt-6">
+                  {/* Pérdida Total */}
+                  <Card>
+                    <CardContent className="p-3 sm:p-4 sm:pt-6">
+                      <div className="text-xl sm:text-2xl font-bold">{getTotalLoss()}</div>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Pérdida total</p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Sospechosos Involucrados */}
+                  <Card>
+                    <CardContent className="p-3 sm:p-4 sm:pt-6">
+                      <div className="text-xl sm:text-2xl font-bold">{suspects.length}</div>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Sospechosos involucrados</p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Sucursal */}
+                  <Card>
+                    <CardContent className="p-3 sm:p-4 sm:pt-6">
+                      <div className="text-xl sm:text-2xl font-bold truncate">
+                        {office?.Name || 'No especificada'}
                 </div>
-                <div className="text-sm font-semibold text-destructive">
-                  {getTotalLoss()}
+                      <p className="text-xs sm:text-sm text-muted-foreground">Sucursal</p>
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
             </div>
-            
-            {/* ID reference */}
-            <div className="flex items-center gap-3">
-              <div className="text-xs text-muted-foreground">ID:</div>
-              <Badge 
-                variant="outline" 
-                className="font-mono text-xs cursor-pointer hover:bg-muted/50 transition-colors" 
-                onClick={() => {
-                  navigator.clipboard.writeText(incident.id.toString());
-                  toast({ title: "ID copiado", description: "ID del incidente copiado al portapapeles" });
-                }}
-                title="Clic para copiar ID completo"
-              >
-                {incident.id}
-              </Badge>
-            </div>
-          </div>
+          </CardContent>
+        </Card>
           
-          {/* Actions */}
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="gap-2" 
-              onClick={generatePDF}
-              disabled={generatingPdf}
-            >
-              {generatingPdf ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              ) : (
-                <Printer className="h-4 w-4" />
-              )}
-              Generar PDF
-            </Button>
-          </div>
-        </div>
-      </div>
-      
+        {/* Rest of the content */}
         {/* Info Cards Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card className="bg-card border-border">
@@ -662,27 +477,62 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                 Desglose de Pérdidas
               </h3>
                   <div className="bg-destructive/5 border border-destructive/20 p-4 rounded-lg space-y-3">
+                    {/* Efectivo */}
                     <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Efectivo</span>
                       <span className="font-medium text-foreground">
-                        {formatCurrency(incident.CashLoss || incident.cashLoss || 0)}
+                        {formatCurrency(incident.CashLoss || 0)}
                       </span>
                 </div>
+
+                    {/* Items detallados si existen */}
+                    {incident.incidentLossItem && incident.incidentLossItem.length > 0 && (
+                      <>
+                        <div className="pt-2">
+                          <span className="text-sm font-medium text-muted-foreground">Detalle de Mercadería</span>
+                          <div className="mt-2 space-y-2">
+                            {incident.incidentLossItem.map((item, index) => (
+                              <div key={item.id || index} className="bg-background/50 p-3 rounded-md">
+                                <div className="flex justify-between items-start">
+                                  <div className="space-y-1">
+                                    <p className="text-sm font-medium text-foreground">{item.description}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {item.quantity} unidades x {formatCurrency(item.unitPrice)}
+                                    </p>
+                                  </div>
+                                  <span className="font-medium text-foreground">
+                                    {formatCurrency(item.total)}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="border-t border-destructive/20 pt-2">
                     <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Mercadería</span>
+                            <span className="text-sm font-medium text-muted-foreground">Total Mercadería</span>
                       <span className="font-medium text-foreground">
-                        {formatCurrency(incident.MerchandiseLoss || incident.merchandiseLoss || 0)}
+                              {formatCurrency(
+                                incident.incidentLossItem.reduce((sum, item) => sum + item.total, 0)
+                              )}
                       </span>
                 </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Otros */}
                     <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Otros</span>
                       <span className="font-medium text-foreground">
-                        {formatCurrency(incident.OtherLosses || incident.otherLosses || 0)}
+                        {formatCurrency(incident.OtherLosses || 0)}
                       </span>
                     </div>
+
+                    {/* Total General */}
                     <div className="border-t border-destructive/20 pt-3">
                       <div className="flex justify-between items-center">
-                        <span className="font-semibold text-foreground">Total</span>
+                        <span className="font-semibold text-foreground">Total General</span>
                         <span className="font-bold text-destructive text-lg">{getTotalLoss()}</span>
                 </div>
                 </div>
@@ -710,7 +560,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                       <div key={suspect.id}>
                     {suspect.id !== 'unknown' ? (
                       <Link 
-                        href={`/dashboard/suspects/${suspect.id}`} 
+                        href={`/dashboard/sospechosos/${suspect.id}`} 
                             className="flex items-center gap-4 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors group"
                       >
                             <div className="h-12 w-12 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">

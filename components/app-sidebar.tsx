@@ -9,12 +9,10 @@ import {
   Users,
   ChevronDown,
   ChevronsUpDown,
-  User,
-  Settings,
   LogOut,
   PlusCircle,
   List,
-  Calendar,
+  BellRing,
 } from "lucide-react";
 
 import {
@@ -38,7 +36,6 @@ import {
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuGroup,
   DropdownMenuItem,
 } from "visor-ui";
 import { Button } from "@/components/ui/button";
@@ -99,8 +96,8 @@ const navigationItems: NavItem[] = [
     ],
   },
   {
-    icon: Calendar,
-    title: "Eventos",
+    icon: BellRing,
+    title: "Alertas",
     url: "/dashboard/eventos",
   },
   // {
@@ -349,13 +346,18 @@ export function AppSidebar() {
                   <Avatar className="h-6 w-6">
                     <AvatarImage src="/avatars/user.png" alt="Usuario" />
                     <AvatarFallback>
-                    {userInfo?.first_name?.[0]}
-                    {userInfo?.last_name?.[0]}
-                  </AvatarFallback>
+                      {userInfo?.first_name?.[0]}
+                      {userInfo?.last_name?.[0]}
+                    </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm">
-                    {userInfo?.first_name} {userInfo?.last_name}
-                  </span>
+                  <div className="flex flex-col items-start">
+                    <span className="text-sm font-medium">
+                      {userInfo?.first_name} {userInfo?.last_name}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {userInfo?.email}
+                    </span>
+                  </div>
                 </div>
                 <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-70" />
               </Button>
@@ -374,23 +376,6 @@ export function AppSidebar() {
               </DropdownMenuLabel>
 
               <DropdownMenuSeparator />
-
-              <DropdownMenuGroup>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/profile" className="flex items-center">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Perfil</span>
-                  </Link>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/settings" className="flex items-center">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Configuración</span>
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-
               <DropdownMenuSeparator />
 
               <DropdownMenuItem onClick={handleLogout}>

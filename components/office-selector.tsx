@@ -84,7 +84,7 @@ export const OfficeSelectorCompact = () => {
               <CommandItem
                 key={o.id}
                 value={o.Name}
-                className="flex items-start gap-3 py-2"
+                className="flex items-start gap-3 py-2 hover:bg-secondary"
                 onSelect={() => handleSelectOffice(o)}
               >
                 <Avatar className="h-6 w-6">

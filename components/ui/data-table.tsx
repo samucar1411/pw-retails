@@ -55,7 +55,7 @@ export function DataTable<TData, TValue>({
   isError = false,
   onAdd,
   onSearch,
-  searchPlaceholder = 'Search...',
+  searchPlaceholder = 'Buscar...',
 }: DataTableProps<TData, TValue>) {
   const [search, setSearch] = useState("");
   const [sortState, setSortState] = useState<SortingState>(sorting);
@@ -119,7 +119,7 @@ export function DataTable<TData, TValue>({
         {onAdd && (
           <Button onClick={onAdd} size="sm" className="h-8">
             <Plus className="mr-2 h-4 w-4" />
-            Add New
+            Agregar Nuevo
           </Button>
         )}
       </div>
@@ -165,7 +165,7 @@ export function DataTable<TData, TValue>({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  {loading ? 'Loading...' : isError ? 'Error loading data' : 'No results found'}
+                  {loading ? 'Cargando...' : isError ? 'Error al cargar los datos' : 'No se encontraron resultados'}
                 </TableCell>
               </TableRow>
             )}
@@ -176,12 +176,12 @@ export function DataTable<TData, TValue>({
       {/* Pagination Controls */}
       <div className="flex items-center justify-between px-2">
         <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{' '}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
+          {table.getFilteredSelectedRowModel().rows.length} de{' '}
+          {table.getFilteredRowModel().rows.length} fila(s) seleccionada(s).
         </div>
         <div className="flex items-center space-x-6 lg:space-x-8">
           <div className="flex items-center space-x-2">
-            <p className="text-sm font-medium">Rows per page</p>
+            <p className="text-sm font-medium">Filas por página</p>
             <select
               className="h-8 w-[70px] rounded-md border border-input bg-background px-2 py-1 text-sm"
               value={pagination.pageSize}
@@ -201,58 +201,73 @@ export function DataTable<TData, TValue>({
             </select>
           </div>
           <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-            Page {table.getState().pagination.pageIndex + 1} of{' '}
-            {table.getPageCount()}
+            Página {pagination.pageIndex + 1} de {pageCount}
           </div>
           <div className="flex items-center space-x-2">
             <Button
               variant="outline"
               className="h-8 w-8 p-0"
               onClick={() => {
-                const prevPage = Math.max(0, pagination.pageIndex - 1);
-                onPaginationChange?.({ ...pagination, pageIndex: prevPage });
+                onPaginationChange?.({
+                  ...pagination,
+                  pageIndex: 0
+                });
               }}
               disabled={pagination.pageIndex === 0}
             >
-              <span className="sr-only">Go to previous page</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <path d="m15 18-6-6 6-6" />
+              <span className="sr-only">Ir a la primera página</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="11 17 6 12 11 7"></polyline>
+                <polyline points="18 17 13 12 18 7"></polyline>
               </svg>
             </Button>
             <Button
               variant="outline"
               className="h-8 w-8 p-0"
               onClick={() => {
-                const nextPage = pagination.pageIndex + 1;
-                onPaginationChange?.({ ...pagination, pageIndex: nextPage });
+                onPaginationChange?.({
+                  ...pagination,
+                  pageIndex: pagination.pageIndex - 1
+                });
               }}
-              disabled={pagination.pageIndex >= (pageCount - 1)}
+              disabled={pagination.pageIndex === 0}
             >
-              <span className="sr-only">Go to next page</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <path d="m9 18 6-6-6-6" />
+              <span className="sr-only">Ir a la página anterior</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => {
+                onPaginationChange?.({
+                  ...pagination,
+                  pageIndex: pagination.pageIndex + 1
+                });
+              }}
+              disabled={pagination.pageIndex === pageCount - 1}
+            >
+              <span className="sr-only">Ir a la página siguiente</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => {
+                onPaginationChange?.({
+                  ...pagination,
+                  pageIndex: pageCount - 1
+                });
+              }}
+              disabled={pagination.pageIndex === pageCount - 1}
+            >
+              <span className="sr-only">Ir a la última página</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="13 17 18 12 13 7"></polyline>
+                <polyline points="6 17 11 12 6 7"></polyline>
               </svg>
             </Button>
           </div>

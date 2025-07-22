@@ -1,84 +1,139 @@
 'use client';
 
-import React, { useRef, ChangeEvent } from 'react';
+import { ChangeEvent } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Loader2, UploadCloud } from 'lucide-react';
-import { toast } from 'sonner';
-import useImageUpload from '@/hooks/useImageUpload';
+import { Camera, UploadCloud } from 'lucide-react';
 
-interface ImageUploaderProps {
-  onUploadComplete: (url: string) => void;
-  maxSizeMB?: number;
+export interface ImageUploaderProps {
+  onImageUpload?: (file: File) => Promise<void>;
+  onUploadComplete?: (url: string) => void;
+  currentImage?: string | null;
+  isUploading?: boolean;
   className?: string;
+  maxSizeMB?: number;
+  disabled?: boolean;
+  multiple?: boolean;
+  maxFiles?: number;
 }
 
 export function ImageUploader({
+  onImageUpload,
   onUploadComplete,
+  currentImage,
+  isUploading,
+  className = 'w-24 h-24',
   maxSizeMB = 5,
-  className = '',
+  disabled = false,
+  multiple = false,
+  maxFiles = 1,
 }: ImageUploaderProps) {
-  const { uploadImage, isUploading } = useImageUpload();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Check file size
-    if (file.size > maxSizeMB * 1024 * 1024) {
-      toast.error(`File size must be less than ${maxSizeMB}MB`);
-      return;
-    }
-
-    try {
-      const imageUrl = await uploadImage(file);
-      onUploadComplete(imageUrl);
-      toast.success('Image uploaded successfully');
+  const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      const fileArray = Array.from(files);
       
-      // Reset the file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      // Verificar límite de archivos
+      if (fileArray.length > maxFiles) {
+        alert(`Puede subir máximo ${maxFiles} imagen${maxFiles > 1 ? 'es' : ''}`);
+        return;
       }
-    } catch (error) {
-      console.error('Upload failed:', error);
-      toast.error('Failed to upload image');
+
+      for (const file of fileArray) {
+        // Verificar que sea una imagen
+        if (!file.type.startsWith('image/')) {
+          alert(`El archivo ${file.name} no es una imagen válida`);
+          return;
+        }
+        
+        if (file.size > maxSizeMB * 1024 * 1024) {
+          alert(`La imagen ${file.name} es demasiado grande. El tamaño máximo es ${maxSizeMB}MB`);
+          return;
+        }
+        
+        try {
+          if (onImageUpload) {
+            await onImageUpload(file);
+          }
+          // Si la carga fue exitosa y tenemos onUploadComplete, llamarlo
+          if (onUploadComplete) {
+            onUploadComplete(URL.createObjectURL(file));
+          }
+        } catch (error) {
+          console.error('Error uploading image:', error);
+        }
+      }
     }
   };
 
+  // Si hay una imagen actual, mostrar el avatar
+  if (currentImage) {
+    return (
+      <div className="flex items-center gap-4">
+        <Avatar className={className}>
+          <AvatarImage src={currentImage} />
+          <AvatarFallback>
+            <Camera className="w-8 h-8 text-muted-foreground" />
+          </AvatarFallback>
+        </Avatar>
+        <div>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            className="hidden"
+            id="image-upload"
+            disabled={isUploading || disabled}
+            multiple={multiple}
+          />
+          <label htmlFor="image-upload">
+            <Button
+              type="button"
+              variant="outline"
+              asChild
+              disabled={isUploading || disabled}
+            >
+              <span>
+                {isUploading ? 'Subiendo...' : 'Cambiar foto'}
+              </span>
+            </Button>
+          </label>
+        </div>
+      </div>
+    );
+  }
+
+  // Si no hay imagen, mostrar el área de upload
   return (
-    <div className={`flex flex-col items-center gap-4 ${className}`}>
+    <div className="w-full">
       <input
         type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
         accept="image/*"
+        onChange={handleImageChange}
         className="hidden"
-        disabled={isUploading}
+        id="image-upload"
+        disabled={isUploading || disabled}
+        multiple={multiple}
       />
-      <Button
-        type="button"
-        variant="outline"
-        onClick={() => fileInputRef.current?.click()}
-        disabled={isUploading}
-        className="flex items-center gap-2"
+      <label 
+        htmlFor="image-upload"
+        className={`
+          block w-full p-6 border-2 border-dashed border-border rounded-lg
+          bg-muted/10 cursor-pointer transition-colors
+          hover:border-primary/50 hover:bg-muted/20
+          ${isUploading || disabled ? 'opacity-50 cursor-not-allowed' : ''}
+        `}
       >
-        {isUploading ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Uploading...
-          </>
-        ) : (
-          <>
-            <UploadCloud className="h-4 w-4" />
-            Upload Image
-          </>
-        )}
-      </Button>
-      <p className="text-xs text-muted-foreground">
-        Max file size: {maxSizeMB}MB
-      </p>
+        <div className="flex flex-col items-center justify-center text-center">
+          <UploadCloud className="w-12 h-12 text-primary mb-4" />
+          <p className="text-lg font-medium mb-2">
+            {isUploading ? 'Subiendo imágenes...' : 'Subir imágenes'}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            PNG, JPG o JPEG (máx. {maxFiles} imagen{maxFiles > 1 ? 'es' : ''})
+          </p>
+        </div>
+      </label>
     </div>
   );
 }
-
-export default ImageUploader;

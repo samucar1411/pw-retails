@@ -123,15 +123,18 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
     // Then, update with actual incident data
     if (incidentsData?.incidents) {
       incidentsData.incidents.forEach((incident) => {
-        const officeId = incident.Office || incident.officeId;
+        const officeId = typeof incident.Office === 'number' 
+          ? incident.Office 
+          : typeof incident.Office === 'object' && incident.Office !== null 
+            ? incident.Office.id 
+            : null;
         if (!officeId) return;
         
         const existingStats = statsMap.get(officeId);
         if (!existingStats) return; // Skip if office not found in our list
         
         // Calculate incident loss
-        const totalLossValue = incident.TotalLoss as string | undefined;
-        const montoEstimadoValue = incident.MontoEstimado as string | undefined;
+        const totalLossValue = incident.TotalLoss;
         const cashLoss = parseNumeric(incident.CashLoss);
         const merchandiseLoss = parseNumeric(incident.MerchandiseLoss);
         const otherLosses = parseNumeric(incident.OtherLosses);
@@ -140,8 +143,6 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
         let incidentLoss = 0;
         if (totalLossValue) {
           incidentLoss = parseNumeric(totalLossValue);
-        } else if (montoEstimadoValue) {
-          incidentLoss = parseNumeric(montoEstimadoValue);
         } else {
           incidentLoss = calculatedTotal;
         }
