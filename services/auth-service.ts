@@ -41,9 +41,7 @@ const clearAuthData = () => {
 
 const authenticateUser = async (username: string, password: string): Promise<AuthResponse> => {
   try {
-    const response = await api.post('auth/token/', { username, password }, {
-      baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://sys.adminpy.com:18001',
-    });
+    const response = await api.post('auth/token/', { username, password });
 
     if (!response.data?.token) {
       throw new Error('Invalid response format - no token found');

@@ -52,6 +52,10 @@ const nextConfig: NextConfig = {
         source: "/api-token-auth2",
         destination: `${API_URL}/api-token-auth2/`,
       },
+      {
+        source: "/auth/:path*",
+        destination: `${API_URL}/auth/:path*/`,
+      },
     ];
   },
   // Ignore SSL certificate errors in dev (DO NOT USE IN PROD!)
