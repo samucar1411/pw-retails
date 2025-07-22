@@ -61,7 +61,7 @@ function SquareSelectGroup({ options, value, onChange, className = '' }: SquareS
               'min-w-[100px] w-[100px] h-[100px] rounded-xl flex flex-col items-center justify-center text-xs font-medium transition-colors outline-none ' +
               (selected
                 ? 'bg-primary/40 border-2 border-primary text-primary-foreground'
-                : 'bg-background border border-border text-foreground hover:border-primary hover:bg-muted/50')
+                : 'bg-background border border-border text-foreground hover:border-primary hover:bg-muted/60')
             }
           >
             {opt.label}
