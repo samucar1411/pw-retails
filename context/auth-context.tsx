@@ -42,10 +42,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 last_name: userData.last_name,
                 email: userData.email
               });
+            } else {
+              // Si no se puede obtener la información del usuario, usar información básica
+              setUserInfo({
+                first_name: 'Usuario',
+                last_name: '',
+                email: 'usuario@pwretails.com'
+              });
             }
           }
         } catch (error) {
           console.error('Error loading user info:', error);
+          // En caso de error, usar información básica
+          setUserInfo({
+            first_name: 'Usuario',
+            last_name: '',
+            email: 'usuario@pwretails.com'
+          });
         }
       }
 

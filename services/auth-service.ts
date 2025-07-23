@@ -92,8 +92,16 @@ const getCurrentUser = async (): Promise<AuthResponse | null> => {
       return null;
     }
 
-    const response = await api.get('users/me/');
-    return response.data;
+    // Intentar obtener información del usuario desde el endpoint de autenticación
+    // Si no funciona, retornar null para que se use la información del login
+    try {
+      const response = await api.get('api-token-auth2/');
+      return response.data;
+    } catch {
+      // Si el endpoint no existe, retornar null
+      // La información del usuario se cargará desde el login
+      return null;
+    }
   } catch (error) {
     console.error('[Auth] Error getting current user:', error);
     return null;

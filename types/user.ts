@@ -18,7 +18,6 @@ export interface User {
   email: string;
   phone?: string;
   position?: string;
-  profileImage?: string;
   createdAt?: string;
   updatedAt?: string;
   isActive?: boolean;

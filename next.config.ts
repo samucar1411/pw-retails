@@ -4,9 +4,20 @@ const nextConfig: NextConfig = {
   images: {
     domains: [
       'asset.cloudinary.com',
-      'res.cloudinary.com'
+      'res.cloudinary.com',
+      'sys.adminpy.com'
     ],
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'asset.cloudinary.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
       {
         protocol: 'https',
         hostname: 'sys.adminpy.com',
@@ -17,6 +28,7 @@ const nextConfig: NextConfig = {
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    unoptimized: process.env.NODE_ENV === 'production', // Deshabilitar optimización en producción si hay problemas
   },
   async headers() {
     return [

@@ -18,6 +18,20 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+// Función para construir URLs de imágenes del backend
+const getImageUrl = (imgFile: string | null): string | null => {
+  if (!imgFile) return null;
+  
+  // Si ya es una URL completa, retornarla
+  if (imgFile.startsWith('http://') || imgFile.startsWith('https://')) {
+    return imgFile;
+  }
+  
+  // Si es una ruta relativa, construir la URL completa
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://sys.adminpy.com:18001';
+  return `${baseUrl}${imgFile.startsWith('/') ? '' : '/'}${imgFile}`;
+};
+
 
 
 type SeverityStyle = {
@@ -365,13 +379,14 @@ export default function EventsPage() {
         <div className="p-4">
           {/* Imagen principal */}
           <div className="relative w-full h-48 rounded-lg overflow-hidden mb-4 bg-muted">
-            {event.img_file ? (
+            {getImageUrl(event.img_file) ? (
               <Image
-                src={event.img_file}
+                src={getImageUrl(event.img_file)!}
                 alt={event.image_name}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                unoptimized={process.env.NODE_ENV === 'production'}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
@@ -506,13 +521,14 @@ export default function EventsPage() {
 
             {/* Imagen principal */}
             <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-muted">
-              {selectedEvent.img_file ? (
+              {getImageUrl(selectedEvent.img_file) ? (
                 <Image
-                  src={selectedEvent.img_file}
+                  src={getImageUrl(selectedEvent.img_file)!}
                   alt={selectedEvent.image_name || 'Imagen del evento'}
                   fill
                   className="object-contain"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  unoptimized={process.env.NODE_ENV === 'production'}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
