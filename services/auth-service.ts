@@ -2,10 +2,10 @@ import { api } from './api';
 
 interface AuthResponse {
   token: string;
-  user_id?: number;
-  email?: string;
-  firts_name?: string;
-  last_name?: string;
+  user_id: number;
+  email: string;
+  firts_name: string; // API typo - should be "first_name"
+  last_name: string;
 }
 
 const TOKEN_KEY = 'auth_token';
@@ -41,7 +41,7 @@ const clearAuthData = () => {
 
 const authenticateUser = async (username: string, password: string): Promise<AuthResponse> => {
   try {
-    const response = await api.post('auth/token/', { username, password });
+    const response = await api.post('api-token-auth2/', { username, password });
 
     if (!response.data?.token) {
       throw new Error('Invalid response format - no token found');

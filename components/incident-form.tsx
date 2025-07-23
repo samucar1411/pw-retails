@@ -999,47 +999,6 @@ export function IncidentForm() {
           <Input readOnly disabled value={formatInputValue(totalLoss)} className="w-full" />
         </section>
         {/* Sticky navigation buttons */}
-        <div className="sticky bottom-0 left-0 w-full bg-background border-t border-border z-10 px-4 py-4 flex justify-between">
-          <Button 
-            variant="outline" 
-            onClick={async () => {
-              // Validar campos del paso actual antes de retroceder
-              let isValid = true;
-              
-              if (activeStep === 0) {
-                const result = await form.trigger(['officeId', 'date', 'time', 'incidentTypeId', 'description']);
-                isValid = result;
-              }
-              
-              if (isValid) {
-                setActiveStep(activeStep - 1);
-              } else {
-                toast.error('Por favor, complete todos los campos requeridos antes de continuar');
-              }
-            }}
-          >
-            Anterior
-          </Button>
-          <Button 
-            onClick={async () => {
-              // Validar campos del paso actual antes de avanzar
-              let isValid = true;
-              
-              if (activeStep === 0) {
-                const result = await form.trigger(['officeId', 'date', 'time', 'incidentTypeId', 'description']);
-                isValid = result;
-              }
-              
-              if (isValid) {
-                setActiveStep(activeStep + 1);
-              } else {
-                toast.error('Por favor, complete todos los campos requeridos antes de continuar');
-              }
-            }}
-          >
-            Siguiente
-          </Button>
-        </div>
       </div>
     );
   }

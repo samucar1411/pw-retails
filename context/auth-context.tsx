@@ -25,9 +25,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Verificar autenticación inicial
-    const checkAuth = () => {
+    const checkAuth = async () => {
       const isAuth = authService.isAuthenticated();
       setIsAuthenticated(isAuth);
+
+      // Si está autenticado, intentar cargar la información del usuario
+      if (isAuth && !userInfo) {
+        try {
+          // Aquí podrías hacer una llamada a la API para obtener la información del usuario
+          // Por ahora, usaremos la información almacenada en localStorage si está disponible
+          const token = authService.getToken();
+          if (token) {
+            // Si hay token pero no userInfo, podríamos hacer una llamada a /users/me
+            // Por ahora, dejamos userInfo como null hasta que se haga login
+          }
+        } catch (error) {
+          console.error('Error loading user info:', error);
+        }
+      }
 
       // Si no está autenticado y no estamos en login, redirigir
       if (!isAuth && pathname !== '/login') {
@@ -36,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     checkAuth();
-  }, [pathname, router]);
+  }, [pathname, router, userInfo]);
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
@@ -44,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.token) {
         setIsAuthenticated(true);
         setUserInfo({
-          first_name: data.firts_name, // Note: API has a typo in the field name
+          first_name: data.firts_name, // API returns "firts_name" (typo)
           last_name: data.last_name,
           email: data.email
         });
