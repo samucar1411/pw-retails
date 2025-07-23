@@ -27,6 +27,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { IdCell } from '@/components/ui/id-cell';
+import { PoliceReportPreview } from '@/components/police-report-preview';
 
 // Services
 import { getIncidentById } from '@/services/incident-service';
@@ -34,6 +35,9 @@ import { getIncidentTypeWithCache } from '@/services/incident-type-service';
 import { getOffice } from '@/services/office-service';
 import { getSuspectById } from '@/services/suspect-service';
 import { getCompanyById } from '@/services/company-service';
+
+// Utils
+import { getProxyUrl } from '@/lib/utils';
 
 // Types
 import { Incident } from '@/types/incident';
@@ -57,6 +61,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
   const [suspects, setSuspects] = useState<Suspect[]>([]);
   const [suspectsLoading, setSuspectsLoading] = useState(true);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState<string>('');
   
   // Fetch incident data
   useEffect(() => {
@@ -75,14 +80,22 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
         // Fetch office data
         if (data.Office) {
           const officeId = typeof data.Office === 'number' ? data.Office : data.Office.id;
+          console.log('Fetching office with ID:', officeId);
           const officeData = await getOffice(officeId);
+          console.log('Office data received:', officeData);
           setOffice(officeData);
           
-          // Fetch company logo if office has company
+          // Fetch company data
           if (officeData?.Company) {
+            console.log('Office has company ID:', officeData.Company);
             const company = await getCompanyById(officeData.Company.toString());
+            console.log('Company data received:', company);
             setCompanyLogo(company?.image_url || null);
+            setCompanyName(company?.name || 'Empresa no encontrada');
+            console.log('Company name set to:', company?.name);
           }
+        } else {
+          console.log('No office data in incident');
         }
         
         // Fetch suspects
@@ -153,67 +166,90 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
     router.back();
   };
 
-  // Generate PDF function
+  // Generate PDF function using the improved component
   const generatePDF = async () => {
     if (!incident) return;
+    
     try {
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pageWidth = pdf.internal.pageSize.width;
+      // Create a temporary container for the report
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '0';
+      tempContainer.style.width = '800px';
+      tempContainer.style.backgroundColor = 'white';
+      tempContainer.style.padding = '20px';
+      document.body.appendChild(tempContainer);
+
+      // Render the PoliceReportPreview component
+      const reportElement = (
+        <PoliceReportPreview 
+          incidentData={incident} 
+          incidentTypes={[{ id: incident.IncidentType, name: incidentType }]} 
+          office={office}
+          companyLogo={companyLogo}
+          companyName={companyName}
+          suspects={suspects}
+        />
+      );
+
+      // Use ReactDOM to render the component
+      const ReactDOM = await import('react-dom/client');
+      const root = ReactDOM.createRoot(tempContainer);
+      root.render(reportElement);
+
+      // Wait a bit for the component to render
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Generate PDF using html2canvas and jsPDF
+      const html2canvas = await import('html2canvas');
+      const canvas = await html2canvas.default(tempContainer, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      // Clean up
+      document.body.removeChild(tempContainer);
+
+      // Open PDF in new window for printing
+      const pdfBlob = pdf.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      const newWindow = window.open(pdfUrl, '_blank');
       
-      // Header with better styling (no logo at top)
-      pdf.setFontSize(24);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('REPORTE DE INCIDENTE', 105, 25, { align: 'center' });
-      
-      // Subtitle
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(100, 100, 100);
-      pdf.text('Informe detallado de incidente registrado', 105, 32, { align: 'center' });
-      
-      // Header line
-      pdf.setDrawColor(50, 50, 50);
-      pdf.setLineWidth(0.5);
-      pdf.line(20, 40, pageWidth - 20, 40);
-      
-      // Reset text color
-      pdf.setTextColor(0, 0, 0);
-      
-      // Document info box with better layout
-      pdf.setFillColor(248, 249, 250);
-      pdf.rect(20, 45, pageWidth - 40, 35, 'F');
-      pdf.setDrawColor(200, 200, 200);
-      pdf.rect(20, 45, pageWidth - 40, 35, 'S');
-      
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'bold');
-      
-      // ID del incidente en su propia línea con más espacio
-      pdf.text(`ID del Incidente:`, 25, 53);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(incident.id.toString(), 70, 53);
-      
-      // Fecha y hora
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(`Fecha y Hora:`, 25, 60);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`${format(new Date(incident.Date), 'dd/MM/yyyy')} ${incident.Time ? `• ${incident.Time}` : ''}`, 70, 60);
-      
-      // Tipo de incidente
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(`Tipo:`, 25, 67);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(incidentType || 'No especificado', 70, 67);
-      
-      // Sucursal
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(`Sucursal:`, 25, 74);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(office?.Name || 'No especificada', 70, 74);
-      
-      // Save the PDF
-      pdf.save(`incidente-${incident.id}.pdf`);
-      toast({ title: "PDF generado", description: "El PDF se ha descargado correctamente" });
+      if (newWindow) {
+        // Wait for the PDF to load and then trigger print
+        newWindow.onload = () => {
+          setTimeout(() => {
+            newWindow.print();
+          }, 1000);
+        };
+        toast({ title: "PDF generado", description: "El PDF se abrirá para imprimir" });
+      } else {
+        // Fallback: download the PDF
+        pdf.save(`incidente-${incident.id}.pdf`);
+        toast({ title: "PDF generado", description: "El PDF se ha descargado correctamente" });
+      }
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast({ title: "Error", description: "No se pudo generar el PDF", variant: "destructive" });
@@ -229,11 +265,11 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
       title: office.Name,
       description: office.Address || 'Dirección no disponible',
       address: office.Address || 'Dirección no disponible',
-      logoUrl: companyLogo || undefined,
+      logoUrl: getProxyUrl(companyLogo) || undefined,
       officeId: office.id,
       popupContent: `
         <div class="mapbox-popup-content-inner">
-          ${companyLogo ? `<img src="${companyLogo}" alt="Logo" class="h-8 mb-2 object-contain" />` : ''}
+          ${companyLogo ? `<img src="${getProxyUrl(companyLogo)}" alt="Logo" class="h-8 mb-2 object-contain" />` : ''}
           <h3 class="mapbox-popup-title">${office.Name}</h3>
           <p class="mapbox-popup-address">${office.Address || 'Dirección no disponible'}</p>
           ${office.Phone ? `<p class="mapbox-popup-address">Tel: ${office.Phone}</p>` : ''}
@@ -294,7 +330,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                 <div className="relative w-32 h-32 sm:w-40 sm:h-40 overflow-hidden border-4 border-muted flex items-center justify-center bg-muted">
                   {companyLogo ? (
                     <Image
-                      src={companyLogo}
+                      src={getProxyUrl(companyLogo) || ''}
                       alt="Logo de la empresa"
                       fill
                       className="object-contain p-4"
@@ -327,12 +363,10 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                       <span className="hidden sm:inline">Descargar PDF</span>
                       <span className="sm:hidden">PDF</span>
                     </Button>
-                    <Button asChild className="h-9 px-3 sm:h-10 sm:px-4">
-                      <Link href={`/dashboard/incidentes/${id}/edit`}>
-                        <Printer className="h-4 w-4 mr-2" />
-                        <span className="hidden sm:inline">Imprimir</span>
-                        <span className="sm:hidden">Imprimir</span>
-                      </Link>
+                    <Button onClick={generatePDF} className="h-9 px-3 sm:h-10 sm:px-4">
+                      <Printer className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">Imprimir</span>
+                      <span className="sm:hidden">Imprimir</span>
                     </Button>
                 </div>
                 </div>

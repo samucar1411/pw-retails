@@ -68,10 +68,6 @@ const nextConfig: NextConfig = {
         destination: `${API_URL}/api-token-auth2/`,
       },
       {
-        source: "/auth/:path*",
-        destination: `${API_URL}/auth/:path*/`,
-      },
-      {
         source: "/media/:path*",
         destination: `${API_URL}/media/:path*`,
       },
