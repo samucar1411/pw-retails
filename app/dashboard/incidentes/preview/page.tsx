@@ -7,7 +7,8 @@ import {
   FileText, 
   Printer,
   CheckCircle2,
-  Info
+  Info,
+  Download
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 
@@ -294,6 +295,24 @@ export default function IncidentPreviewPage() {
     router.push('/dashboard/incidentes');
   };
 
+  const handlePrint = () => {
+    // Ocultar elementos que no queremos imprimir
+    const printElements = document.querySelectorAll('.print\\:hidden');
+    printElements.forEach(el => {
+      (el as HTMLElement).style.display = 'none';
+    });
+
+    // Imprimir la página
+    window.print();
+
+    // Restaurar elementos después de imprimir
+    setTimeout(() => {
+      printElements.forEach(el => {
+        (el as HTMLElement).style.display = '';
+      });
+    }, 1000);
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div></div>;
   }
@@ -322,9 +341,13 @@ export default function IncidentPreviewPage() {
               {generatingPdf ? (
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
               ) : (
-                <Printer className="h-4 w-4 mr-1" />
+                <Download className="h-4 w-4 mr-1" />
               )}
-              Imprimir PDF
+              Descargar PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={handlePrint}>
+              <Printer className="h-4 w-4 mr-1" />
+              Imprimir
             </Button>
             <Button onClick={handleApprove}><CheckCircle2 className="h-4 w-4 mr-1" />Registrar denuncia</Button>
           </div>
