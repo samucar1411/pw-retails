@@ -22,15 +22,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const getImageUrl = (imgFile: string | null): string | null => {
   if (!imgFile) return null;
   
-  // Si ya es una URL completa, retornarla
-  if (imgFile.startsWith('http://') || imgFile.startsWith('https://')) {
+  // Si es una URL completa del backend, convertirla a proxy
+  if (imgFile.includes('sys.adminpy.com')) {
+    // Extraer la ruta después de /media/
+    const mediaMatch = imgFile.match(/\/media\/(.+)$/);
+    if (mediaMatch) {
+      return `/media/${mediaMatch[1]}`;
+    }
+  }
+  
+  // Si ya es una ruta relativa, usar el proxy de Next.js
+  if (imgFile.startsWith('/')) {
     return imgFile;
   }
   
-  // Si es una ruta relativa, usar el proxy de Next.js
-  // Esto evita problemas de SSL al cargar las imágenes
-  const cleanPath = imgFile.startsWith('/') ? imgFile : `/${imgFile}`;
-  return cleanPath;
+  // Si es una ruta sin slash inicial, agregarlo
+  return `/${imgFile}`;
 };
 
 
