@@ -78,29 +78,7 @@ export default function Map({ locations }: MapProps) {
         }
       });
 
-      // Agregar el efecto pulsante
-      map.addLayer({
-        'id': 'points-pulse',
-        'type': 'circle',
-        'source': 'points',
-        'paint': {
-          'circle-radius': [
-            'interpolate',
-            ['linear'],
-            ['get', 'pulse'],
-            0, 8,
-            1, 16
-          ],
-          'circle-color': '#ff0000',
-          'circle-opacity': [
-            'interpolate',
-            ['linear'],
-            ['get', 'pulse'],
-            0, 0.4,
-            1, 0
-          ]
-        }
-      });
+
 
       // Crear popups
       const popup = new mapboxgl.Popup({
@@ -143,29 +121,7 @@ export default function Map({ locations }: MapProps) {
         map.getCanvas().style.cursor = '';
       });
 
-      // Animar los puntos
-      let animationFrame: number;
-      let start = 0;
 
-      function animate(timestamp: number) {
-        if (!start) start = timestamp;
-        const progress = (timestamp - start) / 1500; // 1.5 segundos por ciclo
-
-        locations.forEach(location => {
-          map.setFeatureState(
-            { source: 'points', id: location.id },
-            { pulse: (Math.sin(progress * Math.PI * 2) + 1) / 2 }
-          );
-        });
-
-        animationFrame = requestAnimationFrame(animate);
-      }
-
-      animationFrame = requestAnimationFrame(animate);
-
-      return () => {
-        cancelAnimationFrame(animationFrame);
-      };
     });
 
     // Fit map to show all markers if there are multiple locations

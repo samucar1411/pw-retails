@@ -85,10 +85,26 @@ const isAuthenticated = (): boolean => {
   return !!token;
 };
 
+const getCurrentUser = async (): Promise<AuthResponse | null> => {
+  try {
+    const token = getToken();
+    if (!token) {
+      return null;
+    }
+
+    const response = await api.get('users/me/');
+    return response.data;
+  } catch (error) {
+    console.error('[Auth] Error getting current user:', error);
+    return null;
+  }
+};
+
 export const authService = {
   getToken,
   login,
   loginWithUserInfo,
   logout,
-  isAuthenticated
+  isAuthenticated,
+  getCurrentUser
 };

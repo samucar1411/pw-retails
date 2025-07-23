@@ -80,8 +80,10 @@ export const columns: ColumnDef<Suspect>[] = [
     accessorKey: 'Tags',
     header: 'Características',
     cell: ({ row }) => {
-      const tags = row.getValue('Tags') as string[];
-      if (!tags || tags.length === 0) {
+      const tags = row.getValue('Tags');
+      
+      // Verificar que tags sea un array válido
+      if (!Array.isArray(tags) || tags.length === 0) {
         return <span className="text-muted-foreground text-sm">Sin características</span>;
       }
       
@@ -93,7 +95,7 @@ export const columns: ColumnDef<Suspect>[] = [
                 •
               </span>
               <span className="text-foreground font-medium truncate">
-                {tag}
+                {String(tag)}
               </span>
             </div>
           ))}

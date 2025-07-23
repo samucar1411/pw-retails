@@ -32,12 +32,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Si está autenticado, intentar cargar la información del usuario
       if (isAuth && !userInfo) {
         try {
-          // Aquí podrías hacer una llamada a la API para obtener la información del usuario
-          // Por ahora, usaremos la información almacenada en localStorage si está disponible
           const token = authService.getToken();
           if (token) {
-            // Si hay token pero no userInfo, podríamos hacer una llamada a /users/me
-            // Por ahora, dejamos userInfo como null hasta que se haga login
+            // Cargar información del usuario desde la API
+            const userData = await authService.getCurrentUser();
+            if (userData) {
+              setUserInfo({
+                first_name: userData.firts_name, // API returns "firts_name" (typo)
+                last_name: userData.last_name,
+                email: userData.email
+              });
+            }
           }
         } catch (error) {
           console.error('Error loading user info:', error);
