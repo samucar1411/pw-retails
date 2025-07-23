@@ -331,7 +331,12 @@ export default function IncidentPreviewPage() {
         </div>
       </div>
       
-      <PoliceReportPreview incidentData={incidentData} incidentTypes={[]} />
+      <PoliceReportPreview 
+        incidentData={incidentData} 
+        incidentTypes={[]} 
+        office={null}
+        companyLogo={null}
+      />
       
     </div>
   );
