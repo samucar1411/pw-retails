@@ -71,6 +71,10 @@ const nextConfig: NextConfig = {
         source: "/auth/:path*",
         destination: `${API_URL}/auth/:path*/`,
       },
+      {
+        source: "/media/:path*",
+        destination: `${API_URL}/media/:path*`,
+      },
     ];
   },
   // Ignore SSL certificate errors in dev (DO NOT USE IN PROD!)

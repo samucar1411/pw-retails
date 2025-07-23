@@ -27,9 +27,10 @@ const getImageUrl = (imgFile: string | null): string | null => {
     return imgFile;
   }
   
-  // Si es una ruta relativa, construir la URL completa
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://sys.adminpy.com:18001';
-  return `${baseUrl}${imgFile.startsWith('/') ? '' : '/'}${imgFile}`;
+  // Si es una ruta relativa, usar el proxy de Next.js
+  // Esto evita problemas de SSL al cargar las imágenes
+  const cleanPath = imgFile.startsWith('/') ? imgFile : `/${imgFile}`;
+  return cleanPath;
 };
 
 
