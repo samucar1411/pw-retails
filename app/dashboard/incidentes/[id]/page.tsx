@@ -180,7 +180,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
       tempContainer.style.backgroundColor = 'white';
       tempContainer.style.padding = '20px';
       document.body.appendChild(tempContainer);
-
+      
       // Render the PoliceReportPreview component
       const reportElement = (
         <PoliceReportPreview 
@@ -192,15 +192,15 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
           suspects={suspects}
         />
       );
-
+      
       // Use ReactDOM to render the component
       const ReactDOM = await import('react-dom/client');
       const root = ReactDOM.createRoot(tempContainer);
       root.render(reportElement);
-
+      
       // Wait a bit for the component to render
       await new Promise(resolve => setTimeout(resolve, 100));
-
+      
       // Generate PDF using html2canvas and jsPDF
       const html2canvas = await import('html2canvas');
       const canvas = await html2canvas.default(tempContainer, {
@@ -231,7 +231,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
 
       // Clean up
       document.body.removeChild(tempContainer);
-
+      
       // Open PDF in new window for printing
       const pdfBlob = pdf.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
@@ -247,8 +247,8 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
         toast({ title: "PDF generado", description: "El PDF se abrirá para imprimir" });
       } else {
         // Fallback: download the PDF
-        pdf.save(`incidente-${incident.id}.pdf`);
-        toast({ title: "PDF generado", description: "El PDF se ha descargado correctamente" });
+      pdf.save(`incidente-${incident.id}.pdf`);
+      toast({ title: "PDF generado", description: "El PDF se ha descargado correctamente" });
       }
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -364,9 +364,9 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                       <span className="sm:hidden">PDF</span>
                     </Button>
                     <Button onClick={generatePDF} className="h-9 px-3 sm:h-10 sm:px-4">
-                      <Printer className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">Imprimir</span>
-                      <span className="sm:hidden">Imprimir</span>
+                        <Printer className="h-4 w-4 mr-2" />
+                        <span className="hidden sm:inline">Imprimir</span>
+                        <span className="sm:hidden">Imprimir</span>
                     </Button>
                 </div>
                 </div>

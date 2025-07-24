@@ -1,7 +1,7 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DataTable } from '@/components/ui/data-table';
@@ -22,6 +22,9 @@ interface SuspectFiltersState {
   id?: string;
   suspects_tags?: string[];
   search?: string;
+  fromDate?: string;
+  toDate?: string;
+  officeId?: string;
 }
 
 // Definir las opciones de tags disponibles
@@ -86,14 +89,60 @@ const SUSPECT_TAG_OPTIONS = {
   ]
 };
 
-function SuspectsPage() {
+function SuspectsPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [suspectStatuses, setSuspectStatuses] = useState<SuspectStatus[]>([]);
   const [filters, setFilters] = useState<SuspectFiltersState>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  // Read URL parameters
+  useEffect(() => {
+    const urlFilters: SuspectFiltersState = {};
+    
+    // Read status filter
+    const status = searchParams.get('Status');
+    if (status) urlFilters.Status = status;
+    
+    // Read date filters
+    const fromDate = searchParams.get('fromDate');
+    const toDate = searchParams.get('toDate');
+    if (fromDate) urlFilters.fromDate = fromDate;
+    if (toDate) urlFilters.toDate = toDate;
+    
+    // Read office filter
+    const officeId = searchParams.get('officeId');
+    if (officeId) urlFilters.officeId = officeId;
+    
+    // Read other filters
+    const alias = searchParams.get('alias');
+    if (alias) urlFilters.alias = alias;
+    
+    const id = searchParams.get('id');
+    if (id) urlFilters.id = id;
+    
+    const search = searchParams.get('search');
+    if (search) {
+      urlFilters.search = search;
+      setSearchTerm(search);
+    }
+    
+    // Read tags filter
+    const tags = searchParams.get('suspects_tags');
+    if (tags) {
+      const tagsArray = tags.split(',').filter(tag => tag.trim() !== '');
+      urlFilters.suspects_tags = tagsArray;
+      setSelectedTags(tagsArray);
+    }
+    
+    // Apply URL filters if any exist
+    if (Object.keys(urlFilters).length > 0) {
+      setFilters(urlFilters);
+    }
+  }, [searchParams]);
 
   const {
     data,
@@ -177,49 +226,42 @@ function SuspectsPage() {
       const status = suspectStatuses.find(s => s.id.toString() === value);
       return `Estado: ${status?.Name || value}`;
     }
+    if (key === 'alias') {
+      return `Alias: ${value}`;
+    }
+    if (key === 'id') {
+      return `ID: ${value}`;
+    }
+    if (key === 'search') {
+      return `Búsqueda: ${value}`;
+    }
     return `${key}: ${value}`;
   };
 
   const handleRemoveFilter = (key: string, value?: string) => {
-    const newFilters = { ...filters };
-    if (value) {
-      newFilters[key as keyof SuspectFiltersState] = undefined;
-      setSelectedTags(selectedTags.filter(t => t !== value));
+    if (key === 'suspects_tags' && value) {
+      const newTags = selectedTags.filter(t => t !== value);
+      setSelectedTags(newTags);
+      const updatedFilters = { 
+        ...filters, 
+        suspects_tags: newTags.length > 0 ? newTags : undefined 
+      };
+      setFilters(updatedFilters);
     } else {
-      newFilters[key as keyof SuspectFiltersState] = undefined;
+      const updatedFilters = { ...filters };
+      delete updatedFilters[key as keyof SuspectFiltersState];
+      setFilters(updatedFilters);
     }
-    setFilters(newFilters);
-    setPage(1); // Reset to first page when removing filters
+    setPage(1); // Reset to first page when filters change
   };
 
-  // Loading skeleton
-  if (isLoading && (!data || data.suspects.length === 0)) {
-    return (
-      <div className="container mx-auto py-8 px-4">
-        <div className="flex justify-between items-center mb-6">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-10 w-48" />
-        </div>
-        <div className="mb-6">
-          <Skeleton className="h-10 w-full" />
-        </div>
-        <div className="space-y-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-16 w-full" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
   if (error) {
     return (
       <div className="container mx-auto py-8 px-4">
         <ErrorDisplay 
           title="Error al cargar los sospechosos" 
           message={error.message} 
-          error={error}
+          error={error} 
           retry={refetch}
         />
       </div>
@@ -323,6 +365,14 @@ function SuspectsPage() {
         />
       )}
     </div>
+  );
+}
+
+function SuspectsPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto py-8 px-4"><Skeleton className="h-12 w-full" /></div>}>
+      <SuspectsPageContent />
+    </Suspense>
   );
 }
 

@@ -7,7 +7,13 @@ import { UserCheck, Loader2 } from "lucide-react";
 import { useAllSuspects } from "@/hooks/useAllSuspects";
 import Link from "next/link";
 
-export function KpiSuspectsIdentified() {
+interface KpiSuspectsIdentifiedProps {
+  fromDate?: string;
+  toDate?: string;
+  officeId?: string;
+}
+
+export function KpiSuspectsIdentified({ fromDate, toDate, officeId }: KpiSuspectsIdentifiedProps) {
   // Fetch all suspects across all pages
   const { 
     data: suspectsData, 
@@ -22,6 +28,27 @@ export function KpiSuspectsIdentified() {
       suspect.Status === 1 || suspect.Status === 3
     ).length;
   }, [suspectsData]);
+
+  // Build link to suspects page with filters
+  const suspectsLink = React.useMemo(() => {
+    const link = `/dashboard/sospechosos`;
+    const params = new URLSearchParams();
+    
+    // Add status filter for identified suspects (Status 1 or 3)
+    params.append('Status', '1,3');
+    
+    if (fromDate && toDate && fromDate.trim() !== '' && toDate.trim() !== '') {
+      params.append('fromDate', fromDate);
+      params.append('toDate', toDate);
+    }
+    
+    if (officeId && officeId !== '') {
+      params.append('officeId', officeId);
+    }
+    
+    const queryString = params.toString();
+    return queryString ? `${link}?${queryString}` : link;
+  }, [fromDate, toDate, officeId]);
 
   if (isLoading) {
     return (
@@ -69,7 +96,7 @@ export function KpiSuspectsIdentified() {
           </div>
           
           <div className="pt-2">
-            <Link href="/dashboard/sospechosos">
+            <Link href={suspectsLink}>
               <Button variant="ghost" size="sm" className="text-xs text-primary hover:text-primary/80">
                 Ver sospechosos →
               </Button>

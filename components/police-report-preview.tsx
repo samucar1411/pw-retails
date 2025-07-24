@@ -36,7 +36,7 @@ const getIncidentTypeName = (typeId: number, types: Array<{ id: number; name: st
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('es-PY', {
-    style: 'currency',
+    style: 'currency', 
     currency: 'PYG',
     maximumFractionDigits: 0,
   }).format(amount);
@@ -161,26 +161,26 @@ export function PoliceReportPreview({
         {/* I. Datos del Denunciante */}
         <section className="section page-break-inside-avoid">
           <h2 className="section-title">I. Datos del Denunciante</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+           <div>
               <p className="label">Empresa:</p>
               <p className="value">{companyName || 'Empresa no encontrada'}</p>
-            </div>
-            <div>
+           </div>
+           <div>
               <p className="label">Sucursal:</p>
               <p className="value">{office ? getBranchName(office) : 'Sucursal no especificada'}</p>
-            </div>
+           </div>
             {office?.Address && (
               <div>
                 <p className="label">Dirección:</p>
                 <p className="value">{office.Address}</p>
-              </div>
+         </div>
             )}
             {office?.Phone && (
               <div>
                 <p className="label">Teléfono:</p>
                 <p className="value">{office.Phone}</p>
-              </div>
+      </div>
             )}
           </div>
         </section>
@@ -199,7 +199,7 @@ export function PoliceReportPreview({
                 {getIncidentTypeName(incidentData.IncidentType, incidentTypes)}
               </p>
             </div>
-          </div>
+            </div>
           <div className="mt-4">
             <p className="label mb-2">Descripción de los hechos:</p>
             <div className="bg-gray-50 border-2 border-gray-300 p-4 print:bg-white">
@@ -209,7 +209,7 @@ export function PoliceReportPreview({
             </div>
           </div>
         </section>
-
+      
         {/* III. Daños y Pérdidas */}
         <section className="section page-break-inside-avoid">
           <h2 className="section-title">III. Daños y Pérdidas</h2>
@@ -254,7 +254,7 @@ export function PoliceReportPreview({
           </div>
 
           {incidentData.incidentLossItem?.length > 0 && (
-            <div>
+                    <div>
               <h3 className="subtitle mb-3">Detalle de Mercadería Afectada</h3>
               <table className="w-full border-collapse border-2 border-gray-400">
                 <thead className="bg-gray-100 print:bg-gray-200">
@@ -317,13 +317,13 @@ export function PoliceReportPreview({
                         <div className="flex justify-center">
                           <div className="w-32 h-40 border-2 border-gray-300 bg-gray-100 overflow-hidden rounded-lg">
                             {s.PhotoUrl ? (
-                              <div className="relative w-full h-full">
-                                <Image
+                        <div className="relative w-full h-full">
+                          <Image 
                                   src={s.PhotoUrl}
                                   alt={`Foto de ${s.Alias}`}
-                                  fill
+                            fill
                                   sizes='128px'
-                                  className="object-cover"
+                            className="object-cover"
                                   onError={(e) => {
                                     const target = e.target as HTMLImageElement;
                                     target.style.display = 'none';
@@ -498,8 +498,8 @@ export function PoliceReportPreview({
                                           .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase())
                                           .join(', ')}
                                       </p>
-                                    </div>
-                                  )}
+                      </div>
+                    )}
                                   
                                   {/* Elementos que dificultan identificación */}
                                   {s.Tags.some(tag => ['gorra', 'bufanda', 'mascara', 'gafas'].includes(tag.toLowerCase())) && (
@@ -511,13 +511,13 @@ export function PoliceReportPreview({
                                           .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase())
                                           .join(', ')}
                                       </p>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
+                      </div>
+                    )}
+                  </div>
+          </div>
+        </div>
+      )}
+      
                           {/* Última vez visto */}
                           {s.LastSeen && (
                             <div className="mb-4">
@@ -530,8 +530,8 @@ export function PoliceReportPreview({
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
+          </div>
+        </div>
               ))}
             </div>
           </section>
@@ -561,4 +561,4 @@ export function PoliceReportPreview({
       </footer>
     </article>
   );
-}
+} 

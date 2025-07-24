@@ -346,7 +346,7 @@ export default function IncidentPreviewPage() {
               Descargar PDF
             </Button>
             <Button variant="outline" size="sm" onClick={handlePrint}>
-              <Printer className="h-4 w-4 mr-1" />
+                <Printer className="h-4 w-4 mr-1" />
               Imprimir
             </Button>
             <Button onClick={handleApprove}><CheckCircle2 className="h-4 w-4 mr-1" />Registrar denuncia</Button>

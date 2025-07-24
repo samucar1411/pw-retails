@@ -290,6 +290,24 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
       pdf.setFont('helvetica', 'normal');
       pdf.text(`${incidents.length} registrado${incidents.length !== 1 ? 's' : ''}`, 150, 65);
       
+      // Información personal adicional
+      if (suspect.CI || suspect.Nombre || suspect.Apellido) {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`CI: `, 120, 72);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`${suspect.CI || 'No registrado'}`, 135, 72);
+        
+        if (suspect.Nombre || suspect.Apellido) {
+          const nombreCompleto = `${suspect.Nombre || ''} ${suspect.Apellido || ''}`.trim();
+          if (nombreCompleto) {
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(`Nombre: `, 25, 79);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(`${nombreCompleto}`, 60, 79);
+          }
+        }
+      }
+      
       // Suspect details section
       let yPos = 90;
       pdf.setFontSize(14);
@@ -540,147 +558,199 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
         {/* Características */}
         <Card>
           <CardHeader>
-            <CardTitle>Características</CardTitle>
+            <CardTitle>Información Personal</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {/* Descripción física */}
-              {suspect.PhysicalDescription && (
+              {/* Información básica */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <h3 className="font-medium mb-2">Descripción física</h3>
-                  <p className="text-muted-foreground">{suspect.PhysicalDescription}</p>
+                  <h3 className="font-medium mb-2">Nombre</h3>
+                  <p className="text-muted-foreground">
+                    {suspect.Nombre || 'Sin información'}
+                  </p>
                 </div>
-              )}
+                
+                <div>
+                  <h3 className="font-medium mb-2">Apellido</h3>
+                  <p className="text-muted-foreground">
+                    {suspect.Apellido || 'Sin información'}
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-medium mb-2">CI</h3>
+                  <p className="text-muted-foreground">
+                    {suspect.CI || 'Sin información'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Descripción física */}
+              <div>
+                <h3 className="font-medium mb-2">Descripción física</h3>
+                <p className="text-muted-foreground">
+                  {suspect.PhysicalDescription || 'Sin información'}
+                </p>
+              </div>
 
               {/* Tags/Características */}
-              {suspect.Tags && suspect.Tags.length > 0 && (
-                <div>
-                  <h3 className="font-medium mb-4">Características distintivas</h3>
-                  <div className="bg-card border rounded-lg p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Género */}
-                      {suspect.Tags.some(tag => ['male', 'female'].includes(tag.toLowerCase())) && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Género</h4>
-                          <p className="text-sm">
-                            {suspect.Tags.find(tag => ['male', 'female'].includes(tag.toLowerCase())) === 'male' ? 'Hombre' : 'Mujer'}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Contextura */}
-                      {suspect.Tags.some(tag => ['flaco', 'normal', 'musculoso', 'sobrepeso'].includes(tag.toLowerCase())) && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Contextura</h4>
-                          <p className="text-sm">
-                            {(() => {
-                              const contextura = suspect.Tags.find(tag => ['flaco', 'normal', 'musculoso', 'sobrepeso'].includes(tag.toLowerCase()));
-                              return contextura ? contextura.charAt(0).toUpperCase() + contextura.slice(1).toLowerCase() : '';
-                            })()}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Estatura */}
-                      {suspect.Tags.some(tag => ['bajo', 'normal', 'alto', 'muy_alto'].includes(tag.toLowerCase())) && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Estatura</h4>
-                          <p className="text-sm">
-                            {(() => {
-                              const altura = suspect.Tags.find(tag => ['bajo', 'normal', 'alto', 'muy_alto'].includes(tag.toLowerCase()));
-                              switch(altura?.toLowerCase()) {
-                                case 'bajo': return 'Bajo (<1.60m)';
-                                case 'normal': return 'Normal (1.60m-1.75m)';
-                                case 'alto': return 'Alto (1.76m-1.85m)';
-                                case 'muy_alto': return 'Muy Alto (>1.85m)';
-                                default: return altura;
-                              }
-                            })()}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Tono de piel */}
-                      {suspect.Tags.some(tag => ['clara', 'triguena', 'oscura', 'negra'].includes(tag.toLowerCase())) && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Tono de piel</h4>
-                          <p className="text-sm">
-                            {(() => {
-                              const piel = suspect.Tags.find(tag => ['clara', 'triguena', 'oscura', 'negra'].includes(tag.toLowerCase()));
-                              return piel ? piel.charAt(0).toUpperCase() + piel.slice(1).toLowerCase() : '';
-                            })()}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Piercings */}
-                      {suspect.Tags.some(tag => ['nariz', 'oreja', 'cejas', 'lengua', 'labios'].includes(tag.toLowerCase())) && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Piercings</h4>
-                          <p className="text-sm">
-                            {suspect.Tags
+              <div>
+                <h3 className="font-medium mb-4">Características distintivas</h3>
+                <div className="bg-card border rounded-lg p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Género */}
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Género</h4>
+                      <p className="text-sm">
+                        {Array.isArray(suspect.Tags) && suspect.Tags.some(tag => ['male', 'female'].includes(tag.toLowerCase())) 
+                          ? (Array.isArray(suspect.Tags) && suspect.Tags.find(tag => ['male', 'female'].includes(tag.toLowerCase())) === 'male' ? 'Hombre' : 'Mujer')
+                          : 'Sin información'
+                        }
+                      </p>
+                    </div>
+                    
+                    {/* Contextura */}
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Contextura</h4>
+                      <p className="text-sm">
+                        {(() => {
+                          const contextura = Array.isArray(suspect.Tags) ? suspect.Tags.find(tag => ['flaco', 'normal', 'musculoso', 'sobrepeso'].includes(tag.toLowerCase())) : null;
+                          return contextura ? contextura.charAt(0).toUpperCase() + contextura.slice(1).toLowerCase() : 'Sin información';
+                        })()}
+                      </p>
+                    </div>
+                    
+                    {/* Estatura */}
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Estatura</h4>
+                      <p className="text-sm">
+                        {(() => {
+                          const altura = Array.isArray(suspect.Tags) ? suspect.Tags.find(tag => ['bajo', 'normal', 'alto', 'muy_alto'].includes(tag.toLowerCase())) : null;
+                          switch(altura?.toLowerCase()) {
+                            case 'bajo': return 'Bajo (<1.60m)';
+                            case 'normal': return 'Normal (1.60m-1.75m)';
+                            case 'alto': return 'Alto (1.76m-1.85m)';
+                            case 'muy_alto': return 'Muy Alto (>1.85m)';
+                            default: return 'Sin información';
+                          }
+                        })()}
+                      </p>
+                    </div>
+                    
+                    {/* Tono de piel */}
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Tono de piel</h4>
+                      <p className="text-sm">
+                        {(() => {
+                          const piel = Array.isArray(suspect.Tags) ? suspect.Tags.find(tag => ['clara', 'triguena', 'oscura', 'negra'].includes(tag.toLowerCase())) : null;
+                          return piel ? piel.charAt(0).toUpperCase() + piel.slice(1).toLowerCase() : 'Sin información';
+                        })()}
+                      </p>
+                    </div>
+                    
+                    {/* Piercings */}
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Piercings</h4>
+                      <p className="text-sm">
+                        {Array.isArray(suspect.Tags) && suspect.Tags.some(tag => ['nariz', 'oreja', 'cejas', 'lengua', 'labios'].includes(tag.toLowerCase()))
+                          ? Array.isArray(suspect.Tags) && suspect.Tags
                               .filter(tag => ['nariz', 'oreja', 'cejas', 'lengua', 'labios'].includes(tag.toLowerCase()))
                               .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase())
-                              .join(', ')}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Tatuajes */}
-                      {suspect.Tags.some(tag => ['brazos', 'cara', 'cuello', 'piernas', 'mano'].includes(tag.toLowerCase())) && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Tatuajes</h4>
-                          <p className="text-sm">
-                            {suspect.Tags
+                              .join(', ')
+                          : 'Sin información'
+                        }
+                      </p>
+                    </div>
+                    
+                    {/* Tatuajes */}
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Tatuajes</h4>
+                      <p className="text-sm">
+                        {Array.isArray(suspect.Tags) && suspect.Tags.some(tag => ['brazos', 'cara', 'cuello', 'piernas', 'mano'].includes(tag.toLowerCase()))
+                          ? Array.isArray(suspect.Tags) && suspect.Tags
                               .filter(tag => ['brazos', 'cara', 'cuello', 'piernas', 'mano'].includes(tag.toLowerCase()))
                               .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase())
-                              .join(', ')}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Accesorios */}
-                      {suspect.Tags.some(tag => ['lentes_sol', 'bolsa', 'lentes', 'casco', 'mochila'].includes(tag.toLowerCase())) && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Accesorios</h4>
-                          <p className="text-sm">
-                            {suspect.Tags
+                              .join(', ')
+                          : 'Sin información'
+                        }
+                      </p>
+                    </div>
+                    
+                    {/* Accesorios */}
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Accesorios</h4>
+                      <p className="text-sm">
+                        {Array.isArray(suspect.Tags) && suspect.Tags.some(tag => ['lentes_sol', 'bolsa', 'lentes', 'casco', 'mochila'].includes(tag.toLowerCase()))
+                          ? Array.isArray(suspect.Tags) && suspect.Tags
                               .filter(tag => ['lentes_sol', 'bolsa', 'lentes', 'casco', 'mochila'].includes(tag.toLowerCase()))
                               .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase().replace('_', ' '))
-                              .join(', ')}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Comportamiento */}
-                      {suspect.Tags.some(tag => ['agresivo', 'nervioso', 'calmado', 'sospechoso'].includes(tag.toLowerCase())) && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Comportamiento</h4>
-                          <p className="text-sm">
-                            {suspect.Tags
-                              .filter(tag => ['agresivo', 'nervioso', 'calmado', 'sospechoso'].includes(tag.toLowerCase()))
-                              .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase())
-                              .join(', ')}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Elementos que dificultan identificación */}
-                      {suspect.Tags.some(tag => ['gorra', 'bufanda', 'mascara', 'gafas'].includes(tag.toLowerCase())) && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Dificulta identificación</h4>
-                          <p className="text-sm">
-                            {suspect.Tags
-                              .filter(tag => ['gorra', 'bufanda', 'mascara', 'gafas'].includes(tag.toLowerCase()))
-                              .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase())
-                              .join(', ')}
-                          </p>
-                        </div>
-                      )}
+                              .join(', ')
+                          : 'Sin información'
+                        }
+                      </p>
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
+
+              {/* Comportamiento - Nueva sección separada */}
+              <div>
+                <h3 className="font-medium mb-4">Comportamiento</h3>
+                <div className="bg-card border rounded-lg p-4">
+                  <div className="flex flex-wrap gap-2">
+                    {Array.isArray(suspect.Tags) && suspect.Tags.some(tag => ['nervioso', 'agresivo', 'portaba_armas', 'abuso_fisico', 'alcohol_droga'].includes(tag.toLowerCase())) ? (
+                      suspect.Tags
+                        .filter(tag => ['nervioso', 'agresivo', 'portaba_armas', 'abuso_fisico', 'alcohol_droga'].includes(tag.toLowerCase()))
+                        .map(tag => {
+                          const behaviorLabels: Record<string, string> = {
+                            'nervioso': 'Nervioso',
+                            'agresivo': 'Agresivo',
+                            'portaba_armas': 'Portaba Armas',
+                            'abuso_fisico': 'Abuso Físico',
+                            'alcohol_droga': 'Alcoholizado/Drogado'
+                          };
+                          return (
+                            <Badge key={tag} variant="destructive" className="text-xs">
+                              {behaviorLabels[tag.toLowerCase()] || tag}
+                            </Badge>
+                          );
+                        })
+                    ) : (
+                      <span className="text-sm text-muted-foreground">Sin información</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Elementos que dificultan identificación */}
+              <div>
+                <h3 className="font-medium mb-4">Elementos que dificultan identificación</h3>
+                <div className="bg-card border rounded-lg p-4">
+                  <div className="flex flex-wrap gap-2">
+                    {Array.isArray(suspect.Tags) && suspect.Tags.some(tag => ['mascarilla', 'casco', 'pasamontanas', 'capucha', 'lentes_oscuros'].includes(tag.toLowerCase())) ? (
+                      suspect.Tags
+                        .filter(tag => ['mascarilla', 'casco', 'pasamontanas', 'capucha', 'lentes_oscuros'].includes(tag.toLowerCase()))
+                        .map(tag => {
+                          const difficultyLabels: Record<string, string> = {
+                            'mascarilla': 'Mascarilla/barbijo',
+                            'casco': 'Casco',
+                            'pasamontanas': 'Pasamontañas',
+                            'capucha': 'Capucha',
+                            'lentes_oscuros': 'Lentes Oscuros'
+                          };
+                          return (
+                            <Badge key={tag} variant="outline" className="text-xs">
+                              {difficultyLabels[tag.toLowerCase()] || tag}
+                            </Badge>
+                          );
+                        })
+                    ) : (
+                      <span className="text-sm text-muted-foreground">Sin información</span>
+                    )}
+                  </div>
+                </div>
+              </div>
 
               {/* Última vez visto */}
               {suspect.LastSeen && (

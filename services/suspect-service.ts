@@ -33,6 +33,8 @@ export async function getAllSuspects(
   filters: ListParams & {
     created_at_after?: string;
     created_at_before?: string;
+    fromDate?: string;
+    toDate?: string;
     ordering?: string;
     page?: number;
     page_size?: number;
@@ -61,6 +63,12 @@ export async function getAllSuspects(
       } else if (key === 'alias') {
         // Buscar por alias exacto o parcial
         cleanParams.alias__icontains = value;
+      } else if (key === 'fromDate') {
+        // Map fromDate to created_at_after
+        cleanParams.created_at_after = value;
+      } else if (key === 'toDate') {
+        // Map toDate to created_at_before
+        cleanParams.created_at_before = value;
       } else {
         cleanParams[key] = value as string | number;
       }

@@ -55,20 +55,20 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-4">
-        <div className="space-y-2">
+      <div className="space-y-2">
           <Label htmlFor="username" className="text-sm font-medium text-foreground">
             Usuario
           </Label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
+        <Input
               id="username"
-              type="text"
+          type="text"
               placeholder="Ingrese su usuario"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              disabled={isLoading}
-              required
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          disabled={isLoading}
+          required
               className="pl-10 bg-background border-border focus:border-primary focus:ring-primary"
             />
           </div>
@@ -80,14 +80,14 @@ export function LoginForm() {
           </Label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
+        <Input
               id="password"
               type={showPassword ? 'text' : 'password'}
               placeholder="Ingrese su contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={isLoading}
-              required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          disabled={isLoading}
+          required
               className="pl-10 pr-10 bg-background border-border focus:border-primary focus:ring-primary"
             />
             <button

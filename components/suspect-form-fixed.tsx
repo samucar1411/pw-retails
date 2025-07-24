@@ -122,7 +122,10 @@ function SquareSelectGroup({ options, value, onChange, className = '' }: SquareS
 }
 
 interface SuspectFormValues {
+  nombre: string;
+  apellido: string;
   alias: string;
+  ci: string;
   statusId: number;
   image: string | null;
   description: string;
@@ -135,7 +138,10 @@ export function SuspectForm() {
 
   const form = useForm<SuspectFormValues>({
     defaultValues: {
+      nombre: '',
+      apellido: '',
       alias: '',
+      ci: '',
       statusId: 1,
       image: null,
       description: '',
@@ -162,7 +168,10 @@ export function SuspectForm() {
     setIsSubmitting(true);
     try {
       const suspectData = {
+        Nombre: data.nombre,
+        Apellido: data.apellido,
         Alias: data.alias,
+        CI: data.ci,
         PhysicalDescription: data.description,
         PhotoUrl: data.image || '',
         Tags: Object.values(tags).filter(value => typeof value === 'string') as string[],
@@ -189,12 +198,51 @@ export function SuspectForm() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
+            name="nombre"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nombre</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Nombre del sospechoso" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="apellido"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Apellido</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Apellido del sospechoso" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
             name="alias"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Nombre completo (Alias)</FormLabel>
+                <FormLabel>Alias</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Nombre o alias del sospechoso" />
+                  <Input {...field} placeholder="Alias del sospechoso" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="ci"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Cédula de Identidad</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Número de cédula" />
                 </FormControl>
                 <FormMessage />
               </FormItem>

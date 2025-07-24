@@ -14,6 +14,10 @@ export interface Suspect {
   IncidentsCount?: number;
   PhysicalDescription?: string;
   Tags?: string[];
+  // Nuevos campos
+  CI?: string;
+  Nombre?: string;
+  Apellido?: string;
 }
 
 // For table display

@@ -1,8 +1,8 @@
 "use client";
 
 import { Plus, Search } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,8 +23,10 @@ interface IncidentFiltersState {
   search?: string;
 }
 
-function IncidentesPage() {
+function IncidentesPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
   const { 
     incidents, 
     loading, 
@@ -40,6 +42,40 @@ function IncidentesPage() {
   
   const [filters, setFilters] = useState<IncidentFiltersState>({});
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Read URL parameters on component mount
+  useEffect(() => {
+    const urlFilters: IncidentFiltersState = {};
+    
+    // Read date filters
+    const dateAfter = searchParams.get('Date_after');
+    const dateBefore = searchParams.get('Date_before');
+    if (dateAfter) urlFilters.fromDate = dateAfter;
+    if (dateBefore) urlFilters.toDate = dateBefore;
+    
+    // Read office filter
+    const office = searchParams.get('Office');
+    if (office) urlFilters.Office = office;
+    
+    // Read other filters
+    const incidentType = searchParams.get('IncidentType');
+    if (incidentType) urlFilters.IncidentType = incidentType;
+    
+    const suspectAlias = searchParams.get('suspect_alias');
+    if (suspectAlias) urlFilters.suspect_alias = suspectAlias;
+    
+    const search = searchParams.get('search');
+    if (search) {
+      urlFilters.search = search;
+      setSearchTerm(search);
+    }
+    
+    // Apply URL filters if any exist
+    if (Object.keys(urlFilters).length > 0) {
+      setFilters(urlFilters);
+      applyFilters(urlFilters);
+    }
+  }, [searchParams, applyFilters]);
 
   const handleFiltersChange = (newFilters: IncidentFiltersState) => {
     const updatedFilters = { 
@@ -153,6 +189,14 @@ function IncidentesPage() {
         />
       )}
     </div>
+  );
+}
+
+function IncidentesPage() {
+  return (
+    <Suspense fallback={<LoadingState variant="skeleton" count={5} height="h-12" />}>
+      <IncidentesPageContent />
+    </Suspense>
   );
 }
 

@@ -74,9 +74,17 @@ function DashboardPage() {
           officeId={filters.officeId}
         />
         
-        <KpiSuspectsIdentified />
+        <KpiSuspectsIdentified 
+          fromDate={filters.fromDate}
+          toDate={filters.toDate}
+          officeId={filters.officeId}
+        />
         
-        <KpiSuspectsNotIdentified />
+        <KpiSuspectsNotIdentified 
+          fromDate={filters.fromDate}
+          toDate={filters.toDate}
+          officeId={filters.officeId}
+        />
         
         <KpiBranches24h 
           officeId={filters.officeId}
@@ -124,7 +132,9 @@ function DashboardPage() {
 
       {/* Historical Comparison and Office Ranking Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <HistoricalComparison />
+        <HistoricalComparison 
+          officeId={filters.officeId}
+        />
         
         <OfficeRanking 
           fromDate={filters.fromDate}

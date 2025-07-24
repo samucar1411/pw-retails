@@ -493,22 +493,17 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
                               )}
                               
                               {/* Tags */}
-                              {suspect.Tags && suspect.Tags.length > 0 && (
-                                <div className="space-y-1">
-                                  {suspect.Tags.slice(0, 3).map((tag, index) => (
-                                    <div key={index} className="flex items-center gap-2 text-xs">
-                                      <span className="text-muted-foreground font-medium">
-                                        •
-                                      </span>
-                                      <span className="text-foreground font-medium truncate">
-                                        {tag}
-                                      </span>
-                                    </div>
+                              {suspect.Tags && Array.isArray(suspect.Tags) && suspect.Tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {Array.isArray(suspect.Tags) && suspect.Tags.slice(0, 3).map((tag, index) => (
+                                    <Badge key={index} variant="secondary" className="text-xs">
+                                      {tag}
+                                    </Badge>
                                   ))}
-                                  {suspect.Tags.length > 3 && (
-                                    <div className="text-xs text-muted-foreground pt-1 border-t border-border/30">
+                                  {Array.isArray(suspect.Tags) && suspect.Tags.length > 3 && (
+                                    <Badge variant="outline" className="text-xs">
                                       +{suspect.Tags.length - 3} características más
-                                    </div>
+                                    </Badge>
                                   )}
                                 </div>
                               )}

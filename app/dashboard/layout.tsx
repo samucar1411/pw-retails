@@ -42,18 +42,18 @@ export default function DashboardLayout({
   });
   return (
     <QueryClientProvider client={queryClient}>
-      <OfficeProvider>
-        <CompanyProvider>
-          <SidebarProvider defaultOpen={true}>
-            <AppSidebar />
-            <SidebarInset className="flex flex-col min-h-screen w-full">
-              <DashboardHeader />
-              <main className="flex-1 overflow-y-auto">{children}</main>
-              <DashboardFooter />
-            </SidebarInset>
-          </SidebarProvider>
-        </CompanyProvider>
-      </OfficeProvider>
+        <OfficeProvider>
+          <CompanyProvider>
+            <SidebarProvider defaultOpen={true}>
+              <AppSidebar />
+              <SidebarInset className="flex flex-col min-h-screen w-full">
+                <DashboardHeader />
+                <main className="flex-1 overflow-y-auto">{children}</main>
+                <DashboardFooter />
+              </SidebarInset>
+            </SidebarProvider>
+          </CompanyProvider>
+        </OfficeProvider>
     </QueryClientProvider>
   );
 }

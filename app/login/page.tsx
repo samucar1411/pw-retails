@@ -25,8 +25,8 @@ export default function LoginPage() {
                 Bienvenido
               </CardTitle>
               <CardDescription className="text-muted-foreground">
-                Ingrese sus credenciales para acceder al sistema
-              </CardDescription>
+              Ingrese sus credenciales para acceder al sistema
+            </CardDescription>
             </div>
           </CardHeader>
           <CardContent className="pb-8">
