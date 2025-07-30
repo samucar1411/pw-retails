@@ -23,7 +23,7 @@ import {
 import { useAllIncidents } from "@/hooks/useAllIncidents";
 import { getAllOfficesComplete } from "@/services/office-service";
 import { Office } from "@/types/office";
-import { useRouter } from "next/navigation";
+
 
 interface OfficeRankingProps {
   fromDate: string;
@@ -64,7 +64,7 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
   const [offices, setOffices] = React.useState<Office[]>([]);
   const [isLoadingOffices, setIsLoadingOffices] = React.useState(true);
   const [officesError, setOfficesError] = React.useState<Error | null>(null);
-  const router = useRouter();
+
 
   // Get all incidents for the period
   const { 
@@ -93,10 +93,7 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
     fetchAllOffices();
   }, []);
 
-  // Handle office click
-  const handleOfficeClick = (office: OfficeStats) => {
-    router.push(`/dashboard/sucursales/${office.id}`);
-  };
+
 
   // Calculate stats for ALL offices
   const allOfficeStats = React.useMemo(() => {
@@ -246,8 +243,7 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
             displayedOffices.map((office, index) => (
               <div 
                 key={office.id} 
-                className="flex items-center gap-3 p-4 rounded-lg border bg-card/50 hover:bg-muted/50 cursor-pointer transition-all duration-200 hover:shadow-md group"
-                onClick={() => handleOfficeClick(office)}
+                className="flex items-center gap-3 p-4 rounded-lg border bg-card/50 hover:bg-muted/50 transition-all duration-200 hover:shadow-md group"
               >
                 {/* Ranking number */}
                 <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white ${

@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     domains: [
       'asset.cloudinary.com',
       'res.cloudinary.com',
+      'res-console.cloudinary.com',
       'sys.adminpy.com'
     ],
     remotePatterns: [
@@ -16,6 +17,11 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'res-console.cloudinary.com',
         pathname: '/**',
       },
       {

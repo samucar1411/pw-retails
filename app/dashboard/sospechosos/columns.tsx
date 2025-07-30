@@ -54,24 +54,31 @@ export const columns: ColumnDef<Suspect>[] = [
     header: 'Estado',
     cell: ({ row }) => {
       const status = row.getValue('Status') as number;
-      const statusText = status === 1 ? 'Detenido' : 'Libre';
-      const variant = status === 1 ? 'destructive' : 'secondary';
+      
+      let statusText: string;
+      let variant: 'destructive' | 'secondary' | 'default';
+      
+      switch (status) {
+        case 1:
+          statusText = 'Detenido';
+          variant = 'destructive';
+          break;
+        case 2:
+          statusText = 'Libre';
+          variant = 'secondary';
+          break;
+        case 3:
+          statusText = 'Preso';
+          variant = 'default';
+          break;
+        default:
+          statusText = 'Desconocido';
+          variant = 'secondary';
+      }
       
       return (
         <Badge variant={variant}>
           {statusText}
-        </Badge>
-      );
-    },
-  },
-  {
-    accessorKey: 'IncidentsCount',
-    header: 'Incidentes',
-    cell: ({ row }) => {
-      const suspect = row.original;
-      return (
-        <Badge variant="secondary">
-          {suspect.IncidentsCount ?? 0}
         </Badge>
       );
     },

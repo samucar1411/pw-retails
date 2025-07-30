@@ -134,7 +134,7 @@ interface SuspectFormValues {
 export function SuspectForm() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [tags, setTags] = useState<Record<string, unknown>>({});
+  const [tags, setTags] = useState<Record<string, string>>({});
 
   const form = useForm<SuspectFormValues>({
     defaultValues: {
@@ -153,7 +153,7 @@ export function SuspectForm() {
     return (tags[key] as string) || '';
   }
 
-  function setTagValue(key: string, value: unknown) {
+  function setTagValue(key: string, value: string) {
     setTags(prev => ({
       ...prev,
       [key]: value
@@ -174,7 +174,7 @@ export function SuspectForm() {
         CI: data.ci,
         PhysicalDescription: data.description,
         PhotoUrl: data.image || '',
-        Tags: Object.values(tags).filter(value => typeof value === 'string') as string[],
+        Tags: tags as Record<string, string>,
         Status: data.statusId,
       };
 
@@ -339,7 +339,7 @@ export function SuspectForm() {
                       const newPiercings = checked
                         ? [...piercings, opt.value]
                         : piercings.filter(v => v !== opt.value);
-                      setTagValue('piercings', newPiercings);
+                      setTagValue('piercings', newPiercings.join(', '));
                     }}
                   />
                   <label htmlFor={`piercings-${opt.value}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -366,7 +366,7 @@ export function SuspectForm() {
                       const newTatuajes = checked
                         ? [...tatuajes, opt.value]
                         : tatuajes.filter(v => v !== opt.value);
-                      setTagValue('tatuajes', newTatuajes);
+                      setTagValue('tatuajes', newTatuajes.join(', '));
                     }}
                   />
                   <label htmlFor={`tatuajes-${opt.value}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -393,7 +393,7 @@ export function SuspectForm() {
                       const newAccesorios = checked
                         ? [...accesorios, opt.value]
                         : accesorios.filter(v => v !== opt.value);
-                      setTagValue('accesorios', newAccesorios);
+                      setTagValue('accesorios', newAccesorios.join(', '));
                     }}
                   />
                   <label htmlFor={`accesorios-${opt.value}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -420,7 +420,7 @@ export function SuspectForm() {
                       const newComportamiento = checked
                         ? [...comportamiento, opt.value]
                         : comportamiento.filter(v => v !== opt.value);
-                      setTagValue('comportamiento', newComportamiento);
+                      setTagValue('comportamiento', newComportamiento.join(', '));
                     }}
                   />
                   <label htmlFor={`comportamiento-${opt.value}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -447,7 +447,7 @@ export function SuspectForm() {
                       const newDificultanId = checked
                         ? [...dificultanId, opt.value]
                         : dificultanId.filter(v => v !== opt.value);
-                      setTagValue('dificultan_id', newDificultanId);
+                      setTagValue('dificultan_id', newDificultanId.join(', '));
                     }}
                   />
                   <label htmlFor={`dificultan-${opt.value}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">

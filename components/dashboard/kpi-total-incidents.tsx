@@ -191,8 +191,8 @@ export function KpiTotalIncidents({ fromDate, toDate, officeId }: KpiTotalIncide
           
           <div className="pt-2">
             <Link href={incidentsLink}>
-              <Button variant="ghost" size="sm" className="text-xs text-primary hover:text-underline">
-                Ver detalles →
+              <Button variant="ghost" size="sm" className="text-xs text-primary hover:text-primary/80">
+                Ver incidentes →
               </Button>
             </Link>
           </div>

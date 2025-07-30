@@ -14,18 +14,19 @@ interface KpiSuspectsNotIdentifiedProps {
 }
 
 export function KpiSuspectsNotIdentified({ fromDate, toDate, officeId }: KpiSuspectsNotIdentifiedProps) {
-  // Fetch all suspects across all pages
+  // Fetch suspects with Status=2 (Libre) and use the count from API response
   const { 
     data: suspectsData, 
     isLoading, 
     error 
-  } = useAllSuspects();
+  } = useAllSuspects({ 
+    page: 1, 
+    pageSize: 1,  // We only need the count, so minimal page size
+    filters: { Status: '2' }  // Filter for free suspects
+  });
 
-  // Filter suspects that are "Libre" (Status: 2) - still at large
-  const freeCount = React.useMemo(() => {
-    if (!suspectsData?.suspects) return 0;
-    return suspectsData.suspects.filter(suspect => suspect.Status === 2).length;
-  }, [suspectsData]);
+  // Get count directly from API response
+  const freeCount = suspectsData?.total || 0;
 
   // Build link to suspects page with filters
   const suspectsLink = React.useMemo(() => {
@@ -90,13 +91,13 @@ export function KpiSuspectsNotIdentified({ fromDate, toDate, officeId }: KpiSusp
           <div className="text-2xl font-bold text-amber-600">{freeCount.toLocaleString()}</div>
           
           <div className="text-xs text-muted-foreground">
-            Siguen en libertad (de {suspectsData?.total || 0} total)
+            Sospechosos que siguen en libertad
           </div>
           
           <div className="pt-2">
             <Link href={suspectsLink}>
               <Button variant="ghost" size="sm" className="text-xs text-primary hover:text-primary/80">
-                Ver sospechosos →
+                Ver libres →
               </Button>
             </Link>
           </div>

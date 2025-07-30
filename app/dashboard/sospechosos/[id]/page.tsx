@@ -258,14 +258,67 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
       // Reset text color
       pdf.setTextColor(0, 0, 0);
       
-      // Document info box with better layout
+      // Document info box with better layout - now with space for image
       pdf.setFillColor(248, 249, 250);
-      pdf.rect(20, 45, pageWidth - 40, 35, 'F');
+      pdf.rect(20, 45, pageWidth - 40, 50, 'F'); // Increased height for image
       pdf.setDrawColor(200, 200, 200);
-      pdf.rect(20, 45, pageWidth - 40, 35, 'S');
+      pdf.rect(20, 45, pageWidth - 40, 50, 'S');
+      
+      // Add suspect image if available
+      if (suspect.PhotoUrl && suspect.PhotoUrl.trim() !== '') {
+        try {
+          // Load and add the suspect image
+          const imageResponse = await fetch(suspect.PhotoUrl);
+          const imageBlob = await imageResponse.blob();
+          const imageBase64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(imageBlob);
+          });
+          
+          // Add image to the right side of the info box
+          pdf.addImage(imageBase64, 'JPEG', 140, 47, 35, 45);
+          
+          // Add image border
+          pdf.setDrawColor(150, 150, 150);
+          pdf.setLineWidth(0.5);
+          pdf.rect(140, 47, 35, 45, 'S');
+          
+          // Add "Foto del Sospechoso" label
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(100, 100, 100);
+          pdf.text('FOTO DEL SOSPECHOSO', 140, 95, { align: 'center' });
+          
+        } catch (error) {
+          console.warn('Error loading suspect image:', error);
+          // If image fails to load, add a placeholder
+          pdf.setFillColor(240, 240, 240);
+          pdf.rect(140, 47, 35, 45, 'F');
+          pdf.setDrawColor(200, 200, 200);
+          pdf.rect(140, 47, 35, 45, 'S');
+          
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(150, 150, 150);
+          pdf.text('Sin foto', 157.5, 69.5, { align: 'center' });
+        }
+      } else {
+        // Placeholder when no image
+        pdf.setFillColor(240, 240, 240);
+        pdf.rect(140, 47, 35, 45, 'F');
+        pdf.setDrawColor(200, 200, 200);
+        pdf.rect(140, 47, 35, 45, 'S');
+        
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(150, 150, 150);
+        pdf.text('Sin foto', 157.5, 69.5, { align: 'center' });
+      }
       
       pdf.setFontSize(10);
       pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(0, 0, 0);
       
       // ID del sospechoso en su propia línea con más espacio
       pdf.text(`ID del Sospechoso:`, 25, 53);
@@ -286,30 +339,30 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
       pdf.text(`${suspect.Status === 1 ? 'ACTIVO' : 'INACTIVO'}`, 45, 72);
       
       pdf.setFont('helvetica', 'bold');
-      pdf.text(`Incidentes: `, 120, 65);
+      pdf.text(`Incidentes: `, 25, 79);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`${incidents.length} registrado${incidents.length !== 1 ? 's' : ''}`, 150, 65);
+      pdf.text(`${incidents.length} registrado${incidents.length !== 1 ? 's' : ''}`, 55, 79);
       
       // Información personal adicional
-      if (suspect.CI || suspect.Nombre || suspect.Apellido) {
+      if (suspect.CI || suspect.Name || suspect.LastName) {
         pdf.setFont('helvetica', 'bold');
-        pdf.text(`CI: `, 120, 72);
+        pdf.text(`CI: `, 25, 86);
         pdf.setFont('helvetica', 'normal');
-        pdf.text(`${suspect.CI || 'No registrado'}`, 135, 72);
+        pdf.text(`${suspect.CI || 'No registrado'}`, 40, 86);
         
-        if (suspect.Nombre || suspect.Apellido) {
-          const nombreCompleto = `${suspect.Nombre || ''} ${suspect.Apellido || ''}`.trim();
+        if (suspect.Name || suspect.LastName) {
+          const nombreCompleto = `${suspect.Name || ''} ${suspect.LastName || ''}`.trim();
           if (nombreCompleto) {
             pdf.setFont('helvetica', 'bold');
-            pdf.text(`Nombre: `, 25, 79);
+            pdf.text(`Nombre: `, 25, 93);
             pdf.setFont('helvetica', 'normal');
-            pdf.text(`${nombreCompleto}`, 60, 79);
+            pdf.text(`${nombreCompleto}`, 55, 93);
           }
         }
       }
       
       // Suspect details section
-      let yPos = 90;
+      let yPos = 105; // Moved down to accommodate the larger info box with image
       pdf.setFontSize(14);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(50, 50, 50);
@@ -336,6 +389,21 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
         const splitDescription = pdf.splitTextToSize(description, 170);
         pdf.text(splitDescription, 20, yPos);
         yPos += splitDescription.length * 5 + 10;
+      }
+      
+      // Tags information if available
+      if (suspect.Tags && Object.keys(suspect.Tags).length > 0) {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Características Físicas:', 20, yPos);
+        yPos += 7;
+        
+        pdf.setFont('helvetica', 'normal');
+        const tagsText = Object.entries(suspect.Tags)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join(', ');
+        const splitTags = pdf.splitTextToSize(tagsText, 170);
+        pdf.text(splitTags, 20, yPos);
+        yPos += splitTags.length * 5 + 10;
       }
       
       // Incidents section
@@ -567,14 +635,14 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                 <div>
                   <h3 className="font-medium mb-2">Nombre</h3>
                   <p className="text-muted-foreground">
-                    {suspect.Nombre || 'Sin información'}
+                    {suspect.Name || 'Sin información'}
                   </p>
                 </div>
                 
                 <div>
                   <h3 className="font-medium mb-2">Apellido</h3>
                   <p className="text-muted-foreground">
-                    {suspect.Apellido || 'Sin información'}
+                    {suspect.LastName || 'Sin información'}
                   </p>
                 </div>
                 
@@ -603,8 +671,10 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     <div>
                       <h4 className="text-sm font-medium text-muted-foreground mb-1">Género</h4>
                       <p className="text-sm">
-                        {Array.isArray(suspect.Tags) && suspect.Tags.some(tag => ['male', 'female'].includes(tag.toLowerCase())) 
-                          ? (Array.isArray(suspect.Tags) && suspect.Tags.find(tag => ['male', 'female'].includes(tag.toLowerCase())) === 'male' ? 'Hombre' : 'Mujer')
+                        {suspect.Tags?.sexo ? 
+                          (suspect.Tags.sexo === 'masculino' ? 'Hombre' : 
+                           suspect.Tags.sexo === 'femenino' ? 'Mujer' : 
+                           suspect.Tags.sexo === 'desconocido' ? 'Desconocido' : suspect.Tags.sexo)
                           : 'Sin información'
                         }
                       </p>
@@ -614,10 +684,10 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     <div>
                       <h4 className="text-sm font-medium text-muted-foreground mb-1">Contextura</h4>
                       <p className="text-sm">
-                        {(() => {
-                          const contextura = Array.isArray(suspect.Tags) ? suspect.Tags.find(tag => ['flaco', 'normal', 'musculoso', 'sobrepeso'].includes(tag.toLowerCase())) : null;
-                          return contextura ? contextura.charAt(0).toUpperCase() + contextura.slice(1).toLowerCase() : 'Sin información';
-                        })()}
+                        {suspect.Tags?.contextura ? 
+                          suspect.Tags.contextura.charAt(0).toUpperCase() + suspect.Tags.contextura.slice(1).toLowerCase()
+                          : 'Sin información'
+                        }
                       </p>
                     </div>
                     
@@ -625,16 +695,18 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     <div>
                       <h4 className="text-sm font-medium text-muted-foreground mb-1">Estatura</h4>
                       <p className="text-sm">
-                        {(() => {
-                          const altura = Array.isArray(suspect.Tags) ? suspect.Tags.find(tag => ['bajo', 'normal', 'alto', 'muy_alto'].includes(tag.toLowerCase())) : null;
-                          switch(altura?.toLowerCase()) {
-                            case 'bajo': return 'Bajo (<1.60m)';
-                            case 'normal': return 'Normal (1.60m-1.75m)';
-                            case 'alto': return 'Alto (1.76m-1.85m)';
-                            case 'muy_alto': return 'Muy Alto (>1.85m)';
-                            default: return 'Sin información';
-                          }
-                        })()}
+                        {suspect.Tags?.altura ? 
+                          (() => {
+                            switch(suspect.Tags.altura) {
+                              case 'bajo': return 'Bajo (<1.60m)';
+                              case 'normal': return 'Normal (1.60m-1.75m)';
+                              case 'alto': return 'Alto (1.76m-1.85m)';
+                              case 'muy_alto': return 'Muy Alto (>1.85m)';
+                              default: return suspect.Tags.altura;
+                            }
+                          })()
+                          : 'Sin información'
+                        }
                       </p>
                     </div>
                     
@@ -642,10 +714,10 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     <div>
                       <h4 className="text-sm font-medium text-muted-foreground mb-1">Tono de piel</h4>
                       <p className="text-sm">
-                        {(() => {
-                          const piel = Array.isArray(suspect.Tags) ? suspect.Tags.find(tag => ['clara', 'triguena', 'oscura', 'negra'].includes(tag.toLowerCase())) : null;
-                          return piel ? piel.charAt(0).toUpperCase() + piel.slice(1).toLowerCase() : 'Sin información';
-                        })()}
+                        {suspect.Tags?.piel ? 
+                          suspect.Tags.piel.charAt(0).toUpperCase() + suspect.Tags.piel.slice(1).toLowerCase()
+                          : 'Sin información'
+                        }
                       </p>
                     </div>
                     
@@ -653,11 +725,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     <div>
                       <h4 className="text-sm font-medium text-muted-foreground mb-1">Piercings</h4>
                       <p className="text-sm">
-                        {Array.isArray(suspect.Tags) && suspect.Tags.some(tag => ['nariz', 'oreja', 'cejas', 'lengua', 'labios'].includes(tag.toLowerCase()))
-                          ? Array.isArray(suspect.Tags) && suspect.Tags
-                              .filter(tag => ['nariz', 'oreja', 'cejas', 'lengua', 'labios'].includes(tag.toLowerCase()))
-                              .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase())
-                              .join(', ')
+                        {suspect.Tags?.piercings ? 
+                          suspect.Tags.piercings.split(',').map(p => p.trim().charAt(0).toUpperCase() + p.trim().slice(1).toLowerCase()).join(', ')
                           : 'Sin información'
                         }
                       </p>
@@ -667,11 +736,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     <div>
                       <h4 className="text-sm font-medium text-muted-foreground mb-1">Tatuajes</h4>
                       <p className="text-sm">
-                        {Array.isArray(suspect.Tags) && suspect.Tags.some(tag => ['brazos', 'cara', 'cuello', 'piernas', 'mano'].includes(tag.toLowerCase()))
-                          ? Array.isArray(suspect.Tags) && suspect.Tags
-                              .filter(tag => ['brazos', 'cara', 'cuello', 'piernas', 'mano'].includes(tag.toLowerCase()))
-                              .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase())
-                              .join(', ')
+                        {suspect.Tags?.tatuajes ? 
+                          suspect.Tags.tatuajes.split(',').map(t => t.trim().charAt(0).toUpperCase() + t.trim().slice(1).toLowerCase()).join(', ')
                           : 'Sin información'
                         }
                       </p>
@@ -681,11 +747,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     <div>
                       <h4 className="text-sm font-medium text-muted-foreground mb-1">Accesorios</h4>
                       <p className="text-sm">
-                        {Array.isArray(suspect.Tags) && suspect.Tags.some(tag => ['lentes_sol', 'bolsa', 'lentes', 'casco', 'mochila'].includes(tag.toLowerCase()))
-                          ? Array.isArray(suspect.Tags) && suspect.Tags
-                              .filter(tag => ['lentes_sol', 'bolsa', 'lentes', 'casco', 'mochila'].includes(tag.toLowerCase()))
-                              .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase().replace('_', ' '))
-                              .join(', ')
+                        {suspect.Tags?.accesorios ? 
+                          suspect.Tags.accesorios.split(',').map(a => a.trim().charAt(0).toUpperCase() + a.trim().slice(1).toLowerCase().replace('_', ' ')).join(', ')
                           : 'Sin información'
                         }
                       </p>
@@ -699,23 +762,22 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                 <h3 className="font-medium mb-4">Comportamiento</h3>
                 <div className="bg-card border rounded-lg p-4">
                   <div className="flex flex-wrap gap-2">
-                    {Array.isArray(suspect.Tags) && suspect.Tags.some(tag => ['nervioso', 'agresivo', 'portaba_armas', 'abuso_fisico', 'alcohol_droga'].includes(tag.toLowerCase())) ? (
-                      suspect.Tags
-                        .filter(tag => ['nervioso', 'agresivo', 'portaba_armas', 'abuso_fisico', 'alcohol_droga'].includes(tag.toLowerCase()))
-                        .map(tag => {
-                          const behaviorLabels: Record<string, string> = {
-                            'nervioso': 'Nervioso',
-                            'agresivo': 'Agresivo',
-                            'portaba_armas': 'Portaba Armas',
-                            'abuso_fisico': 'Abuso Físico',
-                            'alcohol_droga': 'Alcoholizado/Drogado'
-                          };
-                          return (
-                            <Badge key={tag} variant="destructive" className="text-xs">
-                              {behaviorLabels[tag.toLowerCase()] || tag}
-                            </Badge>
-                          );
-                        })
+                    {suspect.Tags?.comportamiento ? (
+                      suspect.Tags.comportamiento.split(',').map(behavior => {
+                        const behaviorLabels: Record<string, string> = {
+                          'nervioso': 'Nervioso',
+                          'agresivo': 'Agresivo',
+                          'portaba_armas': 'Portaba Armas',
+                          'abuso_fisico': 'Abuso Físico',
+                          'alcohol_droga': 'Alcoholizado/Drogado'
+                        };
+                        const trimmedBehavior = behavior.trim().toLowerCase();
+                        return (
+                          <Badge key={trimmedBehavior} variant="destructive" className="text-xs">
+                            {behaviorLabels[trimmedBehavior] || trimmedBehavior}
+                          </Badge>
+                        );
+                      })
                     ) : (
                       <span className="text-sm text-muted-foreground">Sin información</span>
                     )}
@@ -728,23 +790,22 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                 <h3 className="font-medium mb-4">Elementos que dificultan identificación</h3>
                 <div className="bg-card border rounded-lg p-4">
                   <div className="flex flex-wrap gap-2">
-                    {Array.isArray(suspect.Tags) && suspect.Tags.some(tag => ['mascarilla', 'casco', 'pasamontanas', 'capucha', 'lentes_oscuros'].includes(tag.toLowerCase())) ? (
-                      suspect.Tags
-                        .filter(tag => ['mascarilla', 'casco', 'pasamontanas', 'capucha', 'lentes_oscuros'].includes(tag.toLowerCase()))
-                        .map(tag => {
-                          const difficultyLabels: Record<string, string> = {
-                            'mascarilla': 'Mascarilla/barbijo',
-                            'casco': 'Casco',
-                            'pasamontanas': 'Pasamontañas',
-                            'capucha': 'Capucha',
-                            'lentes_oscuros': 'Lentes Oscuros'
-                          };
-                          return (
-                            <Badge key={tag} variant="outline" className="text-xs">
-                              {difficultyLabels[tag.toLowerCase()] || tag}
-                            </Badge>
-                          );
-                        })
+                    {suspect.Tags?.dificulta_identificacion ? (
+                      suspect.Tags.dificulta_identificacion.split(',').map(difficultyItem => {
+                        const elementLabels: Record<string, string> = {
+                          'mascarilla': 'Mascarilla',
+                          'casco': 'Casco',
+                          'pasamontanas': 'Pasamontañas',
+                          'capucha': 'Capucha',
+                          'lentes_oscuros': 'Lentes Oscuros'
+                        };
+                        const trimmedDifficultyItem = difficultyItem.trim().toLowerCase();
+                        return (
+                          <Badge key={trimmedDifficultyItem} variant="secondary" className="text-xs">
+                            {elementLabels[trimmedDifficultyItem] || trimmedDifficultyItem}
+                          </Badge>
+                        );
+                      })
                     ) : (
                       <span className="text-sm text-muted-foreground">Sin información</span>
                     )}

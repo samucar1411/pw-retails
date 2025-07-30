@@ -26,6 +26,69 @@ import {
 import { Suspect, SuspectStatus } from '@/types/suspect';
 import { IncidentFormValues } from '@/validators/incident';
 
+// Same tag options as the suspects page for consistency
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const SUSPECT_TAG_OPTIONS = {
+  'Género': [
+    { value: 'masculino', label: 'Masculino' },
+    { value: 'femenino', label: 'Femenino' },
+    { value: 'desconocido', label: 'Desconocido' }
+  ],
+  'Altura': [
+    { value: 'bajo', label: 'Bajo' },
+    { value: 'normal', label: 'Normal' },
+    { value: 'alto', label: 'Alto' },
+    { value: 'muy_alto', label: 'Muy Alto' }
+  ],
+  'Contextura': [
+    { value: 'flaco', label: 'Flaco' },
+    { value: 'normal', label: 'Normal' },
+    { value: 'musculoso', label: 'Musculoso' },
+    { value: 'sobrepeso', label: 'Sobrepeso' }
+  ],
+  'Tono de Piel': [
+    { value: 'clara', label: 'Clara' },
+    { value: 'triguena', label: 'Trigueña' },
+    { value: 'oscura', label: 'Oscura' },
+    { value: 'negra', label: 'Negra' }
+  ],
+  'Piercings': [
+    { value: 'nariz', label: 'Nariz' },
+    { value: 'oreja', label: 'Oreja' },
+    { value: 'cejas', label: 'Cejas' },
+    { value: 'lengua', label: 'Lengua' },
+    { value: 'labios', label: 'Labios' }
+  ],
+  'Tatuajes': [
+    { value: 'brazos', label: 'Brazos' },
+    { value: 'cara', label: 'Cara' },
+    { value: 'cuello', label: 'Cuello' },
+    { value: 'piernas', label: 'Piernas' },
+    { value: 'mano', label: 'Mano' }
+  ],
+  'Accesorios': [
+    { value: 'lentes_sol', label: 'Lentes de sol' },
+    { value: 'bolsa', label: 'Bolsa' },
+    { value: 'lentes', label: 'Lentes' },
+    { value: 'casco', label: 'Casco' },
+    { value: 'mochila', label: 'Mochila' }
+  ],
+  'Comportamiento': [
+    { value: 'nervioso', label: 'Nervioso' },
+    { value: 'agresivo', label: 'Agresivo' },
+    { value: 'portaba_armas', label: 'Portaba Armas' },
+    { value: 'abuso_fisico', label: 'Abuso Físico' },
+    { value: 'alcohol_droga', label: 'Alcoholizado/Drogado' }
+  ],
+  'Elementos que Dificultan ID': [
+    { value: 'mascarilla', label: 'Mascarilla/barbijo' },
+    { value: 'casco', label: 'Casco' },
+    { value: 'pasamontanas', label: 'Pasamontañas' },
+    { value: 'capucha', label: 'Capucha' },
+    { value: 'lentes_oscuros', label: 'Lentes Oscuros' }
+  ]
+};
+
 interface SuspectSelectorProps {
   control: Control<IncidentFormValues>;
 }
@@ -85,7 +148,7 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
     loadSuspectStatuses();
   }, []);
 
-  // Search suspects with debounce
+  // Search suspects with debounce - now using tags-based search like the suspects page
   const performSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
@@ -98,12 +161,14 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
     setIsSearching(true);
     
     try {
-      // Usar solo getAllSuspects con parámetros de búsqueda
+      // Use the same search parameters as the suspects page for consistency
       const searchParams = {
         page: 1,
-        page_size: 25,
-        search: query, // Búsqueda general que incluye alias y descripción
-        format: 'json'
+        pageSize: 25,
+        filters: {
+          tags: query, // Use tags parameter instead of search for better results
+          search: undefined // Remove search parameter as in suspects page
+        }
       };
       
       console.log('📡 Enviando parámetros:', searchParams);
@@ -126,11 +191,11 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
     } catch (error) {
       console.error('❌ Error searching suspects:', error);
       
-      // Fallback: intentar búsqueda más simple
+      // Fallback: try simple search with tags parameter
       try {
         console.log('🔄 Intentando fallback con búsqueda simple...');
         const fallbackResponse = await getAllSuspects({
-          search: query,
+          tags: query,
           page: 1,
           page_size: 50,
           format: 'json'
@@ -372,7 +437,7 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por alias, descripción o tags..."
+              placeholder="Buscar por alias, descripción física, tags o características..."
               value={searchQuery}
               onChange={handleSearchChange}
               onFocus={handleSearchFocus}
@@ -410,12 +475,13 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
                         </div>
                         <p className="font-medium text-foreground mb-2">No se encontraron sospechosos</p>
                         <p className="text-sm text-muted-foreground mb-3 max-w-sm">
-                          Intente buscar por alias, descripción física o tags específicos
+                          Intente buscar por alias, descripción física, tags o características específicas
                         </p>
                         <div className="text-xs text-muted-foreground space-y-1">
-                          <p>• Ejemplo: &quot;Juan&quot; para buscar por alias</p>
-                          <p>• Ejemplo: &quot;alto&quot; para buscar en descripción</p>
-                          <p>• Ejemplo: &quot;tatuaje&quot; para buscar en tags</p>
+                          <p>• Ejemplo: &quot;Juan&quot; - buscar por alias</p>
+                          <p>• Ejemplo: &quot;alto musculoso&quot; - descripción física</p>
+                          <p>• Ejemplo: &quot;tatuaje brazos&quot; - características específicas</p>
+                          <p>• Ejemplo: &quot;nervioso agresivo&quot; - comportamiento</p>
                         </div>
                       </div>
                     </CommandEmpty>
@@ -429,7 +495,7 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
                       )}
                       {searchResults.length > 0 && (
                         <div className="px-3 py-2 text-xs text-muted-foreground bg-blue-50 border-b">
-                          🔍 Búsqueda realizada por alias, descripción y tags
+                          🔍 Búsqueda avanzada por alias, descripción física, tags y características
                         </div>
                       )}
                       {searchResults.map((suspect) => (

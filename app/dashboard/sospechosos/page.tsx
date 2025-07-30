@@ -22,6 +22,7 @@ interface SuspectFiltersState {
   id?: string;
   suspects_tags?: string[];
   search?: string;
+  tags?: string;
   fromDate?: string;
   toDate?: string;
   officeId?: string;
@@ -30,8 +31,8 @@ interface SuspectFiltersState {
 // Definir las opciones de tags disponibles
 const SUSPECT_TAG_OPTIONS = {
   'Género': [
-    { value: 'masculino', label: 'Hombre' },
-    { value: 'femenino', label: 'Mujer' },
+    { value: 'masculino', label: 'Masculino' },
+    { value: 'femenino', label: 'Femenino' },
     { value: 'desconocido', label: 'Desconocido' }
   ],
   'Altura': [
@@ -154,7 +155,8 @@ function SuspectsPageContent() {
     pageSize,
     filters: {
       ...filters,
-      search: searchTerm || undefined
+      tags: searchTerm || undefined,
+      search: undefined // Ensure search parameter is not used
     }
   }) as {
     data: {
@@ -177,8 +179,9 @@ function SuspectsPageContent() {
       } catch (error) {
         console.error('Error loading suspect statuses:', error);
         setSuspectStatuses([
-          { id: 1, Name: 'Libre' },
-          { id: 2, Name: 'Detenido' }
+          { id: 1, Name: 'Detenido' },
+          { id: 2, Name: 'Libre' },
+          { id: 3, Name: 'Preso' }
         ]);
       }
     };
@@ -208,6 +211,14 @@ function SuspectsPageContent() {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
+    
+    // Update filters to use tags parameter instead of search
+    const updatedFilters = { 
+      ...filters, 
+      tags: value || undefined,
+      search: undefined // Remove search parameter
+    };
+    setFilters(updatedFilters);
     setPage(1); // Reset to first page when search changes
   };
 
@@ -231,6 +242,9 @@ function SuspectsPageContent() {
     }
     if (key === 'id') {
       return `ID: ${value}`;
+    }
+    if (key === 'tags') {
+      return `Búsqueda: ${value}`;
     }
     if (key === 'search') {
       return `Búsqueda: ${value}`;

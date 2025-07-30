@@ -9,7 +9,7 @@ const DEFAULT_SUSPECT: Suspect = {
   PhysicalDescription: 'Información no disponible',
   PhotoUrl: '',
   Status: 0,
-  Tags: []  // Changed to empty array to match the type
+  Tags: {}  // Changed to empty object to match the type
 };
 
 // API ENDPOINTS
@@ -55,8 +55,12 @@ export async function getAllSuspects(
       if (key === 'tags' || key === 'suspects_tags') {
         cleanParams[key] = Array.isArray(value) ? value.join(',') : value;
       } else if (key === 'Status') {
-        // Asegurarse de que el estado se envía como número
-        cleanParams[key] = Number(value);
+        // Asegurarse de que el estado se envía como número y con el nombre correcto
+        const statusValue = Number(value);
+        // Solo enviar status válidos (1 = Detenido, 2 = Libre, 3 = Preso)
+        if (statusValue >= 1 && statusValue <= 3) {
+          cleanParams['status'] = statusValue;
+        }
       } else if (key === 'id') {
         // Buscar por ID exacto
         cleanParams[key] = value;

@@ -15,6 +15,7 @@ interface SuspectFilters {
   id?: string;
   suspects_tags?: string[];
   search?: string;
+  tags?: string;
   fromDate?: string;
   toDate?: string;
   officeId?: string;

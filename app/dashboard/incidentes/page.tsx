@@ -1,11 +1,12 @@
 "use client";
 
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useIncidentsWithFilters } from '@/hooks/useIncidentsWithFilters';
 import { IncidentFilters } from "@/components/incidents/incident-filters";
 import { ErrorDisplay } from "@/components/ui/error-display";
@@ -70,12 +71,12 @@ function IncidentesPageContent() {
       setSearchTerm(search);
     }
     
-    // Apply URL filters if any exist
-    if (Object.keys(urlFilters).length > 0) {
-      setFilters(urlFilters);
-      applyFilters(urlFilters);
-    }
-  }, [searchParams, applyFilters]);
+    // Always apply URL filters, even if empty (this will trigger a fresh load)
+    setFilters(urlFilters);
+    applyFilters(urlFilters);
+    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleFiltersChange = (newFilters: IncidentFiltersState) => {
     const updatedFilters = { 
@@ -92,6 +93,42 @@ function IncidentesPageContent() {
       ...filters, 
       search: value
     };
+    setFilters(updatedFilters);
+    applyFilters(updatedFilters);
+  };
+
+  const getFilterDisplayText = (key: string, value: string) => {
+    if (key === 'fromDate') {
+      return `Desde: ${new Date(value).toLocaleDateString('es-ES')}`;
+    }
+    if (key === 'toDate') {
+      return `Hasta: ${new Date(value).toLocaleDateString('es-ES')}`;
+    }
+    if (key === 'Office') {
+      const office = filterOptions.offices.find(o => o.id === value);
+      return `Sucursal: ${office?.name || value}`;
+    }
+    if (key === 'IncidentType') {
+      const type = filterOptions.incidentTypes.find(t => t.id === value);
+      return `Tipo: ${type?.Name || value}`;
+    }
+    if (key === 'suspect_alias') {
+      return `Sospechoso: ${value}`;
+    }
+    if (key === 'search') {
+      return `Búsqueda: ${value}`;
+    }
+    return `${key}: ${value}`;
+  };
+
+  const handleRemoveFilter = (key: string) => {
+    const updatedFilters = { ...filters };
+    delete updatedFilters[key as keyof IncidentFiltersState];
+    
+    if (key === 'search') {
+      setSearchTerm('');
+    }
+    
     setFilters(updatedFilters);
     applyFilters(updatedFilters);
   };
@@ -158,18 +195,27 @@ function IncidentesPageContent() {
         </div>
       </div>
 
-      {/* Active Filters Row */}
-      <div className="w-full flex flex-wrap gap-2">
-        {Object.entries(filters).map(([key, value]) => {
-          if (!value) return null;
-          return (
-            <div key={key} className="inline-flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">{key}:</span>
-              <span className="text-sm font-medium">{value}</span>
-            </div>
-          );
-        })}
+      {/* Active Filters */}
+      {Object.keys(filters).some(key => filters[key as keyof IncidentFiltersState]) && (
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(filters).map(([key, value]) => {
+            if (!value || value === '') return null;
+            return (
+              <Badge
+                key={key}
+                variant="secondary"
+                className="px-2 py-1 text-xs"
+              >
+                {getFilterDisplayText(key, value)}
+                <X
+                  className="ml-1 h-3 w-3 cursor-pointer"
+                  onClick={() => handleRemoveFilter(key)}
+                />
+              </Badge>
+            );
+          })}
         </div>
+      )}
       
       {/* Incidents Table */}
       {loading ? (
