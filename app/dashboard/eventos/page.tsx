@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 
 import { Badge } from '@/components/ui/badge';
 import { useEvents } from '@/hooks/useEvents';
-import { useNotifications } from '@/context/notification-context';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Event } from '@/types/event';
@@ -21,15 +20,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 // Función para construir URLs de imágenes del backend
 const getImageUrl = (imgFile: string | null): string | null => {
   if (!imgFile) return null;
-  
-  // Si es una URL completa del backend, convertirla a proxy
-  if (imgFile.includes('sys.adminpy.com')) {
-    // Extraer la ruta después de /media/
-    const mediaMatch = imgFile.match(/\/media\/(.+)$/);
-    if (mediaMatch) {
-      return `/media/${mediaMatch[1]}`;
-    }
-  }
   
   // Si ya es una ruta relativa, usar el proxy de Next.js
   if (imgFile.startsWith('/')) {
@@ -156,7 +146,6 @@ const filterGroups: FilterGroup[] = [
 
 export default function EventsPage() {
   const { events, loading, error, totalCount, refreshEvents, applyFilters } = useEvents();
-  const { markAllAsViewed } = useNotifications();
   
   const [filters, setFilters] = useState<EventFilters>({});
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -170,10 +159,6 @@ export default function EventsPage() {
 
 
 
-  // Mark all notifications as viewed when entering the events page
-  React.useEffect(() => {
-    markAllAsViewed();
-  }, [markAllAsViewed]);
 
   const handleFiltersChange = (newFilters: EventFilters) => {
     setFilters(newFilters);
@@ -688,8 +673,6 @@ export default function EventsPage() {
                   </div>
                 </div>
               )}
-
-              {/* Footer con estadísticas generales */}
               {getActiveFiltersCount() > 0 && step === 'groups' && (
                 <div className="border-t p-3 bg-muted/30">
                   <div className="flex items-center justify-between">

@@ -54,8 +54,7 @@ export async function getIncidents(
     
     return data;
   } catch (error) {
-    console.error("Error fetching incidents:", error);
-    console.error("Request params were:", params);
+    console.error("Error fetching incidents");
     throw error;
   }
 }
@@ -98,7 +97,7 @@ export async function getIncidentType(id: number): Promise<IncidentType | null> 
     });
     return data;
   } catch (error) {
-    console.error(`Error fetching incident type ${id}:`, error);
+    console.error('Error fetching incident type');
     return null;
   }
 }
@@ -113,7 +112,7 @@ export async function getIncidentById(id: string | number): Promise<Incident> {
     });
     return data;
   } catch (error) {
-    console.error(`Error fetching incident ${id}:`, error);
+    console.error('Error fetching incident');
     throw error;
   }
 }

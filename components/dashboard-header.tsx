@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { NotificationsDropdown } from "@/components/notifications-dropdown";
 import { SidebarTrigger } from "visor-ui";
 
 export function DashboardHeader() {
@@ -18,9 +17,6 @@ export function DashboardHeader() {
         <div className="flex items-center gap-3">
           {/* Theme toggle */}
           <ThemeToggle />
-          
-          {/* Notifications */}
-          <NotificationsDropdown />
         </div>
       </div>
     </header>

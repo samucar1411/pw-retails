@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
         },
         (error, result) => {
           if (error) {
-            console.error('Cloudinary stream upload error:', error);
+            console.error('Cloudinary stream upload error');
             reject(error);
             return;
           }
@@ -50,13 +50,13 @@ export async function POST(req: NextRequest) {
 
     // Check if the uploadResult indicates an error (some errors might not throw but return an error object)
     if ('error' in uploadResult && uploadResult.error) {
-        console.error('Cloudinary upload failed with error object:', uploadResult.error);
+        console.error('Cloudinary upload failed');
         return NextResponse.json({ success: false, message: `Cloudinary upload error: ${uploadResult.error.message}` }, { status: 500 });
     }
     
     // Ensure secure_url is present in a successful response
     if (!('secure_url' in uploadResult) || !uploadResult.secure_url) {
-        console.error('Cloudinary upload result missing secure_url:', uploadResult);
+        console.error('Cloudinary upload result missing secure_url');
         return NextResponse.json({ success: false, message: 'Cloudinary upload did not return a secure URL.' }, { status: 500 });
     }
 
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     }, { status: 200 });
 
   } catch (error: unknown) {
-    console.error('Overall API Error in /api/upload:', error);
+    console.error('API Error in upload endpoint');
     let errorMessage = 'Image upload failed due to an unexpected server error.';
     
     // Use the error's message directly if available and more specific

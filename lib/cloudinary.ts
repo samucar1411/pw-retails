@@ -20,7 +20,7 @@ export async function uploadImage(fileBuffer: Buffer, folder: string = 'pw-retai
       },
       (error, result) => {
         if (error) {
-          console.error('Cloudinary upload error:', error);
+          console.error('Cloudinary upload error');
           return reject(error);
         }
         if (!result?.secure_url) {
@@ -41,7 +41,7 @@ export async function deleteImage(publicId: string): Promise<void> {
   return new Promise((resolve, reject) => {
     cloudinary.uploader.destroy(publicId, (error, result) => {
       if (error) {
-        console.error('Cloudinary delete error:', error);
+        console.error('Cloudinary delete error');
         return reject(error);
       }
       if (result?.result !== 'ok') {

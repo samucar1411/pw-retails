@@ -36,6 +36,7 @@ export interface Incident {
   OtherLosses: string;
   TotalLoss: string;
   Notes: string;
+  Tags: Record<string, string> | null; // Incident tags (e.g., cash type)
   Attachments: File[]; // Array of attachment objects
   Report: Record<string, unknown> | null; // Report data or null
   Office: number | Office; // Can be either an ID or a full Office object when expanded

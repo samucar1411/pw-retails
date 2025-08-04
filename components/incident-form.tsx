@@ -1141,65 +1141,71 @@ export function IncidentForm() {
                           )}
                         />
                   </div>
-                  {/* Upload de foto estilo dropzone */}
-                  <div>
-                    <FormLabel>Fotos del sospechoso</FormLabel>
-                    <ImageUploader
-                      onImageUpload={async (file) => {
-                        try {
-                          // Subir imagen a Cloudinary
-                          const cloudinaryUrl = await uploadImage(file);
+                  {/* Foto de perfil del sospechoso */}
+                  <FormField
+                    control={form.control}
+                    name={`selectedSuspects.${idx}.image`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Foto del sospechoso</FormLabel>
+                        <div className="space-y-4">
+                          {/* Current photo preview */}
+                          {field.value && (
+                            <div className="flex items-center gap-4 p-3 border rounded-lg bg-muted/20">
+                              <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted">
+                                <Image
+                                  src={field.value}
+                                  alt="Foto del sospechoso"
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">Foto cargada</p>
+                                <p className="text-xs text-muted-foreground">Foto de perfil del sospechoso</p>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => field.onChange(null)}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
                           
-                          // Agregar a los adjuntos del formulario
-                          const currentAttachments = form.getValues('attachments') || [];
-                          const newAttachment = {
-                            id: Date.now(),
-                            name: file.name,
-                            url: cloudinaryUrl,
-                            contentType: file.type || 'image/jpeg'
-                          };
-                          form.setValue('attachments', [...currentAttachments, newAttachment]);
-                          
-                          // También agregar a las fotos específicas del sospechoso
-                          const currentSuspectPhotos = getSuspectPhotos(idx);
-                          setSuspectPhotos(idx, [...currentSuspectPhotos, newAttachment]);
-                          
-                          toast.success('Imagen subida correctamente');
-                        } catch (error) {
-                          console.error('Error uploading image:', error);
-                          toast.error('Error al subir la imagen');
-                        }
-                      }}
-                      onUploadComplete={async () => {
-                        // Esta función se llama después de onImageUpload
-                        // No necesitamos hacer nada adicional aquí
-                      }}
-                      maxSizeMB={5}
-                      multiple={true}
-                      maxFiles={5}
-                      disabled={isSubmitting || isImageUploading}
-                    />
-                    
-                    {/* Preview de las fotos del sospechoso */}
-                    {getSuspectPhotos(idx).length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="text-sm font-medium mb-2">Fotos subidas:</h4>
-                        <FilePreviewList
-                          files={getSuspectPhotos(idx)}
-                          onRemove={(removeIdx) => {
-                            const currentPhotos = getSuspectPhotos(idx);
-                            const updatedPhotos = currentPhotos.filter((_, i: number) => i !== removeIdx);
-                            setSuspectPhotos(idx, updatedPhotos);
-                            
-                            // También remover de los adjuntos generales si es necesario
-                            const currentAttachments = form.getValues('attachments') || [];
-                            const updatedAttachments = currentAttachments.filter((_, i: number) => i !== removeIdx);
-                            form.setValue('attachments', updatedAttachments);
-                          }}
-                        />
-                      </div>
+                          {/* Upload area */}
+                          <ImageUploader
+                            onImageUpload={async (file) => {
+                              try {
+                                // Subir imagen a Cloudinary
+                                const cloudinaryUrl = await uploadImage(file);
+                                
+                                // Establecer la URL como foto del sospechoso
+                                field.onChange(cloudinaryUrl);
+                                
+                                toast.success('Foto del sospechoso subida correctamente');
+                              } catch (error) {
+                                console.error('Error uploading suspect photo:', error);
+                                toast.error('Error al subir la foto del sospechoso');
+                              }
+                            }}
+                            onUploadComplete={async () => {
+                              // Esta función se llama después de onImageUpload
+                              // No necesitamos hacer nada adicional aquí
+                            }}
+                            maxSizeMB={5}
+                            multiple={false}
+                            maxFiles={1}
+                            disabled={isSubmitting || isImageUploading}
+                          />
+                        </div>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </div>
+                  />
                   {/* Sexo */}
                   <div>
                     <FormLabel>Sexo</FormLabel>

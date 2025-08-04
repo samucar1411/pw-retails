@@ -48,7 +48,6 @@ export function PoliceReportPreview({
     );
   }
 
-  // Simple date formatting with fallback
   const formatDateTime = () => {
     try {
       if (incidentData.Date && incidentData.Time) {
@@ -66,10 +65,8 @@ export function PoliceReportPreview({
 
   return (
     <article className="max-w-5xl mx-auto bg-white text-gray-800 p-8 print:p-6">
-      {/* Header */}
       <header className="border-b-4 border-black p-8 mb-10 print:p-6 print:mb-8">
         <div className="flex items-center justify-between mb-8">
-          {/* Company Logo */}
           <div className="flex items-center">
             {companyLogo ? (
               <Image
@@ -133,9 +130,7 @@ export function PoliceReportPreview({
         </div>
       </header>
 
-      {/* Content */}
       <main className="space-y-10">
-        {/* 1. Datos del incidente */}
         <section className="bg-gray-50 border border-gray-300 rounded-lg p-6">
           <h2 className="text-2xl font-bold border-b-2 border-black mb-6 pb-2">1. Datos del incidente</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
