@@ -258,9 +258,9 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
   };
   
   // Map location with better coordinates handling
-  const mapLocations = office ? [
+  const mapLocations = office && incident ? [
     {
-      id: `incident-${incident?.id}`,
+      id: `incident-${incident.id}`,
       lat: office.Geo ? parseFloat(office.Geo.split(',')[0]) : -25.2637, // Use actual coordinates or default to Asunción
       lng: office.Geo ? parseFloat(office.Geo.split(',')[1]) : -57.5759,
       title: office.Name,
@@ -268,15 +268,21 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
       address: office.Address || 'Dirección no disponible',
       logoUrl: getProxyUrl(companyLogo) || undefined,
       officeId: office.id,
-      popupContent: `
-        <div class="mapbox-popup-content-inner">
-          ${companyLogo ? `<img src="${getProxyUrl(companyLogo)}" alt="Logo" class="h-8 mb-2 object-contain" />` : ''}
-          <h3 class="mapbox-popup-title">${office.Name}</h3>
-          <p class="mapbox-popup-address">${office.Address || 'Dirección no disponible'}</p>
-          ${office.Phone ? `<p class="mapbox-popup-address">Tel: ${office.Phone}</p>` : ''}
-          ${incident?.Date ? `<p class="mapbox-popup-address">Incidente: ${format(new Date(incident.Date), 'dd/MM/yyyy', { locale: es })}</p>` : ''}
-        </div>
-      `
+      incidentData: {
+        id: incident.id,
+        date: incident.Date,
+        time: incident.Time || '',
+        incidentType: incidentType,
+        totalLoss: incident.TotalLoss || '0',
+        suspectCount: suspects.length,
+        status: 'Reportado',
+        severity: (() => {
+          const totalLoss = parseFloat(incident.TotalLoss || '0');
+          if (totalLoss > 1000000) return 'high' as const;
+          if (totalLoss > 100000) return 'medium' as const;
+          return 'low' as const;
+        })()
+      }
     }
   ] : [];
   

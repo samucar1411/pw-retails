@@ -1,9 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import { useDashboardSmart } from '@/hooks/useDashboardSmart';
 import { getAllSuspects } from '@/services/suspect-service';
-import { getIncidents } from '@/services/incident-service';
-import { getAllOfficesComplete } from '@/services/office-service';
 import { Incident } from '@/types/incident';
 import { Suspect, SuspectStatus } from '@/types/suspect';
 import { Office } from '@/types/office';
@@ -49,6 +48,17 @@ interface DashboardContextType {
   setFilters: (filters: DashboardFilters) => void;
   refreshData: () => void;
   isInitialized: boolean;
+  // Smart dashboard metrics
+  smartMetrics?: {
+    totalCount: number;
+    loadedCount: number;
+    pagesLoaded: number;
+    totalPages: number;
+    memoryUsageMB: number;
+    isLoadingMore: boolean;
+    isComplete: boolean;
+    loadingProgress: number;
+  };
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -79,124 +89,126 @@ const initialData: DashboardData = {
 };
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
-  const [data, setData] = useState<DashboardData>(initialData);
   const [filters, setFilters] = useState<DashboardFilters>({
     fromDate: '',
     toDate: '',
     officeId: ''
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Use smart dashboard hook for optimized loading
+  const smartData = useDashboardSmart(
+    filters.fromDate,
+    filters.toDate, 
+    filters.officeId,
+    {
+      maxPages: 15,      // Load up to 15 pages (1500 incidents)  
+      pageSize: 100,     // 100 incidents per page
+      enableParallelLoading: true
+    }
+  );
 
-  // Función para cargar todos los datos del dashboard
-  const loadDashboardData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
+  // Load additional suspect data (not covered by smart hook)
+  const loadSupplementaryData = useCallback(async () => {
     try {
-      const newData: DashboardData = { ...initialData };
-
-      // 1. Cargar incidentes recientes
-      const recentIncidents = await getIncidents({
-        page: 1,
-        page_size: 10,
-        fromDate: filters.fromDate,
-        toDate: filters.toDate,
-        officeId: filters.officeId
-      });
-      newData.incidents.recent = recentIncidents?.results || [];
-      newData.incidents.total = recentIncidents?.count || 0;
-
-      // 2. Cargar todos los incidentes (para la página de incidentes)
-      const allIncidents = await getIncidents({
-        page: 1,
-        page_size: 100, // Más incidentes para la página de incidentes
-        fromDate: filters.fromDate,
-        toDate: filters.toDate,
-        officeId: filters.officeId
-      });
-      newData.incidents.allIncidents = allIncidents?.results || [];
-
-      // 3. Cargar sospechosos
       const suspects = await getAllSuspects({
         fromDate: filters.fromDate,
         toDate: filters.toDate,
         officeId: filters.officeId
       });
       
-      // Calcular estadísticas de sospechosos
-      const identified = suspects?.results?.filter((s: Suspect) => s.Status === 2)?.length || 0;
-      const notIdentified = suspects?.results?.filter((s: Suspect) => s.Status === 1)?.length || 0;
-      
-      newData.suspects.identified = identified;
-      newData.suspects.notIdentified = notIdentified;
-      newData.suspects.allSuspects = suspects?.results || [];
-
-      // 4. Cargar oficinas
-      const offices = await getAllOfficesComplete();
-      newData.offices.branches24h = offices?.length || 0;
-      newData.offices.ranking = offices || [];
-      newData.offices.allOffices = offices || [];
-
-      // 5. Cargar estados de sospechosos
-      try {
-        const suspectStatuses = await import('@/services/suspect-service').then(module => 
-          module.getSuspectStatuses()
-        );
-        newData.suspectStatuses = suspectStatuses;
-      } catch (error) {
-        console.warn('Error loading suspect statuses:', error);
-        newData.suspectStatuses = [];
-      }
-
-      // 6. Cargar tipos de incidentes
-      try {
-        const incidentTypes = await import('@/services/incident-service').then(module => 
-          module.getIncidentTypes()
-        );
-        newData.incidentTypes = incidentTypes.results || [];
-      } catch (error) {
-        console.warn('Error loading incident types:', error);
-        newData.incidentTypes = [];
-      }
-
-      // 7. Cargar datos históricos (placeholder)
-      newData.historical = [];
-
-      setData(newData);
-      setIsInitialized(true);
-    } catch (err) {
-      console.error('Error loading dashboard data:', err);
-      setError(err instanceof Error ? err : new Error('Error desconocido'));
-    } finally {
-      setIsLoading(false);
+      return {
+        allSuspects: suspects?.results || [],
+        identified: suspects?.results?.filter((s: Suspect) => s.Status === 2)?.length || 0,
+        notIdentified: suspects?.results?.filter((s: Suspect) => s.Status === 1)?.length || 0,
+      };
+    } catch (error) {
+      console.warn('Error loading suspects:', error);
+      return {
+        allSuspects: [],
+        identified: 0,
+        notIdentified: 0,
+      };
     }
   }, [filters]);
 
-  // Cargar datos cuando cambian los filtros
-  useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
+  // Compute dashboard data from smart hook
+  const [supplementaryData, setSupplementaryData] = useState<{
+    allSuspects: Suspect[];
+    identified: number;
+    notIdentified: number;
+  }>({
+    allSuspects: [],
+    identified: 0,
+    notIdentified: 0,
+  });
 
-  // Función para refrescar datos
+  // Load supplementary data when filters change
+  React.useEffect(() => {
+    loadSupplementaryData().then(setSupplementaryData);
+  }, [loadSupplementaryData]);
+
+  // Compute final dashboard data
+  const data: DashboardData = React.useMemo(() => {
+    const incidents = smartData.incidents || [];
+    const offices = smartData.offices || [];
+    
+    return {
+      incidents: {
+        total: smartData.totalCount || 0,
+        recent: incidents.slice(0, 10), // Most recent 10
+        distribution: incidents,
+        economic: incidents.filter(i => i.IncidentType === 1), // Economic crimes
+        allIncidents: incidents
+      },
+      suspects: {
+        identified: supplementaryData.identified,
+        notIdentified: supplementaryData.notIdentified,
+        topRepeat: supplementaryData.allSuspects.slice(0, 10), // Top 10
+        allSuspects: supplementaryData.allSuspects
+      },
+      offices: {
+        branches24h: offices.length,
+        ranking: offices,
+        allOffices: offices
+      },
+      historical: incidents,
+      suspectStatuses: smartData.suspectStatuses || [],
+      incidentTypes: smartData.incidentTypes || []
+    };
+  }, [smartData, supplementaryData]);
+
+  // Refresh function
   const refreshData = useCallback(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
+    smartData.refetch?.();
+    loadSupplementaryData().then(setSupplementaryData);
+  }, [smartData.refetch, loadSupplementaryData]);
 
-  // Función para actualizar filtros
+  // Function to update filters
   const handleSetFilters = useCallback((newFilters: DashboardFilters) => {
     setFilters(newFilters);
   }, []);
 
+  // Smart metrics for monitoring
+  const smartMetrics = {
+    totalCount: smartData.totalCount || 0,
+    loadedCount: smartData.loadedCount || 0,
+    pagesLoaded: smartData.pagesLoaded || 0,
+    totalPages: smartData.totalPages || 0,
+    memoryUsageMB: smartData.memoryUsageMB || 0,
+    isLoadingMore: smartData.isLoadingMore || false,
+    isComplete: smartData.isComplete || false,
+    loadingProgress: smartData.loadingProgress || 0,
+  };
+
   const value: DashboardContextType = {
     data,
     filters,
-    isLoading,
-    error,
+    isLoading: smartData.isLoading || false,
+    error: smartData.error || null,
     setFilters: handleSetFilters,
     refreshData,
-    isInitialized
+    isInitialized: !smartData.isLoading,
+    smartMetrics
   };
 
   return (

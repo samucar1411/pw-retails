@@ -23,10 +23,11 @@ import { getCompanyById } from '@/services/company-service';
 import { Office } from '@/types/office';
 import { Company } from '@/types/company';
 import { IncidentType as IncidentTypeDetails } from '@/types/incident';
-import { default as UIMap } from '@/components/ui/map';
+import UIMap from '@/components/ui/map';
 import { getSuspect } from '@/services/suspect-service';
 import { Suspect } from '@/types/suspect';
 import { api } from '@/services/api';
+import { getProxyUrl } from '@/lib/utils';
 import Link from 'next/link';
 
 interface SuspectDetailPageProps {
@@ -46,16 +47,30 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
   const [incidentsLoading, setIncidentsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [officeDetails, setOfficeDetails] = useState<Map<number, Office>>(new Map());
-  const [mapLocations, setMapLocations] = useState<Array<{ 
-    id: string | number; 
-    lat: number; 
-    lng: number; 
-    title: string; 
+  // Define map location type compatible with ui/map component
+  type MapLocation = {
+    id: string | number;
+    lat: number;
+    lng: number;
+    title: string;
     description: string;
     address?: string;
     logoUrl?: string;
-    officeId?: number;
-  }>>([]);
+    officeId?: string | number;
+    popupContent?: string;
+    incidentData?: {
+      id: string;
+      date: string;
+      time: string;
+      incidentType?: string;
+      totalLoss?: string;
+      suspectCount?: number;
+      status?: string;
+      severity?: 'low' | 'medium' | 'high';
+    };
+  };
+
+  const [mapLocations, setMapLocations] = useState<MapLocation[]>([]);
   const [incidentTypeNames, setIncidentTypeNames] = useState<Map<number, string>>(new Map());
   const [relatedSuspects, setRelatedSuspects] = useState<Suspect[]>([]);
   const [relatedSuspectsLoading, setRelatedSuspectsLoading] = useState(true);
@@ -128,16 +143,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
             const fetchedOffices = (await Promise.all(officePromises)).filter(Boolean) as Office[];
             
             const newOfficeDetails = new Map<number, Office>();
-            const newMapLocations: Array<{ 
-              id: string | number; 
-              lat: number; 
-              lng: number; 
-              title: string; 
-              description: string;
-              address?: string;
-              logoUrl?: string;
-              officeId?: number;
-            }> = [];
+            const newMapLocations: MapLocation[] = [];
 
             // Fetch company details for logos
             const companyIds = [...new Set(fetchedOffices.map(office => office.Company))];
@@ -160,8 +166,14 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                 if (!isNaN(lat) && !isNaN(lng)) {
                   // Get company logo if available
                   const company = newCompanyDetails.get(office.Company);
-                  const logoUrl = company?.image_url || '';
+                  const logoUrl = company?.image_url ? getProxyUrl(company.image_url) : '';
                   
+                  // Encontrar incidentes relacionados con esta oficina
+                  const officeIncidents = fetchedIncidents.filter(inc => inc.Office === office.id);
+                  const latestIncident = officeIncidents.sort((a, b) => 
+                    new Date(b.Date).getTime() - new Date(a.Date).getTime()
+                  )[0];
+
                   newMapLocations.push({
                     id: office.id,
                     lat,
@@ -169,8 +181,23 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     title: office.Name || office.Address || `Oficina ${office.id}`,
                     description: office.Address || 'Dirección no disponible',
                     address: office.Address,
-                    logoUrl,
-                    officeId: office.id
+                    logoUrl: logoUrl || undefined,
+                    officeId: office.id,
+                    incidentData: latestIncident ? {
+                      id: latestIncident.id,
+                      date: latestIncident.Date,
+                      time: latestIncident.Time || '',
+                      incidentType: newIncidentTypeNames.get(latestIncident.IncidentType || 0) || 'Tipo desconocido',
+                      totalLoss: latestIncident.TotalLoss || '0',
+                      suspectCount: latestIncident.Suspects?.length || 0,
+                      status: 'Reportado',
+                      severity: (() => {
+                        const totalLoss = parseFloat(latestIncident.TotalLoss || '0');
+                        if (totalLoss > 1000000) return 'high' as const;
+                        if (totalLoss > 100000) return 'medium' as const;
+                        return 'low' as const;
+                      })()
+                    } : undefined
                   });
                 }
               }

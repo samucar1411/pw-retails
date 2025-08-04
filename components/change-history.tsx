@@ -7,7 +7,7 @@ import { History, User, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Collapsible } from '@/components/ui/collapsible';
 import { getChangeHistory } from '@/services/change-history-service';
 import { ChangeHistory } from '@/types/change-history';
 
@@ -89,7 +89,7 @@ export function ChangeHistoryComponent({
     return fieldLabels[fieldName] || fieldName;
   };
 
-  const formatValue = (value: string | null, fieldName?: string) => {
+  const formatValue = (value: string | null | undefined, fieldName?: string) => {
     if (value === null || value === undefined) return 'Sin valor';
     if (value === '') return 'Vacío';
     
@@ -123,10 +123,12 @@ export function ChangeHistoryComponent({
   }
 
   return (
-    <Card className={className}>
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+    <div className={className}>
+      <Card>
+        <CardHeader 
+          className="cursor-pointer hover:bg-muted/50 transition-colors"
+          onClick={() => setIsOpen(!isOpen)}
+        >
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <History className="h-5 w-5" />
@@ -145,10 +147,9 @@ export function ChangeHistoryComponent({
                 )}
               </Button>
             </CardTitle>
-          </CardHeader>
-        </CollapsibleTrigger>
+        </CardHeader>
         
-        <CollapsibleContent>
+        {isOpen && (
           <CardContent>
             {changes.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
@@ -212,8 +213,8 @@ export function ChangeHistoryComponent({
               </div>
             )}
           </CardContent>
-        </CollapsibleContent>
-      </Collapsible>
-    </Card>
+        )}
+      </Card>
+    </div>
   );
 }

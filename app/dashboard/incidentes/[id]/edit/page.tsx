@@ -64,22 +64,22 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
     defaultValues: {
       date: '',
       time: '',
-      incidentType: '',
-      office: '',
+      incidentTypeId: 0,
+      officeId: 0,
       description: '',
       notes: '',
       cashLoss: 0,
       merchandiseLoss: 0,
       otherLosses: 0,
       selectedSuspects: [],
-      merchandiseItems: [],
+      incidentLossItem: [],
       attachments: [],
     },
   });
 
   const { fields: merchandiseFields, append: appendMerchandise, remove: removeMerchandise } = useFieldArray({
     control: form.control,
-    name: 'merchandiseItems',
+    name: 'incidentLossItem',
   });
 
   // Fetch incident data and populate form
@@ -105,13 +105,16 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
           const formData: IncidentFormValues = {
             date: incidentData.Date ? incidentData.Date.split('T')[0] : '',
             time: incidentData.Time || '',
-            incidentType: incidentData.IncidentType?.toString() || '',
-            office: incidentData.Office?.toString() || '',
+            incidentTypeId: incidentData.IncidentType || 0,
+            officeId: typeof incidentData.Office === 'number' ? incidentData.Office : (incidentData.Office?.id || 0),
             description: incidentData.Description || '',
             notes: incidentData.Notes || '',
             cashLoss: parseFloat(incidentData.CashLoss || '0'),
+            cashFondo: parseFloat(incidentData.Tags?.cashFondo || '0'),
+            cashRecaudacion: parseFloat(incidentData.Tags?.cashRecaudacion || '0'),
             merchandiseLoss: parseFloat(incidentData.MerchandiseLoss || '0'),
             otherLosses: parseFloat(incidentData.OtherLosses || '0'),
+            totalLoss: parseFloat(incidentData.TotalLoss || '0'),
             selectedSuspects: incidentData.Suspects?.map(suspectId => ({
               apiId: suspectId,
               alias: 'Cargando...',
@@ -120,11 +123,13 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
               image: '',
               isNew: false,
             })) || [],
-            merchandiseItems: incidentData.incidentLossItem?.map(item => ({
+            incidentLossItem: incidentData.incidentLossItem?.map(item => ({
+              id: item.id,
               description: item.description,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               total: item.total,
+              type: (item.type || 'mercaderia') as 'mercaderia' | 'material',
             })) || [],
             attachments: [],
           };
@@ -149,8 +154,8 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
   // Calculate merchandise total
   const calculateMerchandiseTotal = () => {
     return merchandiseFields.reduce((total, item) => {
-      const quantity = form.watch(`merchandiseItems.${merchandiseFields.indexOf(item)}.quantity`) || 0;
-      const unitPrice = form.watch(`merchandiseItems.${merchandiseFields.indexOf(item)}.unitPrice`) || 0;
+      const quantity = form.watch(`incidentLossItem.${merchandiseFields.indexOf(item)}.quantity`) || 0;
+      const unitPrice = form.watch(`incidentLossItem.${merchandiseFields.indexOf(item)}.unitPrice`) || 0;
       return total + (quantity * unitPrice);
     }, 0);
   };
@@ -169,20 +174,22 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
       const updateData = {
         Date: values.date,
         Time: values.time,
-        IncidentType: parseInt(values.incidentType),
-        Office: parseInt(values.office),
+        IncidentType: values.incidentTypeId,
+        Office: values.officeId,
         Description: values.description,
         Notes: values.notes,
         CashLoss: values.cashLoss.toString(),
         MerchandiseLoss: values.merchandiseLoss.toString(),
         OtherLosses: values.otherLosses.toString(),
         TotalLoss: (values.cashLoss + values.merchandiseLoss + values.otherLosses).toString(),
-        Suspects: values.selectedSuspects.map(s => s.apiId),
-        incidentLossItem: values.merchandiseItems.map(item => ({
-          description: item.description,
+        Suspects: values.selectedSuspects?.map(s => s.apiId).filter((id): id is string => Boolean(id)) || [],
+        incidentLossItem: values.incidentLossItem.map(item => ({
+          id: item.id,
+          description: item.description || '',
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           total: item.quantity * item.unitPrice,
+          type: item.type,
         })),
       };
 
@@ -357,11 +364,11 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="incidentType"
+                    name="incidentTypeId"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tipo de incidente</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecciona el tipo" />
@@ -382,11 +389,11 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
 
                   <FormField
                     control={form.control}
-                    name="office"
+                    name="officeId"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Sucursal</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecciona la sucursal" />
@@ -505,7 +512,7 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => appendMerchandise({ description: '', quantity: 1, unitPrice: 0, total: 0 })}
+                      onClick={() => appendMerchandise({ description: '', quantity: 1, unitPrice: 0, total: 0, type: 'mercaderia' })}
                     >
                       <Plus className="h-4 w-4 mr-1" />
                       Agregar ítem
@@ -517,7 +524,7 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
                       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
                         <FormField
                           control={form.control}
-                          name={`merchandiseItems.${index}.description`}
+                          name={`incidentLossItem.${index}.description`}
                           render={({ field }) => (
                             <FormItem>
                               <FormControl>
@@ -530,7 +537,7 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
 
                         <FormField
                           control={form.control}
-                          name={`merchandiseItems.${index}.quantity`}
+                          name={`incidentLossItem.${index}.quantity`}
                           render={({ field }) => (
                             <FormItem>
                               <FormControl>
@@ -548,7 +555,7 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
 
                         <FormField
                           control={form.control}
-                          name={`merchandiseItems.${index}.unitPrice`}
+                          name={`incidentLossItem.${index}.unitPrice`}
                           render={({ field }) => (
                             <FormItem>
                               <FormControl>

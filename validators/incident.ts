@@ -75,6 +75,16 @@ export const incidentFormSchema = z.object({
     if (typeof val === 'number') return val;
     return 0;
   }),
+  cashFondo: z.union([z.string(), z.number()]).optional().transform((val) => {
+    if (typeof val === 'string') return Number(val) || 0;
+    if (typeof val === 'number') return val;
+    return 0;
+  }),
+  cashRecaudacion: z.union([z.string(), z.number()]).optional().transform((val) => {
+    if (typeof val === 'string') return Number(val) || 0;
+    if (typeof val === 'number') return val;
+    return 0;
+  }),
   merchandiseLoss: z.union([z.string(), z.number()]).optional().transform((val) => {
     if (typeof val === 'string') return Number(val) || 0;
     if (typeof val === 'number') return val;
@@ -103,6 +113,8 @@ export const incidentFormSchema = z.object({
 export const incidentSchema = incidentFormSchema.transform((data) => ({
   ...data,
   cashLoss: data.cashLoss ? Number(data.cashLoss) : 0,
+  cashFondo: data.cashFondo ? Number(data.cashFondo) : 0,
+  cashRecaudacion: data.cashRecaudacion ? Number(data.cashRecaudacion) : 0,
   merchandiseLoss: data.merchandiseLoss ? Number(data.merchandiseLoss) : 0,
   otherLosses: data.otherLosses ? Number(data.otherLosses) : 0,
   totalLoss: data.totalLoss ? Number(data.totalLoss) : 0,
@@ -114,6 +126,8 @@ export type IncidentFormValues = z.infer<typeof incidentFormSchema>;
 export const incidentPayloadSchema = incidentFormSchema.omit({ selectedSuspects: true }).transform((data) => ({
   ...data,
   cashLoss: data.cashLoss ? Number(data.cashLoss) : 0,
+  cashFondo: data.cashFondo ? Number(data.cashFondo) : 0,
+  cashRecaudacion: data.cashRecaudacion ? Number(data.cashRecaudacion) : 0,
   merchandiseLoss: data.merchandiseLoss ? Number(data.merchandiseLoss) : 0,
   otherLosses: data.otherLosses ? Number(data.otherLosses) : 0,
   totalLoss: data.totalLoss ? Number(data.totalLoss) : 0,
@@ -130,6 +144,8 @@ export interface Incident {
   incidentTypeId: number;
   description?: string;
   cashLoss?: string;
+  cashFondo?: string;
+  cashRecaudacion?: string;
   merchandiseLoss?: string;
   otherLosses?: string;
   totalLoss?: string;

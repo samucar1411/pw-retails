@@ -163,13 +163,13 @@ export default function EditSuspectPage() {
       // Prepare suspect data for update
       const suspectDataToUpdate: Partial<Suspect> = {
         Alias: values.Alias,
-        Name: values.Name || null,
-        LastName: values.LastName || null,
-        LastName2: values.LastName2 || null,
+        Name: values.Name || undefined,
+        LastName: values.LastName || undefined,
+        LastName2: values.LastName2 || undefined,
         PhysicalDescription: values.PhysicalDescription,
         Status: Number(values.Status),
         PhotoUrl: values.PhotoUrl,
-        Nationality: values.Nationality || null,
+        Nationality: values.Nationality || undefined,
         Tags: tags as Record<string, string>,
       };
       

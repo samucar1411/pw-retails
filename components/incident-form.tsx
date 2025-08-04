@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useForm, useFieldArray, Control, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -72,6 +72,56 @@ function SquareSelectGroup({ options, value, onChange, className = '' }: SquareS
           </button>
         );
       })}
+    </div>
+  );
+}
+
+// Componente de input de moneda completamente independiente
+function SimpleCurrencyInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const [displayValue, setDisplayValue] = React.useState('');
+  const [isFocused, setIsFocused] = React.useState(false);
+
+  // Solo actualizar displayValue cuando no está en foco
+  React.useEffect(() => {
+    if (!isFocused) {
+      setDisplayValue(value > 0 ? value.toLocaleString('es-PY') : '');
+    }
+  }, [value, isFocused]);
+
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    setIsFocused(true);
+    setDisplayValue(value > 0 ? value.toString() : '');
+    setTimeout(() => {
+      e.target.select();
+    }, 0);
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/[^\d]/g, '');
+    setDisplayValue(rawValue);
+    const numValue = parseInt(rawValue) || 0;
+    onChange(numValue);
+  };
+
+  return (
+    <div className="relative">
+      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">
+        ₲
+      </span>
+      <input
+        type="text"
+        value={displayValue}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onChange={handleChange}
+        className="w-full pl-8 px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+        placeholder="0"
+        inputMode="numeric"
+      />
     </div>
   );
 }
@@ -488,11 +538,14 @@ export function IncidentForm() {
       incidentTypeId: undefined,
       description: '',
       cashLoss: 0,
+      cashFondo: 0,
+      cashRecaudacion: 0,
       suspects: [], // Initialize suspects array
       incidentLossItem: [], // Initialize incidentLossItem array
     },
     resolver: zodResolver(incidentFormSchema),
   });
+  
 
   // Use selectedSuspects for the field array
   const {
@@ -1440,9 +1493,13 @@ export function IncidentForm() {
   }
 
   // 2. Renderiza el bloque de pérdidas
-  function LossesStep() {
-    const { formatInputValue } = useGuaraniFormatter();
-    const cashLoss = Number(form.watch('cashLoss') || 0);
+  const LossesStep = useMemo(() => {
+    return function LossesStepComponent() {
+      const { formatInputValue } = useGuaraniFormatter();
+      // El cashLoss total es la suma de efectivo fondo + efectivo recaudación
+      const cashFondo = form.watch('cashFondo') || 0;
+      const cashRecaudacion = form.watch('cashRecaudacion') || 0;
+      const cashLoss = cashFondo + cashRecaudacion;
     
     interface LossItem {
       id: string;
@@ -1484,60 +1541,78 @@ export function IncidentForm() {
             <div className="ml-2">
               <h3 className="text-base md:text-lg font-medium">Robo en Efectivo</h3>
               <p className="text-sm text-muted-foreground">
-                Indique los valores estimados de las pérdidas
+                Indique los valores estimados de las pérdidas por tipo de efectivo
               </p>
             </div>
           </div>
           
-          {/* Tipo de efectivo */}
-          <div className="mb-4">
-            <FormLabel className="text-sm font-medium">Tipo de efectivo robado</FormLabel>
-            <div className="flex flex-wrap gap-2 mt-2">
-              <Button
-                type="button"
-                variant={cashType === 'recaudacion' ? 'default' : 'outline'}
-                size="sm"
-                className="rounded-full"
-                onClick={() => setCashType('recaudacion')}
-              >
-                Efectivo recaudación
-              </Button>
-              <Button
-                type="button"
-                variant={cashType === 'fondo' ? 'default' : 'outline'}
-                size="sm"
-                className="rounded-full"
-                onClick={() => setCashType('fondo')}
-              >
+          <div className="space-y-4">
+            {/* Efectivo Fondo */}
+            <div>
+              <FormLabel className="text-sm font-medium flex items-center gap-2">
+                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                  Fondo
+                </span>
                 Efectivo fondo
-              </Button>
-              <Button
-                type="button"
-                variant={cashType === 'general' ? 'default' : 'outline'}
-                size="sm"
-                className="rounded-full"
-                onClick={() => setCashType('general')}
-              >
-                Efectivo general
-              </Button>
+              </FormLabel>
+              <div className="mt-2">
+                <Controller
+                  control={form.control}
+                  name="cashFondo"
+                  render={({ field }) => (
+                    <CurrencyInputField 
+                      value={Number(field.value) || 0} 
+                      onChange={field.onChange} 
+                    />
+                  )}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Dinero destinado para cambio y operaciones diarias
+              </p>
+            </div>
+
+            {/* Efectivo Recaudación */}
+            <div>
+              <FormLabel className="text-sm font-medium flex items-center gap-2">
+                <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                  Recaudación
+                </span>
+                Efectivo recaudación
+              </FormLabel>
+              <div className="mt-2">
+                <Controller
+                  control={form.control}
+                  name="cashRecaudacion"
+                  render={({ field }) => (
+                    <CurrencyInputField 
+                      value={Number(field.value) || 0} 
+                      onChange={field.onChange} 
+                    />
+                  )}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Dinero recaudado de las ventas del día
+              </p>
+            </div>
+
+            {/* Total de efectivo */}
+            <div className="border-t pt-4">
+              <FormLabel className="text-sm font-medium text-primary">Total efectivo robado</FormLabel>
+              <div className="mt-2">
+                <Input 
+                  readOnly 
+                  disabled 
+                  value={formatInputValue(cashFondo + cashRecaudacion)} 
+                  className="w-full bg-primary/5 border-primary/20 font-medium text-primary" 
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Suma automática de efectivo fondo + efectivo recaudación
+              </p>
             </div>
           </div>
-          
-          <FormItem>
-            <FormLabel>Monto robado en efectivo</FormLabel>
-            <Controller
-              control={form.control}
-              name="cashLoss"
-              render={({ field }) => (
-                <CurrencyInputField 
-                  value={Number(field.value) || 0} 
-                  onChange={field.onChange} 
-                  onBlur={field.onBlur} 
-                />
-              )}
-            />
-            <FormMessage />
-          </FormItem>
         </section>
 
         {/* 2. Robo de mercaderías */}
@@ -1603,7 +1678,8 @@ export function IncidentForm() {
         {/* Sticky navigation buttons */}
       </div>
     );
-  }
+    };
+  }, [form, lossFields, appendLoss, removeLoss]);
 
   async function onSubmit(data: IncidentFormValues) {
     console.log('onSubmit called with data:', data);
@@ -1709,7 +1785,9 @@ export function IncidentForm() {
         .filter(item => item.ItemType === 'damage')
         .reduce((sum, item) => sum + (item.TotalValue || 0), 0);
 
-      const cashLoss = Number(data.cashLoss) || 0;
+      const cashFondo = data.cashFondo || 0;
+      const cashRecaudacion = data.cashRecaudacion || 0;
+      const cashLoss = cashFondo + cashRecaudacion;
       const totalLoss = cashLoss + merchandiseLoss + otherLosses;
 
       // 4. Construir el payload del incidente
@@ -1723,6 +1801,10 @@ export function IncidentForm() {
         OtherLosses: otherLosses,
         TotalLoss: totalLoss,
         Notes: data.notes,
+        Tags: {
+          cashFondo: cashFondo.toString(),
+          cashRecaudacion: cashRecaudacion.toString()
+        },
         Attachments: data.attachments,
         Report: null,
         Office: data.officeId,
