@@ -37,9 +37,13 @@ import Link from 'next/link';
 
 const suspectFormSchema = z.object({
   Alias: z.string().min(1, 'El alias es requerido'),
+  Name: z.string().optional(),
+  LastName: z.string().optional(),
+  LastName2: z.string().optional(),
   PhysicalDescription: z.string().min(1, 'La descripción física es requerida'),
   PhotoUrl: z.string().min(1, 'La foto es requerida'),
   Status: z.number(),
+  Nationality: z.string().optional(),
 });
 
 type SuspectFormValues = z.infer<typeof suspectFormSchema>;
@@ -63,9 +67,13 @@ export default function EditSuspectPage() {
     resolver: zodResolver(suspectFormSchema),
     defaultValues: {
       Alias: '',
+      Name: '',
+      LastName: '',
+      LastName2: '',
       PhysicalDescription: '',
       PhotoUrl: '',
       Status: 1,
+      Nationality: '',
     },
   });
 
@@ -81,11 +89,19 @@ export default function EditSuspectPage() {
         if (suspectData) {
           form.reset({
             Alias: suspectData.Alias || '',
+            Name: suspectData.Name || '',
+            LastName: suspectData.LastName || '',
+            LastName2: suspectData.LastName2 || '',
             PhysicalDescription: suspectData.PhysicalDescription || '',
             PhotoUrl: suspectData.PhotoUrl || '',
             Status: suspectData.Status || 1,
+            Nationality: suspectData.Nationality || '',
           });
-          setTags(suspectData.Tags as Record<string, string> || {});
+          
+          // Handle tags properly - convert to the expected format
+          const suspectTags = suspectData.Tags || {};
+          console.log('Loading suspect tags:', suspectTags);
+          setTags(suspectTags as Record<string, string>);
         }
 
         setStatuses(statusesData);
@@ -112,10 +128,15 @@ export default function EditSuspectPage() {
 
   // Functions to handle tags
   function getTagValue(key: string): string {
-    return (tags[key] as string) || '';
+    const value = tags[key];
+    if (typeof value === 'string') {
+      return value;
+    }
+    return '';
   }
 
   function setTagValue(key: string, value: string) {
+    console.log('Setting tag:', key, 'to:', value);
     setTags(prev => ({
       ...prev,
       [key]: value
@@ -123,21 +144,36 @@ export default function EditSuspectPage() {
   }
 
   function getTagArray(key: string): string[] {
-    return Array.isArray(tags[key]) ? tags[key] as string[] : [];
+    const value = tags[key];
+    if (Array.isArray(value)) {
+      return value;
+    }
+    if (typeof value === 'string' && value) {
+      return value.split(', ').filter(v => v.trim() !== '');
+    }
+    return [];
   }
 
   const onSubmit = useCallback(async (values: SuspectFormValues) => {
     setLoading(true);
 
     try {
+      console.log('Current tags state before submit:', tags);
+      
       // Prepare suspect data for update
       const suspectDataToUpdate: Partial<Suspect> = {
         Alias: values.Alias,
+        Name: values.Name || null,
+        LastName: values.LastName || null,
+        LastName2: values.LastName2 || null,
         PhysicalDescription: values.PhysicalDescription,
         Status: Number(values.Status),
         PhotoUrl: values.PhotoUrl,
+        Nationality: values.Nationality || null,
         Tags: tags as Record<string, string>,
       };
+      
+      console.log('Suspect data to update:', suspectDataToUpdate);
 
       // Update the suspect
       const updatedSuspect = await updateSuspect(params.id as string, suspectDataToUpdate);
@@ -245,7 +281,7 @@ export default function EditSuspectPage() {
                   name="Alias"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Alias</FormLabel>
+                      <FormLabel>Alias *</FormLabel>
                       <FormControl>
                         <Input {...field} placeholder="Alias del sospechoso" />
                       </FormControl>
@@ -283,6 +319,64 @@ export default function EditSuspectPage() {
                   )}
                 />
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="Name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Nombre del sospechoso" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="LastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Apellido</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Primer apellido" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="LastName2"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Segundo Apellido</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Segundo apellido" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="Nationality"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nacionalidad</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Nacionalidad del sospechoso" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
           </Card>
 
@@ -300,7 +394,28 @@ export default function EditSuspectPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border border-dashed border-border bg-muted/10 p-6 flex flex-col items-center justify-center">
+              {/* Current image display */}
+              {form.watch('PhotoUrl') && (
+                <div className="mb-4">
+                  <FormLabel>Imagen actual</FormLabel>
+                  <div className="mt-2 flex justify-center">
+                    <div className="relative w-48 h-48 rounded-lg overflow-hidden border">
+                      <img
+                        src={form.watch('PhotoUrl')}
+                        alt="Imagen actual del sospechoso"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.error('Error loading image:', e);
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <FormLabel>Actualizar imagen</FormLabel>
+              <div className="rounded-lg border border-dashed border-border bg-muted/10 p-6 flex flex-col items-center justify-center mt-2">
                 <ImageUploader
                   onImageUpload={async (file) => {
                     // Por ahora solo simularemos la carga

@@ -1,11 +1,27 @@
 import { NextConfig } from 'next';
 
+// Get backend hostname from API URL for secure configuration
+const getBackendHostname = () => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (!apiUrl) return null;
+  
+  try {
+    const url = new URL(apiUrl);
+    return url.hostname;
+  } catch {
+    return null;
+  }
+};
+
+const backendHostname = getBackendHostname();
+
 const nextConfig: NextConfig = {
   images: {
     domains: [
       'asset.cloudinary.com',
       'res.cloudinary.com',
-      'res-console.cloudinary.com'
+      'res-console.cloudinary.com',
+      ...(backendHostname ? [backendHostname] : [])
     ],
     remotePatterns: [
       {
@@ -23,6 +39,11 @@ const nextConfig: NextConfig = {
         hostname: 'res-console.cloudinary.com',
         pathname: '/**',
       },
+      ...(backendHostname ? [{
+        protocol: 'https' as const,
+        hostname: backendHostname,
+        pathname: '/media/**',
+      }] : []),
     ],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',

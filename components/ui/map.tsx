@@ -11,6 +11,10 @@ interface MapLocation {
   lng: number
   title: string
   description: string
+  address?: string
+  logoUrl?: string
+  officeId?: string | number
+  popupContent?: string
 }
 
 interface MapProps {
@@ -46,82 +50,120 @@ export default function Map({ locations }: MapProps) {
 
     // Esperar a que el mapa cargue para agregar los marcadores
     map.on('load', () => {
-      // Agregar el source y layer para los marcadores pulsantes
-      map.addSource('points', {
-        'type': 'geojson',
-        'data': {
-          'type': 'FeatureCollection',
-          'features': locations.map(location => ({
-            'type': 'Feature',
-            'geometry': {
-              'type': 'Point',
-              'coordinates': [location.lng, location.lat]
-            },
-            'properties': {
-              'id': location.id,
-              'title': location.title,
-              'description': location.description
-            }
-          }))
-        }
-      });
-
-      // Agregar el círculo base
-      map.addLayer({
-        'id': 'points',
-        'type': 'circle',
-        'source': 'points',
-        'paint': {
-          'circle-radius': 8,
-          'circle-color': '#ff0000',
-          'circle-opacity': 0.6
-        }
-      });
-
-
-
-      // Crear popups
-      const popup = new mapboxgl.Popup({
-        closeButton: false,
-        closeOnClick: true
-      });
-
-      // Mostrar popup al hacer click
-      map.on('click', 'points', (e) => {
-        const feature = e.features?.[0];
-        if (!feature || !feature.geometry || feature.geometry.type !== 'Point') return;
+      // Agregar marcadores personalizados
+      locations.forEach(location => {
+        const el = document.createElement('div');
+        el.className = 'custom-marker';
         
-        const coordinates = feature.geometry.coordinates.slice() as [number, number];
-        const properties = feature.properties as { title: string; description: string } | null;
-        if (!properties) return;
-        
-        const { title, description } = properties;
-        
-        while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-          coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-        }
-        
-        popup
-          .setLngLat(coordinates)
-          .setHTML(`
-            <div class="p-2">
-              <h3 class="font-semibold">${title}</h3>
-              <p class="text-sm mt-1">${description}</p>
+        if (location.logoUrl) {
+          // Crear marcador con logo de empresa
+          el.innerHTML = `
+            <div style="
+              width: 40px;
+              height: 40px;
+              background: white;
+              border: 3px solid #ef4444;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+              cursor: pointer;
+              transition: all 0.2s ease;
+            " class="marker-container">
+              <img 
+                src="${location.logoUrl}" 
+                alt="${location.title}"
+                style="
+                  width: 28px;
+                  height: 28px;
+                  border-radius: 50%;
+                  object-fit: contain;
+                "
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+              />
+              <div style="
+                width: 28px;
+                height: 28px;
+                background: #ef4444;
+                border-radius: 50%;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 14px;
+                font-weight: bold;
+              ">
+                ${location.title.charAt(0).toUpperCase()}
+              </div>
             </div>
-          `)
+          `;
+        } else {
+          // Marcador por defecto (punto rojo)
+          el.innerHTML = `
+            <div style="
+              width: 20px;
+              height: 20px;
+              background: #ef4444;
+              border: 3px solid white;
+              border-radius: 50%;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+              cursor: pointer;
+              transition: all 0.2s ease;
+            "></div>
+          `;
+        }
+
+        // Hover effects
+        el.addEventListener('mouseenter', () => {
+          const container = el.querySelector('.marker-container') as HTMLElement;
+          if (container) {
+            container.style.transform = 'scale(1.1)';
+            container.style.boxShadow = '0 6px 12px rgba(0,0,0,0.3)';
+          } else {
+            el.firstElementChild!.style.transform = 'scale(1.2)';
+          }
+        });
+
+        el.addEventListener('mouseleave', () => {
+          const container = el.querySelector('.marker-container') as HTMLElement;
+          if (container) {
+            container.style.transform = 'scale(1)';
+            container.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+          } else {
+            el.firstElementChild!.style.transform = 'scale(1)';
+          }
+        });
+
+        // Crear popup
+        const popup = new mapboxgl.Popup({
+          offset: 25,
+          closeButton: true,
+          closeOnClick: true,
+          className: 'custom-popup'
+        });
+
+        // Click handler
+        el.addEventListener('click', () => {
+          const popupHTML = location.popupContent || `
+            <div class="p-3">
+              <h3 class="font-semibold text-lg mb-2">${location.title}</h3>
+              ${location.address ? `<p class="text-sm text-gray-600 mb-2">${location.address}</p>` : ''}
+              <p class="text-sm">${location.description}</p>
+            </div>
+          `;
+          
+          popup
+            .setLngLat([location.lng, location.lat])
+            .setHTML(popupHTML)
+            .addTo(map);
+        });
+
+        // Agregar marcador al mapa
+        new mapboxgl.Marker(el)
+          .setLngLat([location.lng, location.lat])
           .addTo(map);
       });
-
-      // Cambiar el cursor al pasar sobre los puntos
-      map.on('mouseenter', 'points', () => {
-        map.getCanvas().style.cursor = 'pointer';
-      });
-      
-      map.on('mouseleave', 'points', () => {
-        map.getCanvas().style.cursor = '';
-      });
-
-
     });
 
     // Fit map to show all markers if there are multiple locations

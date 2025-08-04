@@ -9,7 +9,7 @@ import { es } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import {
   DollarSign, Users, MapPin, FileText, AlertTriangle,
-  Calendar, Building, FileImage, Download, Printer, User
+  Calendar, Building, FileImage, Download, Printer, User, Edit
 } from 'lucide-react';
 
 // UI Components
@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/breadcrumb';
 import { IdCell } from '@/components/ui/id-cell';
 import { PoliceReportPreview } from '@/components/police-report-preview';
+import { ChangeHistoryComponent } from '@/components/change-history';
 
 // Services
 import { getIncidentById } from '@/services/incident-service';
@@ -362,6 +363,13 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                       <Download className="h-4 w-4 mr-2" />
                       <span className="hidden sm:inline">Descargar PDF</span>
                       <span className="sm:hidden">PDF</span>
+                    </Button>
+                    <Button variant="outline" asChild className="h-9 px-3 sm:h-10 sm:px-4">
+                      <Link href={`/dashboard/incidentes/${incident.id}/edit`}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        <span className="hidden sm:inline">Editar</span>
+                        <span className="sm:hidden">Editar</span>
+                      </Link>
                     </Button>
                     <Button onClick={generatePDF} className="h-9 px-3 sm:h-10 sm:px-4">
                         <Printer className="h-4 w-4 mr-2" />
@@ -734,6 +742,13 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
             )}
           </CardContent>
         </Card>
+
+            {/* Change History */}
+            <ChangeHistoryComponent
+              entityType="incident"
+              entityId={incident.id}
+              className="mt-6"
+            />
           </div>
         </div>
       </div>

@@ -1,0 +1,627 @@
+'use client';
+
+import { useState, useEffect, use } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
+import { toast } from '@/components/ui/use-toast';
+import { AxiosError } from 'axios';
+import { ArrowLeft, Loader2, Calendar, Building, FileText, DollarSign, Users, UploadCloud, Plus, X } from 'lucide-react';
+import Link from 'next/link';
+
+// UI Components
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+
+// Components
+import { CurrencyInput } from '@/components/incident-form/currency-input';
+import { SuspectSelector } from '@/components/incident-form/suspect-selector';
+
+// Services
+import { getIncidentById, updateIncident } from '@/services/incident-service';
+import { getIncidentTypes } from '@/services/incident-service';
+import { getAllOfficesComplete } from '@/services/office-service';
+import { trackMultipleChanges } from '@/services/change-history-service';
+
+// Hooks
+import { useAuth } from '@/context/auth-context';
+
+// Types and Validators
+import { Incident } from '@/types/incident';
+import { IncidentFormValues, incidentFormSchema } from '@/validators/incident';
+
+interface IncidentEditPageProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
+
+export default function IncidentEditPage(props: IncidentEditPageProps) {
+  const { id } = use(props.params);
+  const router = useRouter();
+  const { userInfo } = useAuth();
+  const [incident, setIncident] = useState<Incident | null>(null);
+  const [originalIncident, setOriginalIncident] = useState<Incident | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [incidentTypes, setIncidentTypes] = useState<any[]>([]);
+  const [offices, setOffices] = useState<any[]>([]);
+
+  const form = useForm<IncidentFormValues>({
+    resolver: zodResolver(incidentFormSchema),
+    defaultValues: {
+      date: '',
+      time: '',
+      incidentType: '',
+      office: '',
+      description: '',
+      notes: '',
+      cashLoss: 0,
+      merchandiseLoss: 0,
+      otherLosses: 0,
+      selectedSuspects: [],
+      merchandiseItems: [],
+      attachments: [],
+    },
+  });
+
+  const { fields: merchandiseFields, append: appendMerchandise, remove: removeMerchandise } = useFieldArray({
+    control: form.control,
+    name: 'merchandiseItems',
+  });
+
+  // Fetch incident data and populate form
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch incident, types and offices in parallel
+        const [incidentData, typesResponse, officesData] = await Promise.all([
+          getIncidentById(id),
+          getIncidentTypes(),
+          getAllOfficesComplete()
+        ]);
+
+        setIncident(incidentData);
+        setOriginalIncident(incidentData); // Store original data for change tracking
+        setIncidentTypes(typesResponse.results || []);
+        setOffices(officesData || []);
+
+        // Populate form with incident data
+        if (incidentData) {
+          const formData: IncidentFormValues = {
+            date: incidentData.Date ? incidentData.Date.split('T')[0] : '',
+            time: incidentData.Time || '',
+            incidentType: incidentData.IncidentType?.toString() || '',
+            office: incidentData.Office?.toString() || '',
+            description: incidentData.Description || '',
+            notes: incidentData.Notes || '',
+            cashLoss: parseFloat(incidentData.CashLoss || '0'),
+            merchandiseLoss: parseFloat(incidentData.MerchandiseLoss || '0'),
+            otherLosses: parseFloat(incidentData.OtherLosses || '0'),
+            selectedSuspects: incidentData.Suspects?.map(suspectId => ({
+              apiId: suspectId,
+              alias: 'Cargando...',
+              statusId: 1,
+              description: '',
+              image: '',
+              isNew: false,
+            })) || [],
+            merchandiseItems: incidentData.incidentLossItem?.map(item => ({
+              description: item.description,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              total: item.total,
+            })) || [],
+            attachments: [],
+          };
+          
+          form.reset(formData);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast({
+          title: 'Error',
+          description: 'No se pudieron cargar los datos del incidente',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [id, form]);
+
+  // Calculate merchandise total
+  const calculateMerchandiseTotal = () => {
+    return merchandiseFields.reduce((total, item) => {
+      const quantity = form.watch(`merchandiseItems.${merchandiseFields.indexOf(item)}.quantity`) || 0;
+      const unitPrice = form.watch(`merchandiseItems.${merchandiseFields.indexOf(item)}.unitPrice`) || 0;
+      return total + (quantity * unitPrice);
+    }, 0);
+  };
+
+  // Update merchandise loss when items change
+  useEffect(() => {
+    const total = calculateMerchandiseTotal();
+    form.setValue('merchandiseLoss', total);
+  }, [merchandiseFields, form]);
+
+  const onSubmit = async (values: IncidentFormValues) => {
+    if (!incident || !originalIncident || !userInfo?.user_id) return;
+
+    setSaving(true);
+    try {
+      const updateData = {
+        Date: values.date,
+        Time: values.time,
+        IncidentType: parseInt(values.incidentType),
+        Office: parseInt(values.office),
+        Description: values.description,
+        Notes: values.notes,
+        CashLoss: values.cashLoss.toString(),
+        MerchandiseLoss: values.merchandiseLoss.toString(),
+        OtherLosses: values.otherLosses.toString(),
+        TotalLoss: (values.cashLoss + values.merchandiseLoss + values.otherLosses).toString(),
+        Suspects: values.selectedSuspects.map(s => s.apiId),
+        incidentLossItem: values.merchandiseItems.map(item => ({
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          total: item.quantity * item.unitPrice,
+        })),
+      };
+
+      // Update the incident
+      await updateIncident(id, updateData);
+
+      // Track changes in history
+      try {
+        await trackMultipleChanges(
+          'incident',
+          id,
+          {
+            Date: originalIncident.Date,
+            Time: originalIncident.Time,
+            IncidentType: originalIncident.IncidentType,
+            Office: originalIncident.Office,
+            Description: originalIncident.Description,
+            Notes: originalIncident.Notes,
+            CashLoss: originalIncident.CashLoss,
+            MerchandiseLoss: originalIncident.MerchandiseLoss,
+            OtherLosses: originalIncident.OtherLosses,
+            TotalLoss: originalIncident.TotalLoss,
+            Suspects: originalIncident.Suspects,
+          },
+          updateData,
+          userInfo.user_id.toString(),
+          ['Date', 'Time', 'IncidentType', 'Office', 'Description', 'Notes', 'CashLoss', 'MerchandiseLoss', 'OtherLosses', 'TotalLoss', 'Suspects']
+        );
+      } catch (trackingError) {
+        console.error('Error tracking changes:', trackingError);
+        // Don't fail the update if change tracking fails
+      }
+
+      toast({
+        title: 'Éxito',
+        description: 'Incidente actualizado correctamente',
+      });
+
+      router.push(`/dashboard/incidentes/${id}`);
+    } catch (error) {
+      console.error('Error updating incident:', error);
+      
+      const axiosError = error as AxiosError<any>;
+      if (axiosError.response?.data) {
+        const backendErrors = axiosError.response.data;
+        Object.entries(backendErrors).forEach(([field, errors]) => {
+          if (Array.isArray(errors)) {
+            // Map backend field names to form field names if needed
+            const formField = field as keyof IncidentFormValues;
+            form.setError(formField, {
+              type: 'manual',
+              message: errors[0]
+            });
+          }
+        });
+      }
+
+      toast({
+        title: 'Error',
+        description: 'No se pudo actualizar el incidente',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Cargando datos del incidente...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!incident) {
+    return (
+      <div className="container mx-auto py-6 px-4 md:px-6">
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded">
+          <p>No se pudo encontrar el incidente</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Breadcrumb */}
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/dashboard/incidentes">Incidentes</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href={`/dashboard/incidentes/${id}`}>
+                {incident.id}
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Editar</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="icon" asChild>
+              <Link href={`/dashboard/incidentes/${id}`}>
+                <ArrowLeft className="h-5 w-5" />
+              </Link>
+            </Button>
+            <div>
+              <h1 className="text-xl font-semibold">Editar Incidente</h1>
+              <p className="text-sm text-muted-foreground">ID: {incident.id}</p>
+            </div>
+          </div>
+        </div>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Basic Information Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <div className="rounded-lg bg-primary/10 p-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium">Información Básica</h3>
+                    <p className="text-sm text-muted-foreground">Detalles generales del incidente</p>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fecha del incidente</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="time"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Hora del incidente</FormLabel>
+                        <FormControl>
+                          <Input type="time" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="incidentType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de incidente</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona el tipo" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {incidentTypes.map((type) => (
+                              <SelectItem key={type.id} value={type.id.toString()}>
+                                {type.Name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="office"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sucursal</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona la sucursal" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {offices.map((office) => (
+                              <SelectItem key={office.id} value={office.id.toString()}>
+                                {office.Name} - {office.Address}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descripción del incidente</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Describe detalladamente lo ocurrido..."
+                          className="min-h-[120px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notas adicionales</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Información adicional relevante..."
+                          className="min-h-[80px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Losses Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <div className="rounded-lg bg-destructive/10 p-2">
+                    <DollarSign className="h-5 w-5 text-destructive" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium">Pérdidas</h3>
+                    <p className="text-sm text-muted-foreground">Detalle de los montos perdidos</p>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="cashLoss"
+                    render={({ field }) => (
+                      <FormItem>
+                        <CurrencyInput
+                          label="Efectivo perdido"
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="0"
+                        />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="otherLosses"
+                    render={({ field }) => (
+                      <FormItem>
+                        <CurrencyInput
+                          label="Otras pérdidas"
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="0"
+                        />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Merchandise Items */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium">Mercadería perdida</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Total: {new Intl.NumberFormat('es-PY').format(calculateMerchandiseTotal())} Gs.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => appendMerchandise({ description: '', quantity: 1, unitPrice: 0, total: 0 })}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Agregar ítem
+                    </Button>
+                  </div>
+
+                  {merchandiseFields.map((field, index) => (
+                    <div key={field.id} className="flex gap-2 items-start p-4 border rounded-lg">
+                      <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <FormField
+                          control={form.control}
+                          name={`merchandiseItems.${index}.description`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Input placeholder="Descripción del ítem" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name={`merchandiseItems.${index}.quantity`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  placeholder="Cantidad"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name={`merchandiseItems.${index}.unitPrice`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  placeholder="Precio unitario"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeMerchandise(index)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Suspects Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <div className="rounded-lg bg-primary/10 p-2">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium">Sospechosos</h3>
+                    <p className="text-sm text-muted-foreground">Personas involucradas en el incidente</p>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SuspectSelector control={form.control} />
+              </CardContent>
+            </Card>
+
+            {/* Submit Actions */}
+            <div className="flex justify-end gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+                disabled={saving}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  'Guardar cambios'
+                )}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </div>
+    </div>
+  );
+}

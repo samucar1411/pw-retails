@@ -150,8 +150,16 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         newData.suspectStatuses = [];
       }
 
-      // 6. Cargar tipos de incidentes (placeholder - necesitarás implementar esto)
-      newData.incidentTypes = [];
+      // 6. Cargar tipos de incidentes
+      try {
+        const incidentTypes = await import('@/services/incident-service').then(module => 
+          module.getIncidentTypes()
+        );
+        newData.incidentTypes = incidentTypes.results || [];
+      } catch (error) {
+        console.warn('Error loading incident types:', error);
+        newData.incidentTypes = [];
+      }
 
       // 7. Cargar datos históricos (placeholder)
       newData.historical = [];

@@ -7,6 +7,7 @@ import { authService } from '@/services/auth-service';
 interface AuthContextType {
   isAuthenticated: boolean;
   userInfo: {
+    user_id?: number;
     first_name?: string;
     last_name?: string;
     email?: string;
@@ -38,6 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const userData = await authService.getCurrentUser();
             if (userData) {
               setUserInfo({
+                user_id: userData.user_id,
                 first_name: userData.firts_name, // API returns "firts_name" (typo)
                 last_name: userData.last_name,
                 email: userData.email
@@ -45,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             } else {
               // Si no se puede obtener la información del usuario, usar información básica
               setUserInfo({
+                user_id: 1, // Default user ID
                 first_name: 'Usuario',
                 last_name: '',
                 email: 'usuario@pwretails.com'
@@ -55,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.error('Error loading user info:', error);
           // En caso de error, usar información básica
           setUserInfo({
+            user_id: 1, // Default user ID
             first_name: 'Usuario',
             last_name: '',
             email: 'usuario@pwretails.com'
@@ -77,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.token) {
         setIsAuthenticated(true);
         setUserInfo({
+          user_id: data.user_id,
           first_name: data.firts_name, // API returns "firts_name" (typo)
           last_name: data.last_name,
           email: data.email

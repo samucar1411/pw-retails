@@ -915,7 +915,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     {incidents.length} incidente{incidents.length !== 1 ? 's' : ''} registrado{incidents.length !== 1 ? 's' : ''}
                   </p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center bg-red-500 gap-4">
                   {/* Resumen de pérdidas */}
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">Pérdidas totales</p>
@@ -949,7 +949,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                   <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
                 </div>
               ) : incidents.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {incidents.map((incident) => {
                     const office = incident.Office ? officeDetails.get(incident.Office) : null;
                     const incidentType = incident.IncidentType ? incidentTypeNames.get(incident.IncidentType) : 'Desconocido';
