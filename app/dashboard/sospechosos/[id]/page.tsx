@@ -955,33 +955,35 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     const incidentType = incident.IncidentType ? incidentTypeNames.get(incident.IncidentType) : 'Desconocido';
                     
                     return (
-                      <Card key={incident.id}>
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <h3 className="font-medium">{incidentType}</h3>
-                              <p className="text-sm text-muted-foreground">
-                                {format(new Date(incident.Date), "d 'de' MMMM 'de' yyyy", { locale: es })}
-                                {incident.Time && ` - ${incident.Time}`}
-                              </p>
+                      <Link key={incident.id} href={`/dashboard/incidentes/${incident.id}`}>
+                        <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <h3 className="font-medium hover:text-primary transition-colors">{incidentType}</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {format(new Date(incident.Date), "d 'de' MMMM 'de' yyyy", { locale: es })}
+                                  {incident.Time && ` - ${incident.Time}`}
+                                </p>
+                              </div>
+                              <Badge variant="outline">
+                                {parseFloat(incident.TotalLoss || '0').toLocaleString('es-PY', { 
+                                  style: 'currency', 
+                                  currency: 'PYG' 
+                                })}
+                              </Badge>
                             </div>
-                            <Badge variant="outline">
-                              {parseFloat(incident.TotalLoss || '0').toLocaleString('es-PY', { 
-                                style: 'currency', 
-                                currency: 'PYG' 
-                              })}
-                            </Badge>
-                          </div>
-                          {office && (
-                            <div className="text-sm text-muted-foreground mb-2">
-                              {office.Name} - {office.Address}
-                            </div>
-                          )}
-                          {incident.Description && (
-                            <p className="text-sm mt-2">{incident.Description}</p>
-                          )}
-                        </CardContent>
-                      </Card>
+                            {office && (
+                              <div className="text-sm text-muted-foreground mb-2">
+                                {office.Name} - {office.Address}
+                              </div>
+                            )}
+                            {incident.Description && (
+                              <p className="text-sm mt-2">{incident.Description}</p>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </Link>
                     );
                   })}
                 </div>
