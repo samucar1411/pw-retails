@@ -35,8 +35,8 @@ const getColorClass = (value: number): string => {
 };
 
 export function HourlyIncidentsChart({ data }: HourlyIncidentsChartProps) {
-  const days = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
-  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const days = React.useMemo(() => ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"], []);
+  const hours = React.useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
 
   const heatmapData = React.useMemo(() => {
     const cells: HeatmapCell[] = [];

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -152,13 +152,13 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
   }, [id, form]);
 
   // Calculate merchandise total
-  const calculateMerchandiseTotal = () => {
+  const calculateMerchandiseTotal = useCallback(() => {
     return merchandiseFields.reduce((total, item) => {
       const quantity = form.watch(`incidentLossItem.${merchandiseFields.indexOf(item)}.quantity`) || 0;
       const unitPrice = form.watch(`incidentLossItem.${merchandiseFields.indexOf(item)}.unitPrice`) || 0;
       return total + (quantity * unitPrice);
     }, 0);
-  };
+  }, [merchandiseFields, form]);
 
   // Update merchandise loss when items change
   useEffect(() => {
