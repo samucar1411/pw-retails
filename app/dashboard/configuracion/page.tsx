@@ -73,7 +73,6 @@ export default function SettingsPage() {
     try {
       await updateProfile({
         ...data,
-        profileImage: profile?.profileImage,
       });
       
       toast({
@@ -148,7 +147,7 @@ export default function SettingsPage() {
               </label>
               <ImageUploader
                 onImageUpload={handleImageUpload}
-                currentImage={profile?.profileImage}
+                currentImage={undefined}
                 isUploading={isUploading}
                 className="w-32 h-32"
               />

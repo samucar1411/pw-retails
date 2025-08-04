@@ -2,54 +2,46 @@ import { api } from './api';
 
 interface AuthResponse {
   token: string;
-  user_id?: number;
-  email?: string;
-  firts_name?: string;
-  last_name?: string;
+  user_id: number;
+  email: string;
+  firts_name: string; // API typo - should be "first_name"
+  last_name: string;
 }
 
 const TOKEN_KEY = 'auth_token';
 
 const getToken = (): string | null => {
-  try {
-    return localStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
-  }
+  // Tokens are now handled via httpOnly cookies through middleware
+  return null;
 };
 
 const setToken = (token: string) => {
-  try {
-    const cleanToken = token.replace(/^(Bearer|Token)\s+/i, '').trim();
-    localStorage.setItem(TOKEN_KEY, cleanToken);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error('[Auth] Error setting token:', error.message);
-    }
-  }
+  // Tokens are now handled via httpOnly cookies
+  // This function is kept for backward compatibility but does nothing
 };
 
 const clearAuthData = () => {
-  try {
-    localStorage.removeItem(TOKEN_KEY);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error('[Auth] Error clearing auth data:', error.message);
-    }
-  }
+  // Auth data is now cleared via API endpoint
 };
 
 const authenticateUser = async (username: string, password: string): Promise<AuthResponse> => {
   try {
-    const response = await api.post('auth/token/', { username, password }, {
-      baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://sys.adminpy.com:18001',
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
     });
 
-    if (!response.data?.token) {
-      throw new Error('Invalid response format - no token found');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Authentication failed' }));
+      throw new Error(errorData.error || 'Authentication failed');
     }
 
-    return response.data;
+    const userData = await response.json();
+    // Add a dummy token for backward compatibility
+    return { ...userData, token: 'cookie-based-auth' };
   } catch (error) {
     console.error('[Auth] Authentication error:', error);
     throw error;
@@ -58,11 +50,9 @@ const authenticateUser = async (username: string, password: string): Promise<Aut
 
 const login = async (username: string, password: string): Promise<boolean> => {
   try {
-    const data = await authenticateUser(username, password);
-    setToken(data.token);
+    await authenticateUser(username, password);
     return true;
   } catch {
-    clearAuthData();
     return false;
   }
 };
@@ -70,21 +60,41 @@ const login = async (username: string, password: string): Promise<boolean> => {
 const loginWithUserInfo = async (username: string, password: string): Promise<AuthResponse> => {
   try {
     const data = await authenticateUser(username, password);
-    setToken(data.token);
     return data;
   } catch (error) {
-    clearAuthData();
     throw error;
   }
 };
 
-const logout = () => {
-  clearAuthData();
+const logout = async () => {
+  try {
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+  }
 };
 
 const isAuthenticated = (): boolean => {
-  const token = getToken();
-  return !!token;
+  // Check will be done server-side via middleware
+  // For client-side, we assume authenticated if not redirected to login
+  return true;
+};
+
+const getCurrentUser = async (): Promise<AuthResponse | null> => {
+  try {
+    const response = await fetch('/api/auth/me');
+    
+    if (!response.ok) {
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[Auth] Error getting current user:', error);
+    return null;
+  }
 };
 
 export const authService = {
@@ -92,5 +102,6 @@ export const authService = {
   login,
   loginWithUserInfo,
   logout,
-  isAuthenticated
+  isAuthenticated,
+  getCurrentUser
 };

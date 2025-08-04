@@ -7,6 +7,7 @@ import { authService } from '@/services/auth-service';
 interface AuthContextType {
   isAuthenticated: boolean;
   userInfo: {
+    user_id?: number;
     first_name?: string;
     last_name?: string;
     email?: string;
@@ -25,9 +26,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Verificar autenticación inicial
-    const checkAuth = () => {
+    const checkAuth = async () => {
       const isAuth = authService.isAuthenticated();
       setIsAuthenticated(isAuth);
+
+      // Si está autenticado, intentar cargar la información del usuario
+      if (isAuth && !userInfo) {
+        try {
+          const token = authService.getToken();
+          if (token) {
+            // Cargar información del usuario desde la API
+            const userData = await authService.getCurrentUser();
+            if (userData) {
+              setUserInfo({
+                user_id: userData.user_id,
+                first_name: userData.firts_name, // API returns "firts_name" (typo)
+                last_name: userData.last_name,
+                email: userData.email
+              });
+            } else {
+              // Si no se puede obtener la información del usuario, usar información básica
+              setUserInfo({
+                user_id: 1, // Default user ID
+                first_name: 'Usuario',
+                last_name: '',
+                email: 'usuario@pwretails.com'
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error loading user info:', error);
+          // En caso de error, usar información básica
+          setUserInfo({
+            user_id: 1, // Default user ID
+            first_name: 'Usuario',
+            last_name: '',
+            email: 'usuario@pwretails.com'
+          });
+        }
+      }
 
       // Si no está autenticado y no estamos en login, redirigir
       if (!isAuth && pathname !== '/login') {
@@ -36,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     checkAuth();
-  }, [pathname, router]);
+  }, [pathname, router, userInfo]);
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
@@ -44,7 +81,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.token) {
         setIsAuthenticated(true);
         setUserInfo({
-          first_name: data.firts_name, // Note: API has a typo in the field name
+          user_id: data.user_id,
+          first_name: data.firts_name, // API returns "firts_name" (typo)
           last_name: data.last_name,
           email: data.email
         });
@@ -59,8 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = () => {
-    authService.logout();
+  const logout = async () => {
+    await authService.logout();
     setIsAuthenticated(false);
     setUserInfo(null);
     router.push('/login');

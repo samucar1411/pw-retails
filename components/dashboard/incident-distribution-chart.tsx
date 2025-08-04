@@ -19,7 +19,7 @@ import {
 import { PieChartIcon, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getIncidentTypes } from "@/services/incident-service";
-import { useAllIncidents } from "@/hooks/useAllIncidents";
+import { api } from "@/services/api";
 
 /* -------------------------------- helpers ------------------------------- */
 // 1. Colores fijos para no perder consistencia entre renders
@@ -49,39 +49,53 @@ export function IncidentDistributionChart({ fromDate, toDate, officeId }: Incide
 
   const incidentTypes = incidentTypesResponse?.results || [];
 
-  // Use ALL incidents with filters - same as other dashboard components
-  const { 
-    data: incidentsData, 
-    isLoading: isLoadingIncidents,
-    error: incidentsError
-  } = useAllIncidents(fromDate, toDate, officeId);
+  // Fetch incident counts by type using individual API calls
+  const { data: distributionCounts, isLoading: isLoadingCounts, error: countsError } = useQuery({
+    queryKey: ['incident-distribution', fromDate, toDate, officeId, incidentTypes.map(t => t.id)],
+    queryFn: async () => {
+      if (!incidentTypes.length) return [];
+      
+      const countPromises = incidentTypes.map(async (type) => {
+        try {
+          // Build query parameters
+          const params: Record<string, string> = {
+            IncidentType: type.Name,
+            page_size: '1' // We only need the count, not the actual data
+          };
+          
+          // Add date filters if provided
+          if (fromDate) params.Date_after = fromDate;
+          if (toDate) params.Date_before = toDate;
+          if (officeId) params.Office = officeId;
+          
+          const response = await api.get('/api/incidents/', { params });
+          
+          return {
+            id: type.id,
+            name: type.Name,
+            value: response.data.count || 0,
+            color: COLORS[incidentTypes.indexOf(type) % COLORS.length],
+          };
+        } catch (error) {
+          console.error(`Error fetching count for incident type ${type.id}:`, error);
+          return {
+            id: type.id,
+            name: type.Name,
+            value: 0,
+            color: COLORS[incidentTypes.indexOf(type) % COLORS.length],
+          };
+        }
+      });
+      
+      const results = await Promise.all(countPromises);
+      return results.filter(result => result.value > 0);
+    },
+    enabled: !!incidentTypes.length,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-  // Get incidents array from the data structure
-  const incidents = incidentsData?.incidents || [];
-
-  const distributionData = React.useMemo(() => {
-    if (!incidentTypes.length || !incidents.length) return [];
-
-    // Count incidents by type
-    const counts: Record<number, number> = {};
-    
-    incidents.forEach((incident) => {
-      const typeId = incident.IncidentType;
-      if (typeId) {
-        counts[typeId] = (counts[typeId] || 0) + 1;
-      }
-    });
-
-    return incidentTypes
-      .map((type, idx) => ({
-        id: type.id,
-        name: type.Name, // siempre el nombre legible
-        value: counts[type.id] ?? 0,
-        color: COLORS[idx % COLORS.length],
-      }))
-      .filter((d) => d.value > 0);
-  }, [incidentTypes, incidents]);
-
+  const distributionData = distributionCounts || [];
+  
   const totalIncidents = React.useMemo(
     () => distributionData.reduce((sum, i) => sum + i.value, 0),
     [distributionData],
@@ -90,25 +104,21 @@ export function IncidentDistributionChart({ fromDate, toDate, officeId }: Incide
   /* -----------------------------------------------------------------------
    * 5. Estados de carga / error
    * --------------------------------------------------------------------- */
-  const isLoading = isLoadingTypes || isLoadingIncidents;
-  const hasError = incidentsError;
+  const isLoading = isLoadingTypes || isLoadingCounts;
+  const hasError = countsError;
   const isEmpty = !isLoading && !hasError && distributionData.length === 0;
 
-  /* -----------------------------------------------------------------------
-   * 6. Render UI
-   * --------------------------------------------------------------------- */
   return (
     <Card className="lg:col-span-3 flex flex-col">
       <CardHeader>
         <CardTitle>Distribución de incidentes</CardTitle>
         <CardDescription>
           Por tipo de incidente en el período seleccionado
-          {incidentsData?.total ? ` (${incidentsData.total} incidentes analizados)` : ''}
+          {totalIncidents > 0 ? ` (${totalIncidents} incidentes analizados)` : ''}
         </CardDescription>
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col items-center justify-center pb-4">
-        {/* ------------------- Loading / Error / Empty states ------------------ */}
         {isLoading && (
           <LoadingState />
         )}
@@ -118,8 +128,6 @@ export function IncidentDistributionChart({ fromDate, toDate, officeId }: Incide
         {isEmpty && !isLoading && !hasError && (
           <EmptyState />
         )}
-
-        {/* ----------------------- Gráfico + tabla ---------------------------- */}
         {!isLoading && !hasError && !isEmpty && (
           <ChartAndTable
             data={distributionData}

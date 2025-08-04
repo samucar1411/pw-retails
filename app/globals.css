@@ -231,3 +231,59 @@
 .mapboxgl-ctrl-attrib a {
   color: var(--mapbox-popup-text) !important;
 }
+
+/* Print styles */
+@media print {
+  /* Hide elements that shouldn't be printed */
+  .no-print,
+  button,
+  .sidebar,
+  .breadcrumb,
+  .print-hide {
+    display: none !important;
+  }
+  
+  /* Ensure content is visible and properly formatted */
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt !important;
+    line-height: 1.4 !important;
+  }
+  
+  /* Remove shadows and borders for cleaner print */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  /* Ensure cards and containers are properly displayed */
+  .card,
+  .container {
+    border: 1px solid #ccc !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 10px !important;
+  }
+  
+  /* Force page breaks where needed */
+  .page-break {
+    page-break-before: always;
+  }
+  
+  /* Ensure images are visible */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+  
+  /* Hide navigation and UI elements */
+  nav,
+  header,
+  footer,
+  .navigation,
+  .header,
+  .footer {
+    display: none !important;
+  }
+}

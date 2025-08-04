@@ -1,35 +1,21 @@
 'use client';
 
 import React from 'react';
-import { 
-  User,
-  CalendarClock,
-  ShieldAlert,
-  FileWarning,
-  ClipboardList
-} from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Image from 'next/image';
 
-import { Badge } from '@/components/ui/badge';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Incident } from '@/types/incident';
 import { Suspect } from '@/types/suspect';
 import { Office } from '@/types/office';
 
-// TODO: Move this to a shared constants file
-const branchOptions = [
-  { value: '1', label: 'Sucursal Central' },
-  { value: '2', label: 'Sucursal Norte' },
-  { value: '3', label: 'Sucursal Sur' },
-  // Add more branches as needed
-];
-
 interface PoliceReportPreviewProps {
   incidentData: Incident;
   suspects?: Suspect[];
-  incidentTypes: Array<{id: number, name: string}>;
+  incidentTypes: Array<{ id: number; name: string }>;
+  office?: Office | null;
+  companyLogo?: string | null;
+  companyName?: string;
 }
 
 // Helper functions
@@ -38,190 +24,535 @@ const getBranchName = (office: number | string | Office) => {
     return office.Name || `Oficina ${office.id}`;
   }
   const id = typeof office === 'string' ? parseInt(office, 10) : office;
-  const branch = branchOptions.find((branch: {value: string, label: string}) => parseInt(branch.value, 10) === id);
-  return branch ? branch.label : `Oficina ${id}`;
+  return `Oficina ${id}`;
 };
 
-const getIncidentTypeName = (typeId: number, types: Array<{id: number, name: string}>) => {
-  const type = types.find(type => type.id === typeId);
+const getIncidentTypeName = (typeId: number, types: Array<{ id: number; name: string }>) => {
+  const type = types.find(t => t.id === typeId);
   return type ? type.name : `Tipo ${typeId}`;
 };
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('es-PY', { 
-    style: 'currency', 
-    currency: 'PYG',
-    maximumFractionDigits: 0
-  }).format(amount);
-};
+export function PoliceReportPreview({
+  incidentData,
+  suspects = [],
+  incidentTypes = [],
+  office = null,
+  companyName = '',
+  companyLogo = null,
+}: PoliceReportPreviewProps) {
+  if (!incidentData) {
+    return (
+      <div className="max-w-4xl mx-auto bg-white p-8 text-center">
+        <p className="text-gray-500">No hay datos de incidente para mostrar</p>
+      </div>
+    );
+  }
 
-export function PoliceReportPreview({ incidentData, suspects = [], incidentTypes = [] }: PoliceReportPreviewProps) {
-  if (!incidentData) return null;
+  const formatDateTime = () => {
+    try {
+      if (incidentData.Date && incidentData.Time) {
+        const dateTime = parseISO(`${incidentData.Date}T${incidentData.Time}`);
+        return format(dateTime, 'dd/MM/yyyy - HH:mm', { locale: es });
+      }
+      return `${incidentData.Date || 'N/A'} - ${incidentData.Time || 'N/A'}`;
+    } catch {
+      return `${incidentData.Date || 'N/A'} - ${incidentData.Time || 'N/A'}`;
+    }
+  };
 
-  const formattedDate = format(
-    parseISO(`${incidentData.Date}T${incidentData.Time}`), 
-    "PPP 'a las' HH:mm", 
-    { locale: es }
-  );
-  
-  const hasSuspects = suspects.length > 0;
-  const cashLoss = parseFloat(incidentData.CashLoss || '0') || 0;
-  const merchandiseLoss = parseFloat(incidentData.MerchandiseLoss || '0') || 0;
-  const otherLosses = parseFloat(incidentData.OtherLosses || '0') || 0;
-  const totalLoss = parseFloat(incidentData.TotalLoss || '0') || (cashLoss + merchandiseLoss + otherLosses);
+  const generationDateTime = format(new Date(), 'dd/MM/yyyy - HH:mm', { locale: es });
+  const formattedDateTime = formatDateTime();
 
   return (
-    <div id="police-report" className="max-w-4xl mx-auto bg-white rounded-lg shadow-sm border print:shadow-none print:border-none print:bg-white">
-      {/* Cabecera del reporte */}
-      <div className="flex items-center justify-between border-b p-6 print:p-4">
-        <div className="flex items-center">
-          <ShieldAlert className="h-8 w-8 text-primary mr-2" />
-          <div>
-            <h1 className="text-2xl font-bold">Denuncia Policial</h1>
-            <p className="text-muted-foreground">Exp. No. {incidentData.id}</p>
+    <article className="max-w-5xl mx-auto bg-white text-gray-800 p-8 print:p-6">
+      <header className="border-b-4 border-black p-8 mb-10 print:p-6 print:mb-8">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center">
+            {companyLogo ? (
+              <Image
+                src={companyLogo}
+                alt={companyName || 'Company Logo'}
+                width={80}
+                height={80}
+                className="object-contain w-20 h-20"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent) {
+                    parent.innerHTML = '<div class="w-20 h-20 bg-gray-200 rounded flex items-center justify-center"><span class="text-sm text-gray-500">Logo</span></div>';
+                  }
+                }}
+              />
+            ) : (
+              <div className="w-20 h-20 bg-gray-200 rounded flex items-center justify-center">
+                <span className="text-sm text-gray-500">Logo</span>
+              </div>
+            )}
+            {companyName && (
+              <div className="ml-6">
+                <p className="text-xl font-bold text-gray-800">{companyName}</p>
+                <p className="text-sm text-gray-600">Empresa</p>
+              </div>
+            )}
+          </div>
+          
+          {/* Powervision Logo */}
+          <div className="flex items-center">
+            <div className="text-right mr-4">
+              <p className="text-sm text-gray-600">Generado por</p>
+            </div>
+            <Image
+              src="/logo-dark.png"
+              alt="Powervision"
+              width={120}
+              height={40}
+              className="object-contain w-30 h-10"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent) {
+                  parent.innerHTML = '<div class="w-30 h-10 bg-gray-200 rounded flex items-center justify-center"><span class="text-sm text-gray-500">Powervision</span></div>';
+                }
+              }}
+            />
           </div>
         </div>
-        <div className="text-right">
-          <Badge variant={incidentData.IncidentType === 1 ? 'destructive' : 'default'} className="mb-2">
-            {getIncidentTypeName(incidentData.IncidentType, incidentTypes)}
-          </Badge>
-          <p className="text-muted-foreground">
-            Registrado el {format(new Date(), "PPP", { locale: es })}
+        
+        <div className="text-center">
+          <h1 className="text-3xl font-bold uppercase mb-3 text-black">
+            Informe de Incidente N° {String(incidentData.id).padStart(6, '0')}
+          </h1>
+          <p className="text-lg font-semibold text-gray-700">
+            Fecha de generación: {generationDateTime}
           </p>
         </div>
-      </div>
-      
-      {/* Información del hecho denunciado */}
-      <div className="border-b p-6 print:p-4">
-         <div className="flex items-center gap-2 mb-4">
-           <FileWarning className="h-5 w-5 text-primary" />
-           <h2 className="text-lg font-semibold">Información del hecho denunciado</h2>
-         </div>
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-           <div>
-             <p className="text-sm text-muted-foreground">Fecha y hora del incidente</p>
-             <div className="flex items-center gap-1">
-               <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
-               <p>{formattedDate}</p>
-             </div>
-           </div>
-           <div>
-             <p className="text-sm text-muted-foreground">Lugar del incidente</p>
-             <p className="font-medium">{getBranchName(incidentData.Office)}</p>
-           </div>
-         </div>
-      </div>
-      
-      {/* Descripción de los hechos */}
-      <div className="p-6 print:p-4 border-b">
-        <div className="flex items-center gap-2 mb-4">
-          <ClipboardList className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold">Descripción de los hechos</h2>
-        </div>
-        <div className="mb-5">
-          <div className="bg-muted/10 p-4 rounded-md">
-            <p>{incidentData.Description}</p>
+      </header>
+
+      <main className="space-y-10">
+        <section className="bg-gray-50 border border-gray-300 rounded-lg p-6">
+          <h2 className="text-2xl font-bold border-b-2 border-black mb-6 pb-2">1. Datos del incidente</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div>
+              <p className="font-bold">ID del Incidente:</p>
+              <p className="text-lg">#{incidentData.id}</p>
+            </div>
+            <div>
+              <p className="font-bold">Fecha y Hora:</p>
+              <p>{formattedDateTime}</p>
+            </div>
+            <div>
+              <p className="font-bold">Empresa:</p>
+              <p>{companyName || 'No especificada'}</p>
+            </div>
+            <div>
+              <p className="font-bold">Sucursal:</p>
+              <p>{office ? getBranchName(office) : 'No especificada'}</p>
+            </div>
+            <div>
+              <p className="font-bold">Tipo de Incidente:</p>
+              <p>{getIncidentTypeName(incidentData.IncidentType, incidentTypes)}</p>
+            </div>
+            {office?.Address && (
+              <div>
+                <p className="font-bold">Dirección:</p>
+                <p>{office.Address}</p>
+              </div>
+            )}
           </div>
-        </div>
-        {/* Bienes afectados */}
-        <div className="mt-6">
-          <h3 className="font-medium mb-3">Bienes afectados y valoración</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-3 border rounded-md">
-              <p className="text-sm text-muted-foreground">Dinero</p>
-              <p className="font-medium">{formatCurrency(cashLoss)}</p>
+        </section>
+
+        {/* 2. Descripción */}
+        <section className="bg-white border border-gray-300 rounded-lg p-6">
+          <h2 className="text-2xl font-bold border-b-2 border-black mb-6 pb-2">2. Descripción del incidente</h2>
+          {incidentData.Description && incidentData.Description.trim() !== '' ? (
+            <div className="bg-gray-50 border-2 border-gray-300 p-6 rounded-lg">
+              <p className="whitespace-pre-line text-gray-800 leading-relaxed">
+                {incidentData.Description}
+              </p>
             </div>
-            <div className="p-3 border rounded-md">
-              <p className="text-sm text-muted-foreground">Mercadería</p>
-              <p className="font-medium">{formatCurrency(merchandiseLoss)}</p>
+          ) : (
+            <div className="bg-gray-100 border-2 border-gray-300 p-6 rounded-lg text-center">
+              <p className="text-gray-500 italic">No se proporcionó descripción del incidente</p>
             </div>
-            <div className="p-3 border rounded-md">
-              <p className="text-sm text-muted-foreground">Otros daños</p>
-              <p className="font-medium">{formatCurrency(otherLosses)}</p>
-            </div>
-            <div className="p-3 border rounded-md bg-primary/5">
-              <p className="text-sm text-muted-foreground">Total</p>
-              <p className="font-medium text-primary">{formatCurrency(totalLoss)}</p>
+          )}
+        </section>
+
+        {/* 3. Pérdidas */}
+        <section className="bg-white border border-gray-300 rounded-lg p-6">
+          <h2 className="text-2xl font-bold border-b-2 border-black mb-6 pb-2">3. Pérdidas reportadas</h2>
+          
+          {/* Efectivo */}
+          <div className="mb-8">
+            <div className="bg-red-50 border border-red-200 p-6 rounded-lg">
+              <h3 className="font-bold text-lg mb-4 text-center">Efectivo</h3>
+              <p className="text-xl text-red-600 text-center font-semibold">
+                ₲{(parseFloat(incidentData.CashLoss || '0') || 0).toLocaleString('es-PY')}
+              </p>
             </div>
           </div>
-        </div>
-      </div>
-      
-      {/* Información del sospechoso */}
-      {hasSuspects && (
-        <div className="p-6 print:p-4 border-b">
-          <div className="flex items-center gap-2 mb-4">
-            <User className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">Datos de sospechosos</h2>
-          </div>
-          <div className="space-y-4">
-            {suspects.map((suspect) => (
-              <Card key={suspect.id} className="overflow-hidden shadow-none">
-                <CardHeader className="p-4 pb-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-base">{suspect.Alias}</CardTitle>
-                      <Badge variant={suspect.Status === 1 ? 'default' : 'outline'} className="mt-1">
-                        {suspect.Status === 1 ? 'Detenido' : 'Libre/No ID'}
-                      </Badge>
-                    </div>
-                    <div className="text-sm text-muted-foreground">ID: {suspect.id}</div>
+
+          {/* Mercancía con breakdown */}
+          <div className="mb-8">
+            <div className="bg-red-50 border border-red-200 p-6 rounded-lg">
+              <h3 className="font-bold text-lg mb-4 text-center">Mercancía</h3>
+              {incidentData.incidentLossItem && incidentData.incidentLossItem.filter(item => item.type === 'mercaderia').length > 0 ? (
+                <div className="space-y-4">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-gray-300 bg-white">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Descripción</th>
+                          <th className="border border-gray-300 px-4 py-2 text-center font-semibold">Cantidad</th>
+                          <th className="border border-gray-300 px-4 py-2 text-right font-semibold">Precio Unitario</th>
+                          <th className="border border-gray-300 px-4 py-2 text-right font-semibold">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {incidentData.incidentLossItem
+                          .filter(item => item.type === 'mercaderia')
+                          .map((item, index) => (
+                            <tr key={index} className="hover:bg-gray-50">
+                              <td className="border border-gray-300 px-4 py-2">{item.description}</td>
+                              <td className="border border-gray-300 px-4 py-2 text-center">{item.quantity}</td>
+                              <td className="border border-gray-300 px-4 py-2 text-right">₲{item.unitPrice.toLocaleString('es-PY')}</td>
+                              <td className="border border-gray-300 px-4 py-2 text-right font-semibold text-red-600">₲{item.total.toLocaleString('es-PY')}</td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
                   </div>
-                </CardHeader>
-                <CardContent className="p-4 pt-2">
-                  <div className="flex flex-col md:flex-row gap-4">
-                    {suspect.PhotoUrl && (
-                      <div className="w-full md:w-40 h-40 rounded-md overflow-hidden flex-shrink-0 border">
-                        <div className="relative w-full h-full">
-                          <Image 
-                            src={suspect.PhotoUrl} 
-                            alt={`Foto de ${suspect.Alias}`}
-                            fill
-                            sizes="(max-width: 768px) 100vw, 160px"
-                            className="object-cover"
-                          />
+                  <div className="text-center mt-4 pt-4 border-t border-red-200">
+                    <p className="text-xl text-red-600 font-semibold">
+                      Total Mercancía: ₲{(parseFloat(incidentData.MerchandiseLoss || '0') || 0).toLocaleString('es-PY')}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xl text-red-600 text-center font-semibold">
+                  ₲{(parseFloat(incidentData.MerchandiseLoss || '0') || 0).toLocaleString('es-PY')}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Otros daños con breakdown */}
+          <div className="mb-8">
+            <div className="bg-red-50 border border-red-200 p-6 rounded-lg">
+              <h3 className="font-bold text-lg mb-4 text-center">Otros daños</h3>
+              {incidentData.incidentLossItem && incidentData.incidentLossItem.filter(item => item.type === 'material').length > 0 ? (
+                <div className="space-y-4">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-gray-300 bg-white">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Descripción</th>
+                          <th className="border border-gray-300 px-4 py-2 text-center font-semibold">Cantidad</th>
+                          <th className="border border-gray-300 px-4 py-2 text-right font-semibold">Precio Unitario</th>
+                          <th className="border border-gray-300 px-4 py-2 text-right font-semibold">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {incidentData.incidentLossItem
+                          .filter(item => item.type === 'material')
+                          .map((item, index) => (
+                            <tr key={index} className="hover:bg-gray-50">
+                              <td className="border border-gray-300 px-4 py-2">{item.description}</td>
+                              <td className="border border-gray-300 px-4 py-2 text-center">{item.quantity}</td>
+                              <td className="border border-gray-300 px-4 py-2 text-right">₲{item.unitPrice.toLocaleString('es-PY')}</td>
+                              <td className="border border-gray-300 px-4 py-2 text-right font-semibold text-red-600">₲{item.total.toLocaleString('es-PY')}</td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="text-center mt-4 pt-4 border-t border-red-200">
+                    <p className="text-xl text-red-600 font-semibold">
+                      Total Otros daños: ₲{(parseFloat(incidentData.OtherLosses || '0') || 0).toLocaleString('es-PY')}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xl text-red-600 text-center font-semibold">
+                  ₲{(parseFloat(incidentData.OtherLosses || '0') || 0).toLocaleString('es-PY')}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Total general */}
+          <div className="bg-red-100 border-2 border-red-300 p-6 rounded-lg text-center">
+            <p className="font-bold text-xl mb-2">Total estimado:</p>
+            <p className="text-2xl font-bold text-red-700">
+              ₲{(parseFloat(incidentData.TotalLoss || '0') || 
+                (parseFloat(incidentData.CashLoss || '0') || 0) + 
+                (parseFloat(incidentData.MerchandiseLoss || '0') || 0) + 
+                (parseFloat(incidentData.OtherLosses || '0') || 0)
+              ).toLocaleString('es-PY')}
+            </p>
+          </div>
+        </section>
+
+        {/* 4. Sospechosos */}
+        {suspects && suspects.length > 0 && (
+          <section className="bg-white border border-gray-300 rounded-lg p-6">
+            <h2 className="text-2xl font-bold border-b-2 border-black mb-6 pb-2">4. Información de sospechosos</h2>
+            <div className="space-y-6">
+              {suspects.map((suspect, index) => (
+                <div key={suspect.id || index} className="border-2 border-gray-300 rounded-lg bg-gray-50 overflow-hidden">
+                  {/* Header con número y estado */}
+                  <div className="bg-gray-100 px-6 py-4 border-b border-gray-300">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xl font-bold text-gray-900">
+                        SOSPECHOSO #{index + 1}
+                      </h3>
+                      <div className="px-3 py-1 rounded-full text-sm font-semibold ${
+                        suspect.Status === 1 ? 'bg-red-100 text-red-800' :
+                        suspect.Status === 2 ? 'bg-yellow-100 text-yellow-800' :
+                        suspect.Status === 3 ? 'bg-orange-100 text-orange-800' :
+                        'bg-gray-100 text-gray-800'
+                      }">
+                        {suspect.Status === 1 ? 'Detenido' : suspect.Status === 2 ? 'Libre' : suspect.Status === 3 ? 'Preso' : 'Desconocido'}
+                      </div>                     
+                    </div>
+                  </div>
+                  
+                  {/* Contenido principal */}
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                      {/* Columna 1: Foto */}
+                      <div className="lg:col-span-1">
+                        <h4 className="font-semibold text-gray-900 mb-3 text-sm">FOTOGRAFÍA</h4>
+                        <div className="flex justify-center">
+                          <div className="w-32 h-40 border-2 border-gray-300 bg-white overflow-hidden rounded-lg">
+                            {suspect.PhotoUrl ? (
+                              <Image 
+                                src={suspect.PhotoUrl}
+                                alt={`Foto de ${suspect.Alias}`}
+                                width={128}
+                                height={160}
+                                className="object-cover w-full h-full"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <div className="text-gray-400 text-xs text-center">
+                                  Sin foto
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    )}
-                    {suspect.PhysicalDescription && (
-                      <div className="flex-grow">
-                        <p className="text-sm text-muted-foreground mb-1">Descripción física</p>
-                        <p className="text-sm">{suspect.PhysicalDescription}</p>
+                      
+                      {/* Columna 2: Información básica */}
+                      <div className="lg:col-span-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Información personal */}
+                          <div>
+                            <h4 className="font-semibold text-gray-900 mb-3 text-sm border-b border-gray-200 pb-1">
+                              INFORMACIÓN PERSONAL
+                            </h4>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex">
+                                <span className="font-medium text-gray-600 w-20">Alias:</span>
+                                <span className="text-gray-900 font-semibold">{suspect.Alias || 'No especificado'}</span>
+                              </div>
+                              <div className="flex">
+                                <span className="font-medium text-gray-600 w-20">ID:</span>
+                                <span className="text-gray-900 font-mono">{suspect.id}</span>
+                              </div>
+                              {suspect.IncidentsCount !== undefined && (
+                                <div className="flex">
+                                  <span className="font-medium text-gray-600 w-20">Incidentes:</span>
+                                  <span className="text-gray-900">{suspect.IncidentsCount}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Descripción física */}
+                        {suspect.PhysicalDescription && (
+                          <div className="mt-6">
+                            <h4 className="font-semibold text-gray-900 mb-3 text-sm border-b border-gray-200 pb-1">
+                              DESCRIPCIÓN FÍSICA
+                            </h4>
+                            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line bg-white p-4 rounded border">
+                              {suspect.PhysicalDescription}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Tags/Características */}
+                        {suspect.Tags && Object.keys(suspect.Tags).length > 0 && (
+                          <div className="mt-6">
+                            <h4 className="font-semibold text-gray-900 mb-4 text-sm border-b border-gray-200 pb-1">
+                              CARACTERÍSTICAS DISTINTIVAS
+                            </h4>
+                            <div className="bg-white border rounded-lg p-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Género */}
+                                {suspect.Tags.sexo && (
+                                  <div>
+                                    <h6 className="text-xs font-medium text-gray-600 mb-1">Género</h6>
+                                    <p className="text-sm capitalize">
+                                      {suspect.Tags.sexo === 'masculino' ? 'Hombre' : 
+                                       suspect.Tags.sexo === 'femenino' ? 'Mujer' : 
+                                       suspect.Tags.sexo === 'desconocido' ? 'Desconocido' : suspect.Tags.sexo}
+                                    </p>
+                                  </div>
+                                )}
+                                
+                                {/* Contextura */}
+                                {suspect.Tags.contextura && (
+                                  <div>
+                                    <h6 className="text-xs font-medium text-gray-600 mb-1">Contextura</h6>
+                                    <p className="text-sm capitalize">{suspect.Tags.contextura}</p>
+                                  </div>
+                                )}
+                                
+                                {/* Estatura */}
+                                {suspect.Tags.altura && (
+                                  <div>
+                                    <h6 className="text-xs font-medium text-gray-600 mb-1">Estatura</h6>
+                                    <p className="text-sm">
+                                      {(() => {
+                                        switch(suspect.Tags.altura) {
+                                          case 'bajo': return 'Bajo (<1.60m)';
+                                          case 'normal': return 'Normal (1.60m-1.75m)';
+                                          case 'alto': return 'Alto (1.76m-1.85m)';
+                                          case 'muy_alto': return 'Muy Alto (>1.85m)';
+                                          default: return suspect.Tags.altura;
+                                        }
+                                      })()} 
+                                    </p>
+                                  </div>
+                                )}
+                                
+                                {/* Tono de piel */}
+                                {suspect.Tags.piel && (
+                                  <div>
+                                    <h6 className="text-xs font-medium text-gray-600 mb-1">Tono de piel</h6>
+                                    <p className="text-sm capitalize">{suspect.Tags.piel}</p>
+                                  </div>
+                                )}
+                                
+                                {/* Piercings */}
+                                {suspect.Tags.piercings && (
+                                  <div>
+                                    <h6 className="text-xs font-medium text-gray-600 mb-1">Piercings</h6>
+                                    <p className="text-sm capitalize">
+                                      {suspect.Tags.piercings.split ? suspect.Tags.piercings.split(',').map((p: string) => p.trim()).join(', ') : suspect.Tags.piercings}
+                                    </p>
+                                  </div>
+                                )}
+                                
+                                {/* Tatuajes */}
+                                {suspect.Tags.tatuajes && (
+                                  <div>
+                                    <h6 className="text-xs font-medium text-gray-600 mb-1">Tatuajes</h6>
+                                    <p className="text-sm capitalize">
+                                      {suspect.Tags.tatuajes.split ? suspect.Tags.tatuajes.split(',').map((t: string) => t.trim()).join(', ') : suspect.Tags.tatuajes}
+                                    </p>
+                                  </div>
+                                )}
+                                
+                                {/* Accesorios */}
+                                {suspect.Tags.accesorios && (
+                                  <div>
+                                    <h6 className="text-xs font-medium text-gray-600 mb-1">Accesorios</h6>
+                                    <p className="text-sm capitalize">
+                                      {suspect.Tags.accesorios.split ? suspect.Tags.accesorios.split(',').map((a: string) => a.trim().replace('_', ' ')).join(', ') : suspect.Tags.accesorios}
+                                    </p>
+                                  </div>
+                                )}
+                                
+                                {/* Comportamiento */}
+                                {suspect.Tags.comportamiento && (
+                                  <div>
+                                    <h6 className="text-xs font-medium text-gray-600 mb-1">Comportamiento</h6>
+                                    <p className="text-sm capitalize">
+                                      {suspect.Tags.comportamiento.split ? suspect.Tags.comportamiento.split(',').map((c: string) => c.trim()).join(', ') : suspect.Tags.comportamiento}
+                                    </p>
+                                  </div>
+                                )}
+                                
+                                {/* Transporte */}
+                                {suspect.Tags.transporte && (
+                                  <div>
+                                    <h6 className="text-xs font-medium text-gray-600 mb-1">Transporte</h6>
+                                    <p className="text-sm capitalize">{suspect.Tags.transporte.replace('_', ' ')}</p>
+                                  </div>
+                                )}
+                                
+                                {/* Placa del vehículo */}
+                                {suspect.Tags.placa && (
+                                  <div>
+                                    <h6 className="text-xs font-medium text-gray-600 mb-1">Placa del vehículo</h6>
+                                    <p className="text-sm font-mono">{suspect.Tags.placa}</p>
+                                  </div>
+                                )}
+                                
+                                {/* Elementos que dificultan identificación */}
+                                {suspect.Tags.dificulta_identificacion && (
+                                  <div>
+                                    <h6 className="text-xs font-medium text-gray-600 mb-1">Dificulta identificación</h6>
+                                    <p className="text-sm capitalize">
+                                      {suspect.Tags.dificulta_identificacion.split ? suspect.Tags.dificulta_identificacion.split(',').map((d: string) => d.trim()).join(', ') : suspect.Tags.dificulta_identificacion}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Última vez visto */}
+                        {suspect.LastSeen && (
+                          <div className="mt-6">
+                            <h4 className="font-semibold text-gray-900 mb-2 text-sm border-b border-gray-200 pb-1">
+                              ÚLTIMA VEZ VISTO
+                            </h4>
+                            <p className="text-sm text-gray-700">
+                              {format(new Date(suspect.LastSeen), "d 'de' MMMM 'de' yyyy", { locale: es })}
+                            </p>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t-2 border-black mt-12 pt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          <div className="text-center">
+            <div className="border-b-2 border-black h-16 mb-4"></div>
+            <p className="font-bold">DENUNCIANTE</p>
+            <p className="text-sm">Nombre y Apellido</p>
+          </div>
+          <div className="text-center">
+            <div className="border-b-2 border-black h-16 mb-4"></div>
+            <p className="font-bold">OFICIAL DE POLICÍA</p>
+            <p className="text-sm">Nombre, Apellido y Grado</p>
           </div>
         </div>
-      )}
-      
-      {/* Notas adicionales */}
-      {incidentData.Notes && (
-        <div className="p-6 print:p-4 border-b">
-          <h2 className="text-lg font-semibold mb-3">Información adicional</h2>
-          <div className="bg-muted/10 p-4 rounded-md">
-            <p>{incidentData.Notes}</p>
-          </div>
+        
+        <div className="text-center text-sm text-gray-600">
+          <p>Documento oficial de registro de incidente - Powervision</p>
+          <p>Generado el {generationDateTime}</p>
         </div>
-      )}
-      
-      {/* Firmas y validación */}
-      <div className="p-6 print:p-4 border-b">
-        <h2 className="text-lg font-semibold mb-4">Firmas</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mt-6">
-          <div className="text-center"><div className="border-b border-dashed border-gray-300 pb-2 mb-2">&nbsp;</div><p className="text-sm">Denunciante</p></div>
-          <div className="text-center"><div className="border-b border-dashed border-gray-300 pb-2 mb-2">&nbsp;</div><p className="text-sm">Oficial de policía</p></div>
-        </div>
-      </div>
-      
-      {/* Pie de página */}
-      <div className="border-t p-6 print:p-4 text-center">
-        <p className="text-sm text-muted-foreground">
-          Documento oficial de denuncia policial...
-        </p>
-      </div>
-    </div>
+      </footer>
+    </article>
   );
-} 
+}

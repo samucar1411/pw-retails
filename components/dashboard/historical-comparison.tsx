@@ -8,118 +8,198 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { 
   TrendingUp, 
   TrendingDown, 
-  Calendar,
+  Calendar as CalendarIcon,
   Loader2,
   Equal
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import { getIncidents } from "@/services/incident-service";
 
 interface HistoricalComparisonProps {
-  fromDate?: string;
-  toDate?: string;
   officeId?: string;
 }
 
+interface Period {
+  fromDate: string;
+  toDate: string;
+  label: string;
+}
+
+const COMPARISON_OPTIONS = [
+  { value: '7', label: 'Últimos 7 días' },
+  { value: '14', label: 'Últimos 14 días' },
+  { value: '30', label: 'Últimos 30 días' },
+  { value: '90', label: 'Últimos 90 días' },
+  { value: 'custom', label: 'Período personalizado' }
+];
+
+function calculatePeriodFromDays(days: number): Period {
+  const toDate = new Date();
+  const fromDate = new Date();
+  fromDate.setDate(fromDate.getDate() - days + 1);
+  
+  return {
+    fromDate: fromDate.toISOString().slice(0, 10),
+    toDate: toDate.toISOString().slice(0, 10),
+    label: `Últimos ${days} días`
+  };
+}
+
+function calculatePreviousPeriod(fromDate: string, toDate: string): Period | null {
+  // Return null if dates are empty or invalid
+  if (!fromDate || !toDate || fromDate.trim() === '' || toDate.trim() === '') {
+    return null;
+  }
+
+  const from = new Date(fromDate);
+  const to = new Date(toDate);
+  
+  // Check if dates are valid
+  if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+    return null;
+  }
+  
+  // Calculate period duration in days
+  const periodDuration = Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  
+  // Calculate previous period dates
+  const prevTo = new Date(from);
+  prevTo.setDate(prevTo.getDate() - 1);
+  
+  const prevFrom = new Date(prevTo);
+  prevFrom.setDate(prevFrom.getDate() - periodDuration + 1);
+  
+  return {
+    fromDate: prevFrom.toISOString().slice(0, 10),
+    toDate: prevTo.toISOString().slice(0, 10),
+    label: `Período anterior (${periodDuration} días)`
+  };
+}
+
+function formatPeriodLabel(fromDate: string, toDate: string): string {
+  const from = new Date(fromDate);
+  const to = new Date(toDate);
+  
+  const fromFormatted = from.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+  const toFormatted = to.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+  
+  return `${fromFormatted} - ${toFormatted}`;
+}
+
 export function HistoricalComparison({ officeId }: HistoricalComparisonProps = {}) {
-  const currentYear = new Date().getFullYear();
-  const [year1, setYear1] = React.useState(currentYear - 1);
-  const [year2, setYear2] = React.useState(currentYear);
-  const [year1Count, setYear1Count] = React.useState(0);
-  const [year2Count, setYear2Count] = React.useState(0);
+  const [currentPeriodCount, setCurrentPeriodCount] = React.useState(0);
+  const [previousPeriodCount, setPreviousPeriodCount] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(false);
-  const [lastFetchKey, setLastFetchKey] = React.useState('');
+  const [hasPreviousPeriod, setHasPreviousPeriod] = React.useState(false);
+  
+  // Internal state for period selection
+  const [selectedOption, setSelectedOption] = React.useState('30');
+  const [customFromDate, setCustomFromDate] = React.useState<Date>();
+  const [customToDate, setCustomToDate] = React.useState<Date>();
+  const [isCustomPeriod, setIsCustomPeriod] = React.useState(false);
 
-  const availableYears = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3, currentYear - 4];
+  // Determine which dates to use (only internal selection, no dashboard filters)
+  const fromDate = React.useMemo(() => {
+    if (isCustomPeriod && customFromDate) {
+      return customFromDate.toISOString().slice(0, 10);
+    }
+    if (selectedOption !== 'custom') {
+      return calculatePeriodFromDays(parseInt(selectedOption)).fromDate;
+    }
+    return '';
+  }, [isCustomPeriod, customFromDate, selectedOption]);
 
-  // Create a cache for historical data
-  const dataCache = React.useRef<Map<string, { year1Count: number; year2Count: number }>>(new Map());
+  const toDate = React.useMemo(() => {
+    if (isCustomPeriod && customToDate) {
+      return customToDate.toISOString().slice(0, 10);
+    }
+    if (selectedOption !== 'custom') {
+      return calculatePeriodFromDays(parseInt(selectedOption)).toDate;
+    }
+    return '';
+  }, [isCustomPeriod, customToDate, selectedOption]);
 
-  const fetchYear1Data = React.useCallback(async () => {
+  // Calculate previous period
+  const previousPeriod = React.useMemo(() => {
+    return calculatePreviousPeriod(fromDate || '', toDate || '');
+  }, [fromDate, toDate]);
+
+  const fetchCurrentPeriodData = React.useCallback(async () => {
+    if (!fromDate || !toDate || fromDate.trim() === '' || toDate.trim() === '') {
+      setCurrentPeriodCount(0);
+      return 0;
+    }
+
     try {
-      const yearFromDate = `${year1}-01-01`;
-      const yearToDate = `${year1}-12-31`;
-      
       const filters = {
-        fromDate: yearFromDate,
-        toDate: yearToDate,
+        fromDate,
+        toDate,
         page_size: 1, // Only need count, not results
         ...(officeId && { Office: officeId })
       };
       
       const response = await getIncidents(filters);
       const count = response.count || 0;
-      setYear1Count(count);
+      setCurrentPeriodCount(count);
       return count;
     } catch (error) {
-      console.error(`Error fetching ${year1} data:`, error);
-      setYear1Count(0);
+      console.error('Error fetching current period data:', error);
+      setCurrentPeriodCount(0);
       return 0;
     }
-  }, [year1, officeId]);
+  }, [fromDate, toDate, officeId]);
 
-  const fetchYear2Data = React.useCallback(async () => {
+  const fetchPreviousPeriodData = React.useCallback(async () => {
+    if (!previousPeriod) {
+      setPreviousPeriodCount(0);
+      setHasPreviousPeriod(false);
+      return 0;
+    }
+
     try {
-      const yearFromDate = `${year2}-01-01`;
-      const yearToDate = `${year2}-12-31`;
-      
       const filters = {
-        fromDate: yearFromDate,
-        toDate: yearToDate,
+        fromDate: previousPeriod.fromDate,
+        toDate: previousPeriod.toDate,
         page_size: 1, // Only need count, not results
         ...(officeId && { Office: officeId })
       };
       
       const response = await getIncidents(filters);
       const count = response.count || 0;
-      setYear2Count(count);
+      setPreviousPeriodCount(count);
+      setHasPreviousPeriod(true);
       return count;
     } catch (error) {
-      console.error(`Error fetching ${year2} data:`, error);
-      setYear2Count(0);
+      console.error('Error fetching previous period data:', error);
+      setPreviousPeriodCount(0);
+      setHasPreviousPeriod(false);
       return 0;
     }
-  }, [year2, officeId]);
+  }, [previousPeriod, officeId]);
 
   const loadData = React.useCallback(async () => {
-    // Create a cache key based on parameters
-    const cacheKey = `${year1}-${year2}-${officeId}`;
-    
-    // Check if we already have cached data
-    const cachedData = dataCache.current.get(cacheKey);
-    if (cachedData && cacheKey === lastFetchKey) {
-      setYear1Count(cachedData.year1Count);
-      setYear2Count(cachedData.year2Count);
-      return;
-    }
-
     setIsLoading(true);
     
     try {
-      // Fetch each year independently using the service with delay between requests
-      const [count1, count2] = await Promise.all([
-        fetchYear1Data(),
-        new Promise(resolve => setTimeout(resolve, 200)).then(() => fetchYear2Data()) // Small delay
+      // Fetch both periods in parallel
+      await Promise.all([
+        fetchCurrentPeriodData(),
+        fetchPreviousPeriodData()
       ]);
-      
-      // Cache the results
-      dataCache.current.set(cacheKey, { year1Count: count1, year2Count: count2 });
-      setLastFetchKey(cacheKey);
     } finally {
       setIsLoading(false);
     }
-  }, [year1, year2, officeId, fetchYear1Data, fetchYear2Data, lastFetchKey]);
+  }, [fetchCurrentPeriodData, fetchPreviousPeriodData]);
 
-  // Debounce the data loading to avoid excessive calls
+  // Load data when filters change
   React.useEffect(() => {
     const timeoutId = setTimeout(() => {
       loadData();
@@ -128,15 +208,30 @@ export function HistoricalComparison({ officeId }: HistoricalComparisonProps = {
     return () => clearTimeout(timeoutId);
   }, [loadData]);
 
-  const difference = year2Count - year1Count;
-  const percentage = year1Count > 0 ? ((difference / year1Count) * 100) : 0;
+  // Handle option selection
+  const handleOptionChange = (value: string) => {
+    setSelectedOption(value);
+    if (value === 'custom') {
+      setIsCustomPeriod(true);
+    } else {
+      setIsCustomPeriod(false);
+      setCustomFromDate(undefined);
+      setCustomToDate(undefined);
+    }
+  };
+
+  const difference = currentPeriodCount - previousPeriodCount;
+  const percentage = previousPeriodCount > 0 ? ((difference / previousPeriodCount) * 100) : 0;
+
+  // Determine if we have valid date filters
+  const hasValidDateFilters = fromDate && toDate && fromDate.trim() !== '' && toDate.trim() !== '';
 
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+            <CalendarIcon className="h-5 w-5" />
             Comparativo de Incidentes
           </CardTitle>
         </CardHeader>
@@ -153,86 +248,164 @@ export function HistoricalComparison({ officeId }: HistoricalComparisonProps = {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
+          <CalendarIcon className="h-5 w-5" />
           Comparativo de Incidentes
         </CardTitle>
         <CardDescription>
-          Cantidad de incidentes por año
+          Compara incidentes entre períodos
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Year Selectors */}
-        <div className="flex items-center justify-center gap-4">
-          <Select value={year1.toString()} onValueChange={(value) => setYear1(parseInt(value))}>
-            <SelectTrigger className="w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {availableYears.map(year => (
-                <SelectItem key={year} value={year.toString()} disabled={year === year2}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <span className="text-muted-foreground">VS</span>
-          
-          <Select value={year2.toString()} onValueChange={(value) => setYear2(parseInt(value))}>
-            <SelectTrigger className="w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {availableYears.map(year => (
-                <SelectItem key={year} value={year.toString()} disabled={year === year1}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Period Selection Controls */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Select value={selectedOption} onValueChange={handleOptionChange}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Seleccionar período" />
+              </SelectTrigger>
+              <SelectContent>
+                {COMPARISON_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Custom Date Range */}
+          {isCustomPeriod && (
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[140px] justify-start text-left font-normal",
+                      !customFromDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customFromDate ? format(customFromDate, "dd/MM/yyyy") : "Desde"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={customFromDate}
+                    onSelect={(date) => setCustomFromDate(date)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <span className="text-muted-foreground">hasta</span>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[140px] justify-start text-left font-normal",
+                      !customToDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customToDate ? format(customToDate, "dd/MM/yyyy") : "Hasta"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={customToDate}
+                    onSelect={setCustomToDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
         </div>
 
-        {/* Results */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center p-4 rounded border bg-muted/20">
-            <div className="text-2xl font-bold text-muted-foreground">{year1}</div>
-            <div className="text-3xl font-bold mt-1">{year1Count}</div>
-            <div className="text-sm text-muted-foreground">incidentes</div>
+        {!hasValidDateFilters ? (
+          <div className="text-center p-6 text-muted-foreground">
+            <CalendarIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p>Selecciona un período para ver la comparación</p>
           </div>
-          
-          <div className="text-center p-4 rounded border bg-primary/5">
-            <div className="text-2xl font-bold text-primary">{year2}</div>
-            <div className="text-3xl font-bold mt-1">{year2Count}</div>
-            <div className="text-sm text-muted-foreground">incidentes</div>
-          </div>
-        </div>
+        ) : (
+          <>
+            {/* Period Display */}
+            <div className="flex items-center justify-center gap-4">
+              <div className="text-center">
+                <div className="text-sm text-muted-foreground">Período actual</div>
+                <div className="font-medium">{formatPeriodLabel(fromDate, toDate)}</div>
+              </div>
+              
+              <span className="text-muted-foreground">VS</span>
+              
+              <div className="text-center">
+                <div className="text-sm text-muted-foreground">Período anterior</div>
+                <div className="font-medium">
+                  {previousPeriod ? formatPeriodLabel(previousPeriod.fromDate, previousPeriod.toDate) : 'N/A'}
+                </div>
+              </div>
+            </div>
 
-        {/* Comparison */}
-        <div className="text-center p-3 rounded border bg-card">
-          <div className="flex items-center justify-center gap-2">
-            {difference === 0 ? (
-              <Equal className="h-5 w-5 text-muted-foreground" />
-            ) : difference > 0 ? (
-              <TrendingUp className="h-5 w-5 text-red-500" />
-            ) : (
-              <TrendingDown className="h-5 w-5 text-green-500" />
+            {/* Results */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-4 rounded border bg-primary/5">
+                <div className="text-sm text-muted-foreground">Período actual</div>
+                <div className="text-3xl font-bold mt-1 text-primary">{currentPeriodCount}</div>
+                <div className="text-sm text-muted-foreground">incidentes</div>
+              </div>
+              
+              <div className="text-center p-4 rounded border bg-muted/20">
+                <div className="text-sm text-muted-foreground">Período anterior</div>
+                <div className="text-3xl font-bold mt-1 text-muted-foreground">
+                  {hasPreviousPeriod ? previousPeriodCount : 'N/A'}
+                </div>
+                <div className="text-sm text-muted-foreground">incidentes</div>
+              </div>
+            </div>
+
+            {/* Comparison */}
+            {hasPreviousPeriod && (
+              <div className="text-center p-3 rounded border bg-card">
+                <div className="flex items-center justify-center gap-2">
+                  {difference === 0 ? (
+                    <Equal className="h-5 w-5 text-muted-foreground" />
+                  ) : difference > 0 ? (
+                    <TrendingUp className="h-5 w-5 text-red-500" />
+                  ) : (
+                    <TrendingDown className="h-5 w-5 text-green-500" />
+                  )}
+                  
+                  <span className="text-lg font-semibold">
+                    {difference === 0 ? 'Igual cantidad' : 
+                     difference > 0 ? `+${difference} incidentes` : 
+                     `${difference} incidentes`}
+                  </span>
+                  
+                  {difference !== 0 && (
+                    <span className={`text-sm px-2 py-1 rounded ${
+                      difference > 0 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                    }`}>
+                      {difference > 0 ? '+' : ''}{percentage.toFixed(1)}%
+                    </span>
+                  )}
+                </div>
+              </div>
             )}
-            
-            <span className="text-lg font-semibold">
-              {difference === 0 ? 'Igual cantidad' : 
-               difference > 0 ? `+${difference} incidentes` : 
-               `${difference} incidentes`}
-            </span>
-            
-            {difference !== 0 && (
-              <span className={`text-sm px-2 py-1 rounded ${
-                difference > 0 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
-              }`}>
-                {difference > 0 ? '+' : ''}{percentage.toFixed(1)}%
-              </span>
+
+            {!hasPreviousPeriod && (
+              <div className="text-center p-3 rounded border bg-muted/20">
+                <div className="text-sm text-muted-foreground">
+                  No hay datos del período anterior para comparar
+                </div>
+              </div>
             )}
-          </div>
-        </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

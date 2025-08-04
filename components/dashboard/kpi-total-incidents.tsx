@@ -89,20 +89,20 @@ export function KpiTotalIncidents({ fromDate, toDate, officeId }: KpiTotalIncide
 
   // Build link to incidents page with filters
   const incidentsLink = React.useMemo(() => {
-    if (!fromDate || !toDate || fromDate.trim() === '' || toDate.trim() === '') {
-      // No date filters, link to all incidents
-      let link = `/dashboard/incidentes`;
-      if (officeId && officeId !== '') {
-        link += `?Office=${officeId}`;
-      }
-      return link;
+    const link = `/dashboard/incidentes`;
+    const params = new URLSearchParams();
+    
+    if (fromDate && toDate && fromDate.trim() !== '' && toDate.trim() !== '') {
+      params.append('Date_after', fromDate);
+      params.append('Date_before', toDate);
     }
     
-    let link = `/dashboard/incidentes?Date_after=${fromDate}&Date_before=${toDate}`;
     if (officeId && officeId !== '') {
-      link += `&Office=${officeId}`;
+      params.append('Office', officeId);
     }
-    return link;
+    
+    const queryString = params.toString();
+    return queryString ? `${link}?${queryString}` : link;
   }, [fromDate, toDate, officeId]);
 
   const getVariationDisplay = () => {
@@ -191,8 +191,8 @@ export function KpiTotalIncidents({ fromDate, toDate, officeId }: KpiTotalIncide
           
           <div className="pt-2">
             <Link href={incidentsLink}>
-              <Button variant="ghost" size="sm" className="text-xs text-primary hover:text-underline">
-                Ver detalles →
+              <Button variant="ghost" size="sm" className="text-xs text-primary hover:text-primary/80">
+                Ver incidentes →
               </Button>
             </Link>
           </div>

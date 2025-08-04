@@ -30,36 +30,61 @@ export function KpiBranches24h({ officeId }: KpiBranches24hProps) {
     error 
   } = usePaginatedIncidents(fromDate24h, toDate24h, officeId);
 
-  // Get unique offices from incidents
-  const affectedOfficesCount = React.useMemo(() => {
-    const uniqueOffices = new Set<number>();
-    incidents.forEach(incident => {
-      const officeId = typeof incident.Office === 'number' 
-        ? incident.Office 
-        : typeof incident.Office === 'object' && incident.Office !== null 
-          ? incident.Office.id 
-          : null;
-      if (officeId !== null) {
-        uniqueOffices.add(officeId);
-      }
-    });
-    return uniqueOffices.size;
-  }, [incidents]);
-
-  // Build link
-  const incidentsLink = React.useMemo(() => {
-    let link = `/dashboard/incidentes?Date_after=${fromDate24h}&Date_before=${toDate24h}`;
+  // Calculate the main metric based on whether office filter is applied
+  const { mainCount, title, description } = React.useMemo(() => {
     if (officeId && officeId !== '') {
-      link += `&Office=${officeId}`;
+      // When office filter is applied, show incident count for that office
+      return {
+        mainCount: incidents.length,
+        title: 'Incidentes (24h)',
+        description: `en la sucursal seleccionada`
+      };
+    } else {
+      // When no office filter, show unique affected offices count
+      const uniqueOffices = new Set<number>();
+      incidents.forEach(incident => {
+        const incidentOfficeId = typeof incident.Office === 'number' 
+          ? incident.Office 
+          : typeof incident.Office === 'object' && incident.Office !== null 
+            ? incident.Office.id 
+            : null;
+        if (incidentOfficeId !== null) {
+          uniqueOffices.add(incidentOfficeId);
+        }
+      });
+      return {
+        mainCount: uniqueOffices.size,
+        title: 'Sucursales afectadas (24h)',
+        description: `${incidents.length} incidente${incidents.length !== 1 ? 's' : ''} en las últimas 24 horas`
+      };
     }
-    return link;
+  }, [incidents, officeId]);
+
+  // Build link using URLSearchParams like the suspects KPI
+  const incidentsLink = React.useMemo(() => {
+    const link = `/dashboard/incidentes`;
+    const params = new URLSearchParams();
+    
+    // Add date filters for 24h period
+    params.append('Date_after', fromDate24h);
+    params.append('Date_before', toDate24h);
+    
+    // Add office filter if present
+    if (officeId && officeId !== '') {
+      params.append('Office', officeId);
+    }
+    
+    const queryString = params.toString();
+    return queryString ? `${link}?${queryString}` : link;
   }, [fromDate24h, toDate24h, officeId]);
+
+  const loadingTitle = (officeId && officeId !== '') ? 'Incidentes (24h)' : 'Sucursales afectadas (24h)';
 
   if (isLoading) {
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Sucursales afectadas (24h)</CardTitle>
+          <CardTitle className="text-sm font-medium">{loadingTitle}</CardTitle>
           <Building2 className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -76,7 +101,7 @@ export function KpiBranches24h({ officeId }: KpiBranches24hProps) {
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Sucursales afectadas (24h)</CardTitle>
+          <CardTitle className="text-sm font-medium">{loadingTitle}</CardTitle>
           <Building2 className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -89,21 +114,21 @@ export function KpiBranches24h({ officeId }: KpiBranches24hProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">Sucursales afectadas (24h)</CardTitle>
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <Building2 className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          <div className="text-2xl font-bold text-blue-600">{affectedOfficesCount}</div>
+          <div className="text-2xl font-bold text-blue-600">{mainCount}</div>
           
           <div className="text-xs text-muted-foreground">
-            {incidents.length} incidente{incidents.length !== 1 ? 's' : ''} en las últimas 24 horas
+            {description}
           </div>
           
           <div className="pt-2">
             <Link href={incidentsLink}>
               <Button variant="ghost" size="sm" className="text-xs text-primary hover:text-primary/80">
-                Ver incidentes →
+                Ver incidentes 24h →
               </Button>
             </Link>
           </div>

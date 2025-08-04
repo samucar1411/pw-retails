@@ -68,12 +68,6 @@ const filterGroups: FilterGroup[] = [
         label: 'Tipo de Incidente',
         type: 'select',
         placeholder: 'Seleccionar tipo...'
-      },
-      {
-        key: 'id',
-        label: 'ID del Incidente',
-        type: 'text',
-        placeholder: 'Buscar por ID...'
       }
     ]
   },
@@ -104,18 +98,6 @@ const filterGroups: FilterGroup[] = [
         label: 'Fecha final',
         type: 'date',
         placeholder: 'Seleccionar fecha final...'
-      }
-    ]
-  },
-  {
-    id: 'search',
-    label: 'Búsqueda',
-    fields: [
-      {
-        key: 'search',
-        label: 'Búsqueda general',
-        type: 'text',
-        placeholder: 'Buscar...'
       }
     ]
   }

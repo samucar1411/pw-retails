@@ -8,7 +8,8 @@ import { DashboardFooter } from "@/components/dashboard-footer";
 // Event provider removed
 import { CompanyProvider } from "@/context/company-context";
 import { OfficeProvider } from "@/context/office-context";
-import { WebSocketProvider } from "@/context/websocket-context";
+import { DashboardProvider } from "@/context/dashboard-context";
+
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 
 export default function DashboardLayout({
@@ -42,20 +43,20 @@ export default function DashboardLayout({
   });
   return (
     <QueryClientProvider client={queryClient}>
-      <WebSocketProvider>
         <OfficeProvider>
           <CompanyProvider>
-            <SidebarProvider defaultOpen={true}>
-              <AppSidebar />
-              <SidebarInset className="flex flex-col min-h-screen w-full">
-                <DashboardHeader />
-                <main className="flex-1 overflow-y-auto">{children}</main>
-                <DashboardFooter />
-              </SidebarInset>
-            </SidebarProvider>
+            <DashboardProvider>
+              <SidebarProvider defaultOpen={true}>
+                <AppSidebar />
+                <SidebarInset className="flex flex-col min-h-screen w-full">
+                  <DashboardHeader />
+                  <main className="flex-1 overflow-y-auto">{children}</main>
+                  <DashboardFooter />
+                </SidebarInset>
+              </SidebarProvider>
+            </DashboardProvider>
           </CompanyProvider>
         </OfficeProvider>
-      </WebSocketProvider>
     </QueryClientProvider>
   );
 }

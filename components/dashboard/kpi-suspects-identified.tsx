@@ -7,27 +7,53 @@ import { UserCheck, Loader2 } from "lucide-react";
 import { useAllSuspects } from "@/hooks/useAllSuspects";
 import Link from "next/link";
 
-export function KpiSuspectsIdentified() {
-  // Fetch all suspects across all pages
+interface KpiSuspectsIdentifiedProps {
+  fromDate?: string;
+  toDate?: string;
+  officeId?: string;
+}
+
+export function KpiSuspectsIdentified({ fromDate, toDate, officeId }: KpiSuspectsIdentifiedProps) {
+  // Fetch suspects with Status=3 (Preso) and use the count from API response
   const { 
     data: suspectsData, 
     isLoading, 
     error 
-  } = useAllSuspects();
+  } = useAllSuspects({ 
+    page: 1, 
+    pageSize: 1,  // We only need the count, so minimal page size
+    filters: { Status: '3' }  // Filter for imprisoned suspects
+  });
 
-  // Filter suspects that are identified (Detenido: 1 or Preso: 3)
-  const identifiedCount = React.useMemo(() => {
-    if (!suspectsData?.suspects) return 0;
-    return suspectsData.suspects.filter(suspect => 
-      suspect.Status === 1 || suspect.Status === 3
-    ).length;
-  }, [suspectsData]);
+  // Get count directly from API response
+  const imprisonedCount = suspectsData?.total || 0;
+
+  // Build link to suspects page with filters
+  const suspectsLink = React.useMemo(() => {
+    const link = `/dashboard/sospechosos`;
+    const params = new URLSearchParams();
+    
+    // Add status filter for imprisoned suspects (Status 3 - Preso)
+    params.append('Status', '3');
+    
+    if (fromDate && toDate && fromDate.trim() !== '' && toDate.trim() !== '') {
+      params.append('fromDate', fromDate);
+      params.append('toDate', toDate);
+    }
+    
+    if (officeId && officeId !== '') {
+      params.append('officeId', officeId);
+    }
+    
+    const queryString = params.toString();
+    return queryString ? `${link}?${queryString}` : link;
+  }, [fromDate, toDate, officeId]);
 
   if (isLoading) {
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Sospechosos capturados</CardTitle>
+          <CardTitle className="text-sm font-medium">Sospechosos presos</CardTitle>
           <UserCheck className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -44,7 +70,7 @@ export function KpiSuspectsIdentified() {
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Sospechosos capturados</CardTitle>
+          <CardTitle className="text-sm font-medium">Sospechosos presos</CardTitle>
           <UserCheck className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -57,21 +83,21 @@ export function KpiSuspectsIdentified() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">Sospechosos capturados</CardTitle>
+        <CardTitle className="text-sm font-medium">Sospechosos presos</CardTitle>
         <UserCheck className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          <div className="text-2xl font-bold text-green-600">{identifiedCount.toLocaleString()}</div>
+          <div className="text-2xl font-bold text-green-600">{imprisonedCount.toLocaleString()}</div>
           
           <div className="text-xs text-muted-foreground">
-            Detenidos o en prisión (de {suspectsData?.total || 0} total)
+            Sospechosos que están en prisión
           </div>
           
           <div className="pt-2">
-            <Link href="/dashboard/sospechosos">
+            <Link href={suspectsLink}>
               <Button variant="ghost" size="sm" className="text-xs text-primary hover:text-primary/80">
-                Ver sospechosos →
+                Ver presos →
               </Button>
             </Link>
           </div>

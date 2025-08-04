@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 
 import { Badge } from '@/components/ui/badge';
 import { useEvents } from '@/hooks/useEvents';
-import { useNotifications } from '@/context/notification-context';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Event } from '@/types/event';
@@ -17,6 +16,19 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+// Función para construir URLs de imágenes del backend
+const getImageUrl = (imgFile: string | null): string | null => {
+  if (!imgFile) return null;
+  
+  // Si ya es una ruta relativa, usar el proxy de Next.js
+  if (imgFile.startsWith('/')) {
+    return imgFile;
+  }
+  
+  // Si es una ruta sin slash inicial, agregarlo
+  return `/${imgFile}`;
+};
 
 
 
@@ -134,7 +146,6 @@ const filterGroups: FilterGroup[] = [
 
 export default function EventsPage() {
   const { events, loading, error, totalCount, refreshEvents, applyFilters } = useEvents();
-  const { markAllAsViewed } = useNotifications();
   
   const [filters, setFilters] = useState<EventFilters>({});
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -148,10 +159,6 @@ export default function EventsPage() {
 
 
 
-  // Mark all notifications as viewed when entering the events page
-  React.useEffect(() => {
-    markAllAsViewed();
-  }, [markAllAsViewed]);
 
   const handleFiltersChange = (newFilters: EventFilters) => {
     setFilters(newFilters);
@@ -365,13 +372,14 @@ export default function EventsPage() {
         <div className="p-4">
           {/* Imagen principal */}
           <div className="relative w-full h-48 rounded-lg overflow-hidden mb-4 bg-muted">
-            {event.img_file ? (
+            {getImageUrl(event.img_file) ? (
               <Image
-                src={event.img_file}
+                src={getImageUrl(event.img_file)!}
                 alt={event.image_name}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                unoptimized={process.env.NODE_ENV === 'production'}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
@@ -506,13 +514,14 @@ export default function EventsPage() {
 
             {/* Imagen principal */}
             <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-muted">
-              {selectedEvent.img_file ? (
+              {getImageUrl(selectedEvent.img_file) ? (
                 <Image
-                  src={selectedEvent.img_file}
+                  src={getImageUrl(selectedEvent.img_file)!}
                   alt={selectedEvent.image_name || 'Imagen del evento'}
                   fill
                   className="object-contain"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  unoptimized={process.env.NODE_ENV === 'production'}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
@@ -664,8 +673,6 @@ export default function EventsPage() {
                   </div>
                 </div>
               )}
-
-              {/* Footer con estadísticas generales */}
               {getActiveFiltersCount() > 0 && step === 'groups' && (
                 <div className="border-t p-3 bg-muted/30">
                   <div className="flex items-center justify-between">
