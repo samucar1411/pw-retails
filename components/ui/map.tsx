@@ -44,6 +44,7 @@ export default function Map({ locations }: MapProps) {
   console.log('Map component received locations:', locations)
 
   // Function to create detailed popup content
+  /* 
   const createIncidentPopupContent = async (location: MapLocation): Promise<string> => {
     let officeInfo = ''
     
@@ -117,6 +118,7 @@ export default function Map({ locations }: MapProps) {
       </div>
     `
   }
+  */
 
   // Helper function for severity styling
   const getSeverityClass = (severity?: 'low' | 'medium' | 'high'): string => {

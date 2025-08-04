@@ -76,55 +76,6 @@ function SquareSelectGroup({ options, value, onChange, className = '' }: SquareS
   );
 }
 
-// Componente de input de moneda completamente independiente
-function SimpleCurrencyInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  const [displayValue, setDisplayValue] = React.useState('');
-  const [isFocused, setIsFocused] = React.useState(false);
-
-  // Solo actualizar displayValue cuando no está en foco
-  React.useEffect(() => {
-    if (!isFocused) {
-      setDisplayValue(value > 0 ? value.toLocaleString('es-PY') : '');
-    }
-  }, [value, isFocused]);
-
-  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    setIsFocused(true);
-    setDisplayValue(value > 0 ? value.toString() : '');
-    setTimeout(() => {
-      e.target.select();
-    }, 0);
-  };
-
-  const handleBlur = () => {
-    setIsFocused(false);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value.replace(/[^\d]/g, '');
-    setDisplayValue(rawValue);
-    const numValue = parseInt(rawValue) || 0;
-    onChange(numValue);
-  };
-
-  return (
-    <div className="relative">
-      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">
-        ₲
-      </span>
-      <input
-        type="text"
-        value={displayValue}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        onChange={handleChange}
-        className="w-full pl-8 px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
-        placeholder="0"
-        inputMode="numeric"
-      />
-    </div>
-  );
-}
 
 function CurrencyInputField({ value, onChange, onBlur }: { value: number; onChange: (v: number) => void; onBlur?: () => void }) {
   const { formatInputValue, parseNumber } = useGuaraniFormatter();
@@ -511,7 +462,6 @@ export function IncidentForm() {
   const [suspectTags, setSuspectTags] = useState<Record<number, Record<string, unknown>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { uploadImage, isUploading: isImageUploading } = useImageUpload();
-  const [cashType, setCashType] = useState<'recaudacion' | 'fondo' | 'general'>('general');
   
   // State for incident image metadata (separate from attachments)
   const [incidentImageMetadata, setIncidentImageMetadata] = useState<{
@@ -755,14 +705,6 @@ export function IncidentForm() {
     return Array.isArray(suspectTags[idx]?.[key]) ? suspectTags[idx][key] : [];
   }
 
-  // Función específica para manejar fotos del sospechoso
-  function getSuspectPhotos(idx: number): { id: number; url: string; name: string; contentType: string }[] {
-    return Array.isArray(suspectTags[idx]?.photos) ? suspectTags[idx].photos : [];
-  }
-
-  function setSuspectPhotos(idx: number, photos: { id: number; url: string; name: string; contentType: string }[]) {
-    setTagValue(idx, 'photos', photos);
-  }
 
   // Handlers for incident image metadata
   const handleAddIncidentImage = (file: File) => {

@@ -61,7 +61,7 @@ export function HourlyIncidentsChart({ data }: HourlyIncidentsChartProps) {
     });
 
     return cells;
-  }, [data]);
+  }, [data, days, hours]);
 
   const isEmpty = data.length === 0;
 

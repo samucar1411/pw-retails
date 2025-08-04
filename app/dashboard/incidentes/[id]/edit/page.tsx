@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/components/ui/use-toast';
 import { AxiosError } from 'axios';
-import { ArrowLeft, Loader2, Calendar, Building, FileText, DollarSign, Users, UploadCloud, Plus, X } from 'lucide-react';
+import { ArrowLeft, Loader2, FileText, DollarSign, Users, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 
 // UI Components
@@ -56,8 +56,8 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
   const [originalIncident, setOriginalIncident] = useState<Incident | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [incidentTypes, setIncidentTypes] = useState<any[]>([]);
-  const [offices, setOffices] = useState<any[]>([]);
+  const [incidentTypes, setIncidentTypes] = useState<{id: number; Name: string}[]>([]);
+  const [offices, setOffices] = useState<{id: number; Name: string; Address: string}[]>([]);
 
   const form = useForm<IncidentFormValues>({
     resolver: zodResolver(incidentFormSchema),
@@ -164,7 +164,7 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
   useEffect(() => {
     const total = calculateMerchandiseTotal();
     form.setValue('merchandiseLoss', total);
-  }, [merchandiseFields, form]);
+  }, [merchandiseFields, form, calculateMerchandiseTotal]);
 
   const onSubmit = async (values: IncidentFormValues) => {
     if (!incident || !originalIncident || !userInfo?.user_id) return;
@@ -232,7 +232,7 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
     } catch (error) {
       console.error('Error updating incident:', error);
       
-      const axiosError = error as AxiosError<any>;
+      const axiosError = error as AxiosError<Record<string, string[]>>;
       if (axiosError.response?.data) {
         const backendErrors = axiosError.response.data;
         Object.entries(backendErrors).forEach(([field, errors]) => {

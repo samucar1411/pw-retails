@@ -5,7 +5,7 @@ import { Incident } from "@/types/incident";
 import { Office } from "@/types/office";
 import { Company } from "@/types/company";
 import { useIncidentsMap } from "@/hooks/useIncidentsMap";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, TrendingUp, Building2, AlertTriangle } from "lucide-react";
 

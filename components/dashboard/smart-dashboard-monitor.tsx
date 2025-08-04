@@ -10,7 +10,6 @@ import {
   Zap, 
   Clock, 
   HardDrive, 
-  TrendingUp, 
   RefreshCw,
   CheckCircle2,
   Loader2

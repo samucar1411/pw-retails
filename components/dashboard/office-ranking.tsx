@@ -157,7 +157,7 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
     const sortedByIncidents = [...officeStatsArray].sort((a, b) => b.incidentCount - a.incidentCount);
     
     return sortedByIncidents; // Return sorted by incidents by default
-  }, [incidentsData?.incidents, offices, fromDate, toDate]);
+  }, [incidentsData?.incidents, offices]);
 
   // Get offices to display (top 3 by default, offices with incidents if showAll is true)
   const displayedOffices = React.useMemo(() => {

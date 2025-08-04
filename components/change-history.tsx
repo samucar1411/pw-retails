@@ -7,7 +7,6 @@ import { History, User, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Collapsible } from '@/components/ui/collapsible';
 import { getChangeHistory } from '@/services/change-history-service';
 import { ChangeHistory } from '@/types/change-history';
 

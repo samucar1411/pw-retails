@@ -8,7 +8,6 @@ import { getIncidents } from '@/services/incident-service';
 import { getOffice } from '@/services/office-service';
 import { getIncidentTypeWithCache } from '@/services/incident-type-service';
 import { getCompanyById } from '@/services/company-service';
-import { getSuspectById } from '@/services/suspect-service';
 import { Incident } from '@/types/incident';
 import { getProxyUrl } from '@/lib/utils';
 

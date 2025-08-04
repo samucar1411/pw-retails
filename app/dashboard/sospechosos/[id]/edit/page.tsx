@@ -17,7 +17,6 @@ import { Suspect, SuspectStatus } from '@/types/suspect';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUploader } from '@/components/ImageUploader';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -28,7 +27,6 @@ import {
 } from '@/components/ui/breadcrumb';
 import { 
   SUSPECT_TAG_OPTIONS,
-  SquareSelectGroup,
   CheckboxGroup,
   SingleSelect 
 } from '@/components/suspect-form/tag-selector';
@@ -400,6 +398,7 @@ export default function EditSuspectPage() {
                   <FormLabel>Imagen actual</FormLabel>
                   <div className="mt-2 flex justify-center">
                     <div className="relative w-48 h-48 rounded-lg overflow-hidden border">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={form.watch('PhotoUrl')}
                         alt="Imagen actual del sospechoso"

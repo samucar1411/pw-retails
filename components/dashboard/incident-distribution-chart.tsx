@@ -94,7 +94,7 @@ export function IncidentDistributionChart({ fromDate, toDate, officeId }: Incide
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const distributionData = distributionCounts || [];
+  const distributionData = React.useMemo(() => distributionCounts || [], [distributionCounts]);
   
   const totalIncidents = React.useMemo(
     () => distributionData.reduce((sum, i) => sum + i.value, 0),
@@ -267,7 +267,6 @@ function ChartAndTable({ data, total }: ChartAndTableProps) {
 }
 
 // Using a pragmatic approach for Recharts tooltip types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TooltipProps = {
   active?: boolean;
   // Using any here is intentional due to the complexity of Recharts types
