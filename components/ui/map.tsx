@@ -6,6 +6,7 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import { useTheme } from "next-themes"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import { getSafeImageUrl } from "@/lib/utils"
 
 interface MapLocation {
   id: string | number
@@ -142,9 +143,8 @@ export default function Map({ locations }: MapProps) {
       zoom: locations.length > 1 ? 10 : 12,
     })
 
-    // Esperar a que el mapa cargue para agregar los marcadores
-    map.on('load', () => {
-      // Agregar marcadores personalizados
+    // Agregar marcadores después de que el mapa esté listo
+    const addMarkers = () => {
       locations.forEach(location => {
         const el = document.createElement('div');
         el.className = 'custom-marker';
@@ -166,7 +166,7 @@ export default function Map({ locations }: MapProps) {
               transition: all 0.2s ease;
             " class="marker-container">
               <img 
-                src="${location.logoUrl}" 
+                src="${getSafeImageUrl(location.logoUrl, '')}" 
                 alt="${location.title}"
                 style="
                   width: 28px;
@@ -246,7 +246,7 @@ export default function Map({ locations }: MapProps) {
             <div class="bg-background text-foreground p-4 min-w-[280px] max-w-[360px]">
               <!-- Header -->
               <div class="flex items-start gap-3 mb-3">
-                ${location.logoUrl ? `<img src="${location.logoUrl}" alt="Logo" class="w-10 h-10 rounded-lg object-contain border border-border bg-background flex-shrink-0">` : `<div class="w-10 h-10 rounded-lg border border-border bg-muted flex items-center justify-center flex-shrink-0"><span class="text-lg">🏢</span></div>`}
+                ${location.logoUrl ? `<img src="${getSafeImageUrl(location.logoUrl, '')}" alt="Logo" class="w-10 h-10 rounded-lg object-contain border border-border bg-background flex-shrink-0" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : `<div class="w-10 h-10 rounded-lg border border-border bg-muted flex items-center justify-center flex-shrink-0"><span class="text-lg">🏢</span></div>`}
                 <div class="flex-1 min-w-0">
                   <h3 class="font-semibold text-base text-foreground leading-tight">${location.title}</h3>
                   ${location.address ? `<p class="text-sm text-muted-foreground mt-1">📍 ${location.address}</p>` : ''}
@@ -318,16 +318,24 @@ export default function Map({ locations }: MapProps) {
           .setLngLat([location.lng, location.lat])
           .addTo(map);
       });
-    });
+    };
 
-    // Fit map to show all markers if there are multiple locations
-    if (locations.length > 1) {
-      const bounds = new mapboxgl.LngLatBounds()
-      locations.forEach(location => {
-        bounds.extend([location.lng, location.lat])
-      })
-      map.fitBounds(bounds, { padding: 50 })
-    }
+    // Esperar a que el mapa cargue y luego agregar los marcadores
+    map.on('load', () => {
+      // Pequeño delay para asegurar que todo esté listo
+      setTimeout(() => {
+        addMarkers();
+        
+        // Fit map to show all markers if there are multiple locations
+        if (locations.length > 1) {
+          const bounds = new mapboxgl.LngLatBounds()
+          locations.forEach(location => {
+            bounds.extend([location.lng, location.lat])
+          })
+          map.fitBounds(bounds, { padding: 50 })
+        }
+      }, 100);
+    });
 
     return () => map.remove()
   }, [locations, mounted, currentTheme])

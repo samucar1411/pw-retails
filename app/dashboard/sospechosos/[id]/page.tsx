@@ -27,7 +27,7 @@ import UIMap from '@/components/ui/map';
 import { getSuspect } from '@/services/suspect-service';
 import { Suspect } from '@/types/suspect';
 import { api } from '@/services/api';
-import { getProxyUrl } from '@/lib/utils';
+import { getSafeImageUrl } from '@/lib/utils';
 import Link from 'next/link';
 
 interface SuspectDetailPageProps {
@@ -166,7 +166,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                 if (!isNaN(lat) && !isNaN(lng)) {
                   // Get company logo if available
                   const company = newCompanyDetails.get(office.Company);
-                  const logoUrl = company?.image_url ? getProxyUrl(company.image_url) : '';
+                  const logoUrl = company?.image_url ? getSafeImageUrl(company.image_url) : '';
                   
                   // Encontrar incidentes relacionados con esta oficina
                   const officeIncidents = fetchedIncidents.filter(inc => inc.Office === office.id);

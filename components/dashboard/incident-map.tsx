@@ -9,7 +9,7 @@ import { getOffice } from '@/services/office-service';
 import { getIncidentTypeWithCache } from '@/services/incident-type-service';
 import { getCompanyById } from '@/services/company-service';
 import { Incident } from '@/types/incident';
-import { getProxyUrl } from '@/lib/utils';
+import { getSafeImageUrl } from '@/lib/utils';
 
 interface MapLocation {
   id: string | number;
@@ -118,7 +118,7 @@ export function IncidentMap({ fromDate, toDate, officeId }: IncidentMapProps = {
               title: office.Name || 'Sucursal',
               description: office.Address || 'Dirección no disponible',
               address: office.Address,
-              logoUrl: logoUrl ? getProxyUrl(logoUrl) || undefined : undefined,
+              logoUrl: logoUrl ? getSafeImageUrl(logoUrl) || undefined : undefined,
               officeId: office.id,
               incidentData: {
                 id: incident.id,

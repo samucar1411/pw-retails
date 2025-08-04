@@ -46,7 +46,7 @@ import { OfficeProvider } from "@/context/office-context";
 import { getAllOfficesComplete } from "@/services/office-service";
 import { getCompanyById } from "@/services/company-service";
 import { Company } from "@/types/company";
-import { getProxyUrl } from "@/lib/utils";
+import { getSafeImageUrl } from "@/lib/utils";
 
 // Restore NavItem interface
 interface NavItem {
@@ -288,7 +288,7 @@ export function AppSidebar() {
               <>
                 {company.image_url ? (
                   <Avatar className="h-8 w-8 rounded-md">
-                    <AvatarImage src={getProxyUrl(company.image_url) || ''} alt={company.name} className="object-cover" />
+                    <AvatarImage src={getSafeImageUrl(company.image_url, '/images/default-company.png')} alt={company.name} className="object-cover" />
                     <AvatarFallback className="rounded-md bg-primary text-primary-foreground">
                       {company.name?.substring(0, 2).toUpperCase() || 'PW'}
                     </AvatarFallback>

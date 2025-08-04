@@ -38,7 +38,7 @@ import { getSuspectById } from '@/services/suspect-service';
 import { getCompanyById } from '@/services/company-service';
 
 // Utils
-import { getProxyUrl } from '@/lib/utils';
+import { getSafeImageUrl } from '@/lib/utils';
 
 // Types
 import { Incident } from '@/types/incident';
@@ -266,7 +266,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
       title: office.Name,
       description: office.Address || 'Dirección no disponible',
       address: office.Address || 'Dirección no disponible',
-      logoUrl: getProxyUrl(companyLogo) || undefined,
+      logoUrl: getSafeImageUrl(companyLogo) || undefined,
       officeId: office.id,
       incidentData: {
         id: incident.id,
@@ -337,7 +337,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                 <div className="relative w-32 h-32 sm:w-40 sm:h-40 overflow-hidden border-4 border-muted flex items-center justify-center bg-muted">
                   {companyLogo ? (
                     <Image
-                      src={getProxyUrl(companyLogo) || ''}
+                      src={getSafeImageUrl(companyLogo) || ''}
                       alt="Logo de la empresa"
                       fill
                       className="object-contain p-4"
