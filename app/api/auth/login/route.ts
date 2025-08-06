@@ -5,7 +5,7 @@ interface AuthResponse {
   token: string;
   user_id: number;
   email: string;
-  firts_name: string; // API typo - should be "first_name"
+  firts_name: string;
   last_name: string;
 }
 
