@@ -16,8 +16,20 @@ export function getProxyUrl(url: string | null | undefined): string | null {
     return `/${url}`;
   }
   
+  // If it's a backend URL (sys.adminpy.com), proxy it through our API route
+  if (url.includes('sys.adminpy.com')) {
+    try {
+      const urlObj = new URL(url);
+      // Extract the path from the backend URL and proxy it through /api/media
+      const path = urlObj.pathname + urlObj.search;
+      return `/api/media${path}`;
+    } catch (error) {
+      console.error('Error parsing backend URL:', error);
+      return null;
+    }
+  }
   
-  // Return original URL for other cases
+  // Return original URL for other cases (external CDNs, etc)
   return url;
 }
 
