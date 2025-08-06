@@ -4,7 +4,7 @@ import { api } from './api';
 export interface IncidentItemLoss {
   id?: number;
   ItemType: string;
-  Description: string;
+  Description?: string;
   Quantity: number | null;
   UnitPrice: number | null;
   TotalValue: number | null;

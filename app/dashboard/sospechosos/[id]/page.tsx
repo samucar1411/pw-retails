@@ -660,22 +660,22 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
               {/* Información básica */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <h3 className="font-medium mb-2">Nombre</h3>
-                  <p className="text-muted-foreground">
+                  <h3 className="font-normal text-muted-foreground mb-2">Nombre</h3>
+                  <p className="text-foreground font-semibold">
                     {suspect.Name || 'Sin información'}
                   </p>
                 </div>
                 
                 <div>
-                  <h3 className="font-medium mb-2">Apellido</h3>
-                  <p className="text-muted-foreground">
+                  <h3 className="font-normal text-muted-foreground mb-2">Apellido</h3>
+                  <p className="text-foreground font-semibold">
                     {suspect.LastName || 'Sin información'}
                   </p>
                 </div>
                 
                 <div>
-                  <h3 className="font-medium mb-2">CI</h3>
-                  <p className="text-muted-foreground">
+                  <h3 className="font-normal text-muted-foreground mb-2">CI</h3>
+                  <p className="text-foreground font-semibold">
                     {suspect.CI || 'Sin información'}
                   </p>
                 </div>
@@ -683,8 +683,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
 
               {/* Descripción física */}
               <div>
-                <h3 className="font-medium mb-2">Descripción física</h3>
-                <p className="text-muted-foreground">
+                <h3 className="font-normal text-muted-foreground mb-2">Descripción física</h3>
+                <p className="text-foreground font-semibold">
                   {suspect.PhysicalDescription || 'Sin información'}
                 </p>
               </div>
@@ -697,7 +697,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     {/* Género */}
                     <div>
                       <h4 className="text-sm font-normal text-muted-foreground mb-1">Género</h4>
-                      <p className="text-sm">
+                      <p className="text-sm text-foreground font-semibold">
                         {suspect.Tags?.sexo ? 
                           (suspect.Tags.sexo === 'masculino' ? 'Hombre' : 
                            suspect.Tags.sexo === 'femenino' ? 'Mujer' : 
@@ -710,7 +710,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     {/* Contextura */}
                     <div>
                       <h4 className="text-sm font-normal text-muted-foreground mb-1">Contextura</h4>
-                      <p className="text-sm">
+                      <p className="text-sm text-foreground font-semibold">
                         {suspect.Tags?.contextura ? 
                           suspect.Tags.contextura.charAt(0).toUpperCase() + suspect.Tags.contextura.slice(1).toLowerCase()
                           : 'Sin información'
@@ -721,7 +721,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     {/* Estatura */}
                     <div>
                       <h4 className="text-sm font-normal text-muted-foreground mb-1">Estatura</h4>
-                      <p className="text-sm">
+                      <p className="text-sm text-foreground font-semibold">
                         {suspect.Tags?.altura ? 
                           (() => {
                             switch(suspect.Tags.altura) {
@@ -740,7 +740,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     {/* Tono de piel */}
                     <div>
                       <h4 className="text-sm font-normal text-muted-foreground mb-1">Tono de piel</h4>
-                      <p className="text-sm">
+                      <p className="text-sm text-foreground font-semibold">
                         {suspect.Tags?.piel ? 
                           suspect.Tags.piel.charAt(0).toUpperCase() + suspect.Tags.piel.slice(1).toLowerCase()
                           : 'Sin información'
@@ -751,7 +751,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     {/* Piercings */}
                     <div>
                       <h4 className="text-sm font-normal text-muted-foreground mb-1">Piercings</h4>
-                      <p className="text-sm">
+                      <p className="text-sm text-foreground font-semibold">
                         {suspect.Tags?.piercings ? 
                           suspect.Tags.piercings.split(',').map(p => p.trim().charAt(0).toUpperCase() + p.trim().slice(1).toLowerCase()).join(', ')
                           : 'Sin información'
@@ -762,7 +762,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     {/* Tatuajes */}
                     <div>
                       <h4 className="text-sm font-normal text-muted-foreground mb-1">Tatuajes</h4>
-                      <p className="text-sm">
+                      <p className="text-sm text-foreground font-semibold">
                         {suspect.Tags?.tatuajes ? 
                           suspect.Tags.tatuajes.split(',').map(t => t.trim().charAt(0).toUpperCase() + t.trim().slice(1).toLowerCase()).join(', ')
                           : 'Sin información'
@@ -773,7 +773,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     {/* Accesorios */}
                     <div>
                       <h4 className="text-sm font-normal text-muted-foreground mb-1">Accesorios</h4>
-                      <p className="text-sm">
+                      <p className="text-sm text-foreground font-semibold">
                         {suspect.Tags?.accesorios ? 
                           suspect.Tags.accesorios.split(',').map(a => a.trim().charAt(0).toUpperCase() + a.trim().slice(1).toLowerCase().replace('_', ' ')).join(', ')
                           : 'Sin información'
@@ -843,8 +843,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
               {/* Última vez visto */}
               {suspect.LastSeen && (
                 <div>
-                  <h3 className="font-medium mb-2">Última vez visto</h3>
-                  <p className="text-muted-foreground">
+                  <h3 className="font-normal text-muted-foreground mb-2">Última vez visto</h3>
+                  <p className="text-foreground font-semibold">
                     {format(new Date(suspect.LastSeen), "d 'de' MMMM 'de' yyyy", { locale: es })}
                   </p>
                 </div>

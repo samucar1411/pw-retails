@@ -1,6 +1,7 @@
 import { Incident, IncidentType } from '@/types/incident';
 import { PaginatedResponse, ListParams } from '@/types/api';
 import { api } from '@/services/api';
+import { getIncidentItemLosses, IncidentItemLoss } from './incident-item-losses-service';
 
 
 export async function getIncidents(
@@ -81,9 +82,6 @@ export async function updateIncident(id: string, incident: Partial<Incident>): P
   return data;
 }
 
-export async function deleteIncident(id: string): Promise<void> {
-  await api.delete(`/api/incidents/${id}/`);
-}
 
 /**
  * Get incident type by ID
@@ -110,9 +108,38 @@ export async function getIncidentById(id: string | number): Promise<Incident> {
     const { data } = await api.get<Incident>(`/api/incidents/${id}/`, {
       params: { format: 'json' }
     });
+    
+    // Load incident item losses separately
+    try {
+      const allIncidentItemLosses = await getIncidentItemLosses();
+      const incidentItemLosses = allIncidentItemLosses.filter(item => 
+        item.Incident === Number(id)
+      );
+      
+      // Add the incident item losses to the incident data
+      data.IncidentItemLosses = incidentItemLosses;
+      console.log(`Loaded ${incidentItemLosses.length} incident item losses for incident ${id}`);
+    } catch (itemLossError) {
+      console.warn('Error loading incident item losses:', itemLossError);
+      data.IncidentItemLosses = [];
+    }
+    
     return data;
   } catch (error) {
     console.error('Error fetching incident');
+    throw error;
+  }
+}
+
+/**
+ * Delete an incident by ID
+ */
+export async function deleteIncident(id: string | number): Promise<void> {
+  try {
+    await api.delete(`/api/incidents/${id}/`);
+    console.log(`Incident ${id} deleted successfully`);
+  } catch (error) {
+    console.error('Error deleting incident:', error);
     throw error;
   }
 }

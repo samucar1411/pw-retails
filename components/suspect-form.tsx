@@ -132,10 +132,12 @@ const suspectFormSchema = z.object({
   PhysicalDescription: z.string().min(1, 'La descripción física es requerida'),
   PhotoUrl: z.string().min(1, 'La foto es requerida'),
   Status: z.number(),
-  // Nuevos campos
+  // Campos de identificación
   CI: z.string().optional(),
   Name: z.string().optional(),
   LastName: z.string().optional(),
+  LastName2: z.string().optional(),
+  Nationality: z.string().optional(),
 });
 
 type SuspectFormValues = z.infer<typeof suspectFormSchema>;
@@ -180,10 +182,12 @@ export function SuspectForm() {
       PhysicalDescription: '',
       PhotoUrl: '',
       Status: 1,
-      // Nuevos campos
+      // Campos de identificación
       CI: '',
       Name: '',
       LastName: '',
+      LastName2: '',
+      Nationality: '',
     },
   });
 
@@ -217,10 +221,12 @@ export function SuspectForm() {
         PhysicalDescription: values.PhysicalDescription,
         Status: Number(values.Status),
         PhotoUrl: values.PhotoUrl,
-        // Nuevos campos
+        // Campos de identificación
         CI: values.CI,
         Name: values.Name,
         LastName: values.LastName,
+        LastName2: values.LastName2,
+        Nationality: values.Nationality,
         Tags: tags as Record<string, string>,
       };
 
@@ -305,9 +311,37 @@ export function SuspectForm() {
                   name="LastName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Apellido</FormLabel>
+                      <FormLabel>Apellido Paterno</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Apellido del sospechoso" />
+                        <Input {...field} placeholder="Apellido paterno del sospechoso" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="LastName2"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Apellido Materno</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Apellido materno del sospechoso" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="Nationality"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nacionalidad</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Nacionalidad del sospechoso" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

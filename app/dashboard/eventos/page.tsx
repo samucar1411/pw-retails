@@ -16,19 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-// Función para construir URLs de imágenes del backend
-const getImageUrl = (imgFile: string | null): string | null => {
-  if (!imgFile) return null;
-  
-  // Si ya es una ruta relativa, usar el proxy de Next.js
-  if (imgFile.startsWith('/')) {
-    return imgFile;
-  }
-  
-  // Si es una ruta sin slash inicial, agregarlo
-  return `/${imgFile}`;
-};
+import { getSafeImageUrl } from '@/lib/utils';
 
 
 
@@ -372,10 +360,10 @@ export default function EventsPage() {
         <div className="p-4">
           {/* Imagen principal */}
           <div className="relative w-full h-48 rounded-lg overflow-hidden mb-4 bg-muted">
-            {getImageUrl(event.img_file) ? (
+            {event.img_file ? (
               <Image
-                src={getImageUrl(event.img_file)!}
-                alt={event.image_name}
+                src={getSafeImageUrl(event.img_file)}
+                alt={event.image_name || 'Imagen del evento'}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -514,9 +502,9 @@ export default function EventsPage() {
 
             {/* Imagen principal */}
             <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-muted">
-              {getImageUrl(selectedEvent.img_file) ? (
+              {selectedEvent.img_file ? (
                 <Image
-                  src={getImageUrl(selectedEvent.img_file)!}
+                  src={getSafeImageUrl(selectedEvent.img_file)}
                   alt={selectedEvent.image_name || 'Imagen del evento'}
                   fill
                   className="object-contain"

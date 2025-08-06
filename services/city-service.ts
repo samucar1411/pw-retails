@@ -4,11 +4,13 @@ import { api } from './api';
 export const cityService = {
   getCities: async (): Promise<City[]> => {
     const response = await api.get('/api/cities/');
-    return response.data;
+    // Handle both paginated and direct array responses
+    return response.data.results || response.data;
   },
 
   getCity: async (id: number): Promise<City> => {
-    const response = await api.get(`/api/cities/${id}`);
+    const response = await api.get(`/api/cities/${id}/`);
+    console.log(`City service response for ID ${id}:`, response.data);
     return response.data;
   },
 

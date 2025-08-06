@@ -31,6 +31,8 @@ import { Controller } from 'react-hook-form';
 import { useGuaraniFormatter } from '@/hooks/useGuaraniFormatter';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { createIncidentImageMetadata, IncidentImageMetadataCreateInput, IncidentImageMetadata } from '@/services/incident-image-metadata-service';
+import { getSafeImageUrl } from '@/lib/utils';
+import { createIncidentItemLoss, IncidentItemLoss } from '@/services/incident-item-losses-service';
 // import { SuspectSelector } from '@/components/incident-form/suspect-selector';
 
 // Stepper steps definition
@@ -915,7 +917,7 @@ export function IncidentForm() {
                           <div className="flex-shrink-0">
                             {suspect.PhotoUrl ? (
                         <Image
-                          src={suspect.PhotoUrl}
+                          src={getSafeImageUrl(suspect.PhotoUrl)}
                           alt={suspect.Alias}
                           width={48}
                           height={48}
@@ -1041,7 +1043,7 @@ export function IncidentForm() {
                         <div className="flex-shrink-0">
                           {field.image ? (
                             <Image
-                              src={field.image}
+                              src={getSafeImageUrl(field.image)}
                               alt={field.alias}
                               width={64}
                               height={64}
@@ -1149,7 +1151,7 @@ export function IncidentForm() {
                             <div className="flex items-center gap-4 p-3 border rounded-lg bg-muted/20">
                               <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted">
                                 <Image
-                                  src={field.value}
+                                  src={getSafeImageUrl(field.value)}
                                   alt="Foto del sospechoso"
                                   fill
                                   className="object-cover"
@@ -1452,7 +1454,8 @@ export function IncidentForm() {
       total: number;
     }
 
-    const allItems = (form.getValues('incidentLossItem') || []).map(item => ({
+    // Use watch() instead of getValues() to make it reactive
+    const allItems = (form.watch('incidentLossItem') || []).map(item => ({
       ...item,
       id: item.id ? String(item.id) : '',
     })) as LossItem[];
@@ -1709,7 +1712,7 @@ export function IncidentForm() {
         const total = quantity * unitPrice;
 
         return {
-          ItemType: item.type === 'mercaderia' ? 'merchandise' : 'damage',
+          ItemType: item.type, // Send 'mercaderia' or 'material' as-is
           Description: item.description,
           Quantity: quantity,
           UnitPrice: unitPrice,
@@ -1720,11 +1723,11 @@ export function IncidentForm() {
 
       // 3. Calcular totales
       const merchandiseLoss = lossItems
-        .filter(item => item.ItemType === 'merchandise')
+        .filter(item => item.ItemType === 'mercaderia')
         .reduce((sum, item) => sum + (item.TotalValue || 0), 0);
 
       const otherLosses = lossItems
-        .filter(item => item.ItemType === 'damage')
+        .filter(item => item.ItemType === 'material')
         .reduce((sum, item) => sum + (item.TotalValue || 0), 0);
 
       const cashFondo = data.cashFondo || 0;
@@ -1732,7 +1735,7 @@ export function IncidentForm() {
       const cashLoss = cashFondo + cashRecaudacion;
       const totalLoss = cashLoss + merchandiseLoss + otherLosses;
 
-      // 4. Construir el payload del incidente
+      // 4. Construir el payload del incidente (SIN IncidentItemLosses)
       const incidentPayload = {
         TransDate: new Date().toISOString(),
         Date: data.date,
@@ -1751,11 +1754,11 @@ export function IncidentForm() {
         Report: null,
         Office: data.officeId,
         IncidentType: data.incidentTypeId,
-        Suspects: suspectIds,
-        IncidentItemLosses: lossItems
+        Suspects: suspectIds
+        // NO incluir IncidentItemLosses aquí
       };
 
-      // 5. Enviar el incidente usando el servicio de API configurado
+      // 5. Primero crear el incidente
       const { api } = await import('@/services/api');
       
       // Debug: verificar token
@@ -1763,20 +1766,56 @@ export function IncidentForm() {
       console.log('Token disponible:', !!token);
       console.log('Payload del incidente:', incidentPayload);
       
+      let createdIncident: { id: number; [key: string]: unknown } | null = null;
+      
       try {
-        const response = await api.post('/api/incidents/', incidentPayload);
+        console.log('Step 1: Sending POST request to /api/incidents/ with payload:', incidentPayload);
+        const incidentResponse = await api.post('/api/incidents/', incidentPayload);
+        console.log('Incident response received:', incidentResponse);
         
-        if (response.status === 201 || response.status === 200) {
+        if (incidentResponse.status === 201 || incidentResponse.status === 200) {
+          createdIncident = incidentResponse.data;
+          console.log('Incident created successfully with ID:', createdIncident?.id);
+          
+          // 6. Crear los items de pérdida individualmente
+          if (lossItems.length > 0 && createdIncident?.id) {
+            console.log(`Step 2: Creating ${lossItems.length} loss items for incident ${createdIncident.id}`);
+            
+            for (let i = 0; i < lossItems.length; i++) {
+              const item = lossItems[i];
+              const lossItemPayload: Omit<IncidentItemLoss, 'id'> = {
+                ItemType: item.ItemType,
+                Description: item.Description,
+                Quantity: item.Quantity,
+                UnitPrice: item.UnitPrice,
+                TotalValue: item.TotalValue,
+                Incident: createdIncident.id
+              };
+              
+              console.log(`Creating loss item ${i + 1}/${lossItems.length}:`, lossItemPayload);
+              
+              try {
+                const lossItemResponse = await createIncidentItemLoss(lossItemPayload);
+                console.log(`Loss item ${i + 1} created successfully:`, lossItemResponse);
+              } catch (lossItemError) {
+                console.error(`Error creating loss item ${i + 1}:`, lossItemError);
+                toast.error(`Error al crear el item de pérdida ${i + 1}: ${item.Description}`);
+                // Continue with other items instead of failing completely
+              }
+            }
+          }
+          
           toast.success('Incidente registrado correctamente');
           router.push('/dashboard/incidentes');
         } else {
-          toast.error('Error al registrar el incidente');
+          console.error('Unexpected incident response status:', incidentResponse.status);
+          toast.error(`Error al registrar el incidente. Status: ${incidentResponse.status}`);
         }
       } catch (error: unknown) {
         console.error('Error creating incident:', error);
         
         // Type guard para el error
-        const isApiError = (err: unknown): err is { status?: number; data?: { detail?: string }; message?: string } => {
+        const isApiError = (err: unknown): err is { status?: number; data?: { detail?: string; message?: string; error?: string } | string; message?: string } => {
           return typeof err === 'object' && err !== null;
         };
         
@@ -1788,13 +1827,33 @@ export function IncidentForm() {
           });
           
           let errorMsg = 'Error al registrar el incidente';
-          if (error.data?.detail) {
-            errorMsg = error.data.detail;
+          
+          // Handle different error formats
+          if (error.data) {
+            if (typeof error.data === 'string') {
+              errorMsg = error.data;
+            } else if (error.data.detail) {
+              errorMsg = error.data.detail;
+            } else if (error.data.message) {
+              errorMsg = error.data.message;
+            } else if (error.data.error) {
+              errorMsg = error.data.error;
+            } else {
+              // If data is an object, try to extract meaningful error info
+              errorMsg = JSON.stringify(error.data);
+            }
           } else if (error.message) {
             errorMsg = error.message;
           }
+          
+          // Add status code to error message if available
+          if (error.status) {
+            errorMsg = `Error ${error.status}: ${errorMsg}`;
+          }
+          
           toast.error(errorMsg);
         } else {
+          console.error('Unknown error type:', error);
           toast.error('Error inesperado al registrar el incidente');
         }
       }

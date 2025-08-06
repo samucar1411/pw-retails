@@ -4,6 +4,7 @@ import { IdCell } from "@/components/ui/id-cell";
 import { IncidentTypeInfo } from "../incident-type-info";
 import { OfficeInfo } from "../office-info";
 import { LossesInfo } from "../losses-info";
+import { IncidentActions } from "../incident-actions";
 
 export const columns: ColumnDef<Incident>[] = [
   {
@@ -56,5 +57,10 @@ export const columns: ColumnDef<Incident>[] = [
     accessorKey: "TotalLoss",
     header: "Pérdida",
     cell: ({ row }) => <LossesInfo incident={row.original} />
+  },
+  {
+    id: "actions",
+    header: "Acciones",
+    cell: ({ row }) => <IncidentActions incident={row.original} />
   }
 ]; 

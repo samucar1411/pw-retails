@@ -96,6 +96,10 @@ interface SuspectSelectorProps {
 interface NewSuspectCard {
   id: string;
   alias: string;
+  name: string;
+  lastName: string;
+  lastName2: string;
+  nationality: string;
   description: string;
   statusId: number;
   image: File | null;
@@ -305,6 +309,10 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
     const newCard: NewSuspectCard = {
       id: Date.now().toString(),
       alias: '',
+      name: '',
+      lastName: '',
+      lastName2: '',
+      nationality: '',
       description: '',
       statusId: 1,
       image: null,
@@ -377,6 +385,10 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
       // 2. Prepare suspect data for creation
       const suspectDataToCreate = {
         Alias: card.alias.trim(),
+        Name: card.name.trim() || '',
+        LastName: card.lastName.trim() || '',
+        LastName2: card.lastName2.trim() || '',
+        Nationality: card.nationality.trim() || '',
         PhysicalDescription: card.description.trim() || '',
         Status: card.statusId, // Use the selected status instead of hardcoding
         PhotoUrl: finalPhotoUrl,
@@ -642,6 +654,52 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
               <div className="space-y-6">
                 {/* Basic Info */}
                 <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">Nombre</label>
+                      <Input
+                        placeholder="Nombre del sospechoso"
+                        value={card.name}
+                        onChange={(e) => updateNewSuspectCard(card.id, { name: e.target.value })}
+                        disabled={card.isSubmitting}
+                        className="h-10"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">Apellido Paterno</label>
+                      <Input
+                        placeholder="Apellido paterno del sospechoso"
+                        value={card.lastName}
+                        onChange={(e) => updateNewSuspectCard(card.id, { lastName: e.target.value })}
+                        disabled={card.isSubmitting}
+                        className="h-10"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">Apellido Materno</label>
+                      <Input
+                        placeholder="Apellido materno del sospechoso"
+                        value={card.lastName2}
+                        onChange={(e) => updateNewSuspectCard(card.id, { lastName2: e.target.value })}
+                        disabled={card.isSubmitting}
+                        className="h-10"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">Nacionalidad</label>
+                      <Input
+                        placeholder="Nacionalidad del sospechoso"
+                        value={card.nationality}
+                        onChange={(e) => updateNewSuspectCard(card.id, { nationality: e.target.value })}
+                        disabled={card.isSubmitting}
+                        className="h-10"
+                      />
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">
                       Alias <span className="text-destructive">*</span>
