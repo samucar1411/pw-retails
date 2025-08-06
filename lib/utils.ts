@@ -16,13 +16,17 @@ export function getProxyUrl(url: string | null | undefined): string | null {
     return `/${url}`;
   }
   
-  // If it's a backend URL (sys.adminpy.com), proxy it through our API route
+  // Force HTTP instead of HTTPS to avoid SSL certificate issues
+  if (url.startsWith('https://')) {
+    return url.replace('https://', 'http://');
+  }
   
-  // Return original URL for other cases (external CDNs, etc)
   return url;
 }
 
 export function getSafeImageUrl(url: string | null | undefined, fallback: string = '/logo-light.png'): string {
+  if (!url) return fallback;
+  
   const proxyUrl = getProxyUrl(url);
   return proxyUrl || fallback;
 }
