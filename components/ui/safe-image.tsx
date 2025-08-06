@@ -47,7 +47,7 @@ export function SafeImage({
           setHasError(true);
           setIsLoading(false);
         }}
-        unoptimized={process.env.NODE_ENV === 'production'} // Evitar problemas de optimización en producción
+        unoptimized={true} // Permitir carga de imágenes sin SSL válido
       />
       {isLoading && (
         <div className="absolute inset-0 bg-muted flex items-center justify-center">
