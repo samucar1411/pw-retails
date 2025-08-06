@@ -16,7 +16,6 @@ import {
   Equal
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -25,63 +24,6 @@ import { getIncidents } from "@/services/incident-service";
 
 interface HistoricalComparisonProps {
   officeId?: string;
-}
-
-interface Period {
-  fromDate: string;
-  toDate: string;
-  label: string;
-}
-
-const COMPARISON_OPTIONS = [
-  { value: '7', label: 'Últimos 7 días' },
-  { value: '14', label: 'Últimos 14 días' },
-  { value: '30', label: 'Últimos 30 días' },
-  { value: '90', label: 'Últimos 90 días' },
-  { value: 'custom', label: 'Período personalizado' }
-];
-
-function calculatePeriodFromDays(days: number): Period {
-  const toDate = new Date();
-  const fromDate = new Date();
-  fromDate.setDate(fromDate.getDate() - days + 1);
-  
-  return {
-    fromDate: fromDate.toISOString().slice(0, 10),
-    toDate: toDate.toISOString().slice(0, 10),
-    label: `Últimos ${days} días`
-  };
-}
-
-function calculatePreviousPeriod(fromDate: string, toDate: string): Period | null {
-  // Return null if dates are empty or invalid
-  if (!fromDate || !toDate || fromDate.trim() === '' || toDate.trim() === '') {
-    return null;
-  }
-
-  const from = new Date(fromDate);
-  const to = new Date(toDate);
-  
-  // Check if dates are valid
-  if (isNaN(from.getTime()) || isNaN(to.getTime())) {
-    return null;
-  }
-  
-  // Calculate period duration in days
-  const periodDuration = Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  
-  // Calculate previous period dates
-  const prevTo = new Date(from);
-  prevTo.setDate(prevTo.getDate() - 1);
-  
-  const prevFrom = new Date(prevTo);
-  prevFrom.setDate(prevFrom.getDate() - periodDuration + 1);
-  
-  return {
-    fromDate: prevFrom.toISOString().slice(0, 10),
-    toDate: prevTo.toISOString().slice(0, 10),
-    label: `Período anterior (${periodDuration} días)`
-  };
 }
 
 function formatPeriodLabel(fromDate: string, toDate: string): string {
@@ -95,46 +37,20 @@ function formatPeriodLabel(fromDate: string, toDate: string): string {
 }
 
 export function HistoricalComparison({ officeId }: HistoricalComparisonProps = {}) {
-  const [currentPeriodCount, setCurrentPeriodCount] = React.useState(0);
-  const [previousPeriodCount, setPreviousPeriodCount] = React.useState(0);
+  const [periodACount, setPeriodACount] = React.useState(0);
+  const [periodBCount, setPeriodBCount] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(false);
-  const [hasPreviousPeriod, setHasPreviousPeriod] = React.useState(false);
   
-  // Internal state for period selection
-  const [selectedOption, setSelectedOption] = React.useState('30');
-  const [customFromDate, setCustomFromDate] = React.useState<Date>();
-  const [customToDate, setCustomToDate] = React.useState<Date>();
-  const [isCustomPeriod, setIsCustomPeriod] = React.useState(false);
+  // Period A (first period)
+  const [periodAFromDate, setPeriodAFromDate] = React.useState<Date>();
+  const [periodAToDate, setPeriodAToDate] = React.useState<Date>();
+  
+  // Period B (second period)
+  const [periodBFromDate, setPeriodBFromDate] = React.useState<Date>();
+  const [periodBToDate, setPeriodBToDate] = React.useState<Date>();
 
-  // Determine which dates to use (only internal selection, no dashboard filters)
-  const fromDate = React.useMemo(() => {
-    if (isCustomPeriod && customFromDate) {
-      return customFromDate.toISOString().slice(0, 10);
-    }
-    if (selectedOption !== 'custom') {
-      return calculatePeriodFromDays(parseInt(selectedOption)).fromDate;
-    }
-    return '';
-  }, [isCustomPeriod, customFromDate, selectedOption]);
-
-  const toDate = React.useMemo(() => {
-    if (isCustomPeriod && customToDate) {
-      return customToDate.toISOString().slice(0, 10);
-    }
-    if (selectedOption !== 'custom') {
-      return calculatePeriodFromDays(parseInt(selectedOption)).toDate;
-    }
-    return '';
-  }, [isCustomPeriod, customToDate, selectedOption]);
-
-  // Calculate previous period
-  const previousPeriod = React.useMemo(() => {
-    return calculatePreviousPeriod(fromDate || '', toDate || '');
-  }, [fromDate, toDate]);
-
-  const fetchCurrentPeriodData = React.useCallback(async () => {
+  const fetchPeriodData = React.useCallback(async (fromDate: string, toDate: string) => {
     if (!fromDate || !toDate || fromDate.trim() === '' || toDate.trim() === '') {
-      setCurrentPeriodCount(0);
       return 0;
     }
 
@@ -147,59 +63,41 @@ export function HistoricalComparison({ officeId }: HistoricalComparisonProps = {
       };
       
       const response = await getIncidents(filters);
-      const count = response.count || 0;
-      setCurrentPeriodCount(count);
-      return count;
+      return response.count || 0;
     } catch (error) {
-      console.error('Error fetching current period data:', error);
-      setCurrentPeriodCount(0);
+      console.error('Error fetching period data:', error);
       return 0;
     }
-  }, [fromDate, toDate, officeId]);
-
-  const fetchPreviousPeriodData = React.useCallback(async () => {
-    if (!previousPeriod) {
-      setPreviousPeriodCount(0);
-      setHasPreviousPeriod(false);
-      return 0;
-    }
-
-    try {
-      const filters = {
-        fromDate: previousPeriod.fromDate,
-        toDate: previousPeriod.toDate,
-        page_size: 1, // Only need count, not results
-        ...(officeId && { Office: officeId })
-      };
-      
-      const response = await getIncidents(filters);
-      const count = response.count || 0;
-      setPreviousPeriodCount(count);
-      setHasPreviousPeriod(true);
-      return count;
-    } catch (error) {
-      console.error('Error fetching previous period data:', error);
-      setPreviousPeriodCount(0);
-      setHasPreviousPeriod(false);
-      return 0;
-    }
-  }, [previousPeriod, officeId]);
+  }, [officeId]);
 
   const loadData = React.useCallback(async () => {
+    const periodAFromStr = periodAFromDate?.toISOString().slice(0, 10);
+    const periodAToStr = periodAToDate?.toISOString().slice(0, 10);
+    const periodBFromStr = periodBFromDate?.toISOString().slice(0, 10);
+    const periodBToStr = periodBToDate?.toISOString().slice(0, 10);
+    
+    // Only load if we have both periods defined
+    if (!periodAFromStr || !periodAToStr || !periodBFromStr || !periodBToStr) {
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
       // Fetch both periods in parallel
-      await Promise.all([
-        fetchCurrentPeriodData(),
-        fetchPreviousPeriodData()
+      const [countA, countB] = await Promise.all([
+        fetchPeriodData(periodAFromStr, periodAToStr),
+        fetchPeriodData(periodBFromStr, periodBToStr)
       ]);
+      
+      setPeriodACount(countA);
+      setPeriodBCount(countB);
     } finally {
       setIsLoading(false);
     }
-  }, [fetchCurrentPeriodData, fetchPreviousPeriodData]);
+  }, [periodAFromDate, periodAToDate, periodBFromDate, periodBToDate, fetchPeriodData]);
 
-  // Load data when filters change
+  // Load data when periods change
   React.useEffect(() => {
     const timeoutId = setTimeout(() => {
       loadData();
@@ -208,23 +106,8 @@ export function HistoricalComparison({ officeId }: HistoricalComparisonProps = {
     return () => clearTimeout(timeoutId);
   }, [loadData]);
 
-  // Handle option selection
-  const handleOptionChange = (value: string) => {
-    setSelectedOption(value);
-    if (value === 'custom') {
-      setIsCustomPeriod(true);
-    } else {
-      setIsCustomPeriod(false);
-      setCustomFromDate(undefined);
-      setCustomToDate(undefined);
-    }
-  };
-
-  const difference = currentPeriodCount - previousPeriodCount;
-  const percentage = previousPeriodCount > 0 ? ((difference / previousPeriodCount) * 100) : 0;
-
-  // Determine if we have valid date filters
-  const hasValidDateFilters = fromDate && toDate && fromDate.trim() !== '' && toDate.trim() !== '';
+  const difference = periodACount - periodBCount;
+  const bothPeriodsSet = periodAFromDate && periodAToDate && periodBFromDate && periodBToDate;
 
   if (isLoading) {
     return (
@@ -246,60 +129,47 @@ export function HistoricalComparison({ officeId }: HistoricalComparisonProps = {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CalendarIcon className="h-5 w-5" />
-          Comparativo de Incidentes
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <CalendarIcon className="h-5 w-5 text-primary" />
+          Comparativo de Períodos
         </CardTitle>
         <CardDescription>
-          Compara incidentes entre períodos
+          Compara la cantidad de incidentes entre dos períodos específicos
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Period Selection Controls */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Select value={selectedOption} onValueChange={handleOptionChange}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Seleccionar período" />
-              </SelectTrigger>
-              <SelectContent>
-                {COMPARISON_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Custom Date Range */}
-          {isCustomPeriod && (
-            <div className="flex items-center gap-2">
+      
+      <CardContent className="space-y-6">
+        {/* Period Selection */}
+        <div className="space-y-6">
+          {/* Period A */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-primary">Período A</h3>
+            <div className="flex items-center gap-3">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
                       "w-[140px] justify-start text-left font-normal",
-                      !customFromDate && "text-muted-foreground"
+                      !periodAFromDate && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {customFromDate ? format(customFromDate, "dd/MM/yyyy") : "Desde"}
+                    {periodAFromDate ? format(periodAFromDate, "dd/MM/yyyy") : "Desde"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <Calendar
                     mode="single"
-                    selected={customFromDate}
-                    onSelect={(date) => setCustomFromDate(date)}
+                    selected={periodAFromDate}
+                    onSelect={setPeriodAFromDate}
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
 
-              <span className="text-muted-foreground">hasta</span>
+              <span className="text-sm text-muted-foreground">hasta</span>
 
               <Popover>
                 <PopoverTrigger asChild>
@@ -307,104 +177,177 @@ export function HistoricalComparison({ officeId }: HistoricalComparisonProps = {
                     variant="outline"
                     className={cn(
                       "w-[140px] justify-start text-left font-normal",
-                      !customToDate && "text-muted-foreground"
+                      !periodAToDate && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {customToDate ? format(customToDate, "dd/MM/yyyy") : "Hasta"}
+                    {periodAToDate ? format(periodAToDate, "dd/MM/yyyy") : "Hasta"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <Calendar
                     mode="single"
-                    selected={customToDate}
-                    onSelect={setCustomToDate}
+                    selected={periodAToDate}
+                    onSelect={setPeriodAToDate}
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
             </div>
-          )}
+          </div>
+
+          {/* Period B */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-orange-600">Período B</h3>
+            <div className="flex items-center gap-3">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[140px] justify-start text-left font-normal",
+                      !periodBFromDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {periodBFromDate ? format(periodBFromDate, "dd/MM/yyyy") : "Desde"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={periodBFromDate}
+                    onSelect={setPeriodBFromDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <span className="text-sm text-muted-foreground">hasta</span>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[140px] justify-start text-left font-normal",
+                      !periodBToDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {periodBToDate ? format(periodBToDate, "dd/MM/yyyy") : "Hasta"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={periodBToDate}
+                    onSelect={setPeriodBToDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
         </div>
 
-        {!hasValidDateFilters ? (
-          <div className="text-center p-6 text-muted-foreground">
-            <CalendarIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>Selecciona un período para ver la comparación</p>
+        {!bothPeriodsSet ? (
+          <div className="text-center p-8 bg-muted/30 rounded-lg">
+            <CalendarIcon className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+            <h3 className="font-medium mb-1">Configura ambos períodos</h3>
+            <p className="text-sm text-muted-foreground">
+              Selecciona las fechas de inicio y fin para ambos períodos A y B
+            </p>
           </div>
         ) : (
-          <>
-            {/* Period Display */}
-            <div className="flex items-center justify-center gap-4">
-              <div className="text-center">
-                <div className="text-sm text-muted-foreground">Período actual</div>
-                <div className="font-medium">{formatPeriodLabel(fromDate, toDate)}</div>
-              </div>
-              
-              <span className="text-muted-foreground">VS</span>
-              
-              <div className="text-center">
-                <div className="text-sm text-muted-foreground">Período anterior</div>
-                <div className="font-medium">
-                  {previousPeriod ? formatPeriodLabel(previousPeriod.fromDate, previousPeriod.toDate) : 'N/A'}
-                </div>
-              </div>
-            </div>
-
-            {/* Results */}
+          <div className="space-y-6">
+            {/* Main Comparison Display */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 rounded border bg-primary/5">
-                <div className="text-sm text-muted-foreground">Período actual</div>
-                <div className="text-3xl font-bold mt-1 text-primary">{currentPeriodCount}</div>
-                <div className="text-sm text-muted-foreground">incidentes</div>
+              {/* Period A */}
+              <div className="relative p-6 rounded-lg border-2 border-primary/20 bg-primary/5">
+                <div className="text-center">
+                  <div className="text-sm font-medium text-primary/70 uppercase tracking-wide mb-1">
+                    Período A
+                  </div>
+                  <div className="text-3xl font-bold text-primary mb-1">
+                    {periodACount}
+                  </div>
+                  <div className="text-sm text-primary/70 mb-2">
+                    {periodACount === 1 ? 'incidente' : 'incidentes'}
+                  </div>
+                  <div className="text-xs text-muted-foreground border-t border-primary/20 pt-2">
+                    {periodAFromDate && periodAToDate ? 
+                      formatPeriodLabel(periodAFromDate.toISOString().slice(0, 10), periodAToDate.toISOString().slice(0, 10)) 
+                      : 'Sin fechas'
+                    }
+                  </div>
+                </div>
               </div>
               
-              <div className="text-center p-4 rounded border bg-muted/20">
-                <div className="text-sm text-muted-foreground">Período anterior</div>
-                <div className="text-3xl font-bold mt-1 text-muted-foreground">
-                  {hasPreviousPeriod ? previousPeriodCount : 'N/A'}
+              {/* Period B */}
+              <div className="relative p-6 rounded-lg border-2 border-orange-200 bg-orange-50">
+                <div className="text-center">
+                  <div className="text-sm font-medium text-orange-700 uppercase tracking-wide mb-1">
+                    Período B
+                  </div>
+                  <div className="text-3xl font-bold text-orange-600 mb-1">
+                    {periodBCount}
+                  </div>
+                  <div className="text-sm text-orange-700 mb-2">
+                    {periodBCount === 1 ? 'incidente' : 'incidentes'}
+                  </div>
+                  <div className="text-xs text-muted-foreground border-t border-orange-200 pt-2">
+                    {periodBFromDate && periodBToDate ? 
+                      formatPeriodLabel(periodBFromDate.toISOString().slice(0, 10), periodBToDate.toISOString().slice(0, 10))
+                      : 'Sin fechas'
+                    }
+                  </div>
                 </div>
-                <div className="text-sm text-muted-foreground">incidentes</div>
               </div>
             </div>
 
-            {/* Comparison */}
-            {hasPreviousPeriod && (
-              <div className="text-center p-3 rounded border bg-card">
-                <div className="flex items-center justify-center gap-2">
+            {/* Simple Comparison Result */}
+            <div className="relative">
+              <div className={`p-6 rounded-lg border-2 text-center ${
+                difference === 0 
+                  ? 'border-blue-200 bg-blue-50' 
+                  : difference > 0 
+                    ? 'border-green-200 bg-green-50' 
+                    : 'border-yellow-200 bg-yellow-50'
+              }`}>
+                <div className="flex items-center justify-center gap-3">
                   {difference === 0 ? (
-                    <Equal className="h-5 w-5 text-muted-foreground" />
+                    <>
+                      <Equal className="h-8 w-8 text-blue-600" />
+                      <span className="text-2xl font-bold text-blue-600">
+                        Misma cantidad de incidentes
+                      </span>
+                    </>
                   ) : difference > 0 ? (
-                    <TrendingUp className="h-5 w-5 text-red-500" />
+                    <>
+                      <TrendingUp className="h-8 w-8 text-green-600" />
+                      <span className="text-2xl font-bold text-green-600">
+                        Período A tuvo {Math.abs(difference)} incidente{Math.abs(difference) !== 1 ? 's' : ''} más
+                      </span>
+                    </>
                   ) : (
-                    <TrendingDown className="h-5 w-5 text-green-500" />
-                  )}
-                  
-                  <span className="text-lg font-semibold">
-                    {difference === 0 ? 'Igual cantidad' : 
-                     difference > 0 ? `+${difference} incidentes` : 
-                     `${difference} incidentes`}
-                  </span>
-                  
-                  {difference !== 0 && (
-                    <span className={`text-sm px-2 py-1 rounded ${
-                      difference > 0 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
-                    }`}>
-                      {difference > 0 ? '+' : ''}{percentage.toFixed(1)}%
-                    </span>
+                    <>
+                      <TrendingDown className="h-8 w-8 text-yellow-600" />
+                      <span className="text-2xl font-bold text-yellow-600">
+                        Período B tuvo {Math.abs(difference)} incidente{Math.abs(difference) !== 1 ? 's' : ''} más
+                      </span>
+                    </>
                   )}
                 </div>
+                
+                {difference === 0 && (
+                  <div className="text-sm text-blue-600/70 mt-2">
+                    Ambos períodos tuvieron exactamente {periodACount} incidente{periodACount !== 1 ? 's' : ''}
+                  </div>
+                )}
               </div>
-            )}
-
-            {!hasPreviousPeriod && (
-              <div className="text-center p-3 rounded border bg-muted/20">
-                <div className="text-sm text-muted-foreground">
-                  No hay datos del período anterior para comparar
-                </div>
-              </div>
-            )}
-          </>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

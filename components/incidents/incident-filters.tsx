@@ -233,7 +233,7 @@ export function IncidentFilters({
         }));
       } else if (field.key === 'IncidentType') {
         options = filterOptions.incidentTypes.map((type) => ({
-          value: type.id,
+          value: type.Name,
           label: type.Name
         }));
       } else if (field.key === 'suspect_alias') {

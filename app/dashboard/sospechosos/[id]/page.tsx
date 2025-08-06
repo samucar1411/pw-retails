@@ -696,7 +696,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Género */}
                     <div>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Género</h4>
+                      <h4 className="text-sm font-normal text-muted-foreground mb-1">Género</h4>
                       <p className="text-sm">
                         {suspect.Tags?.sexo ? 
                           (suspect.Tags.sexo === 'masculino' ? 'Hombre' : 
@@ -709,7 +709,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     
                     {/* Contextura */}
                     <div>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Contextura</h4>
+                      <h4 className="text-sm font-normal text-muted-foreground mb-1">Contextura</h4>
                       <p className="text-sm">
                         {suspect.Tags?.contextura ? 
                           suspect.Tags.contextura.charAt(0).toUpperCase() + suspect.Tags.contextura.slice(1).toLowerCase()
@@ -720,7 +720,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     
                     {/* Estatura */}
                     <div>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Estatura</h4>
+                      <h4 className="text-sm font-normal text-muted-foreground mb-1">Estatura</h4>
                       <p className="text-sm">
                         {suspect.Tags?.altura ? 
                           (() => {
@@ -739,7 +739,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     
                     {/* Tono de piel */}
                     <div>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Tono de piel</h4>
+                      <h4 className="text-sm font-normal text-muted-foreground mb-1">Tono de piel</h4>
                       <p className="text-sm">
                         {suspect.Tags?.piel ? 
                           suspect.Tags.piel.charAt(0).toUpperCase() + suspect.Tags.piel.slice(1).toLowerCase()
@@ -750,7 +750,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     
                     {/* Piercings */}
                     <div>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Piercings</h4>
+                      <h4 className="text-sm font-normal text-muted-foreground mb-1">Piercings</h4>
                       <p className="text-sm">
                         {suspect.Tags?.piercings ? 
                           suspect.Tags.piercings.split(',').map(p => p.trim().charAt(0).toUpperCase() + p.trim().slice(1).toLowerCase()).join(', ')
@@ -761,7 +761,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     
                     {/* Tatuajes */}
                     <div>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Tatuajes</h4>
+                      <h4 className="text-sm font-normal text-muted-foreground mb-1">Tatuajes</h4>
                       <p className="text-sm">
                         {suspect.Tags?.tatuajes ? 
                           suspect.Tags.tatuajes.split(',').map(t => t.trim().charAt(0).toUpperCase() + t.trim().slice(1).toLowerCase()).join(', ')
@@ -772,7 +772,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     
                     {/* Accesorios */}
                     <div>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Accesorios</h4>
+                      <h4 className="text-sm font-normal text-muted-foreground mb-1">Accesorios</h4>
                       <p className="text-sm">
                         {suspect.Tags?.accesorios ? 
                           suspect.Tags.accesorios.split(',').map(a => a.trim().charAt(0).toUpperCase() + a.trim().slice(1).toLowerCase().replace('_', ' ')).join(', ')

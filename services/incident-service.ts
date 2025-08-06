@@ -40,8 +40,8 @@ export async function getIncidents(
         // Si es un ID, usarlo directamente
         params.id = value;
       } else if (key === 'IncidentType') {
-        // Asegurarse de que el tipo de incidente se envía como número
-        params[key] = Number(value);
+        // Enviar el tipo de incidente como string (nombre del tipo)
+        params[key] = value;
       } else {
         // For all other parameters, use them directly (including Office)
         params[key] = value;

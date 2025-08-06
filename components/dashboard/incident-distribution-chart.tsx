@@ -16,10 +16,12 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { PieChartIcon, Loader2 } from "lucide-react";
+import { PieChartIcon, Loader2, ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getIncidentTypes } from "@/services/incident-service";
 import { api } from "@/services/api";
+import { useRouter } from "next/navigation";
+import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
 /* -------------------------------- helpers ------------------------------- */
 // 1. Colores fijos para no perder consistencia entre renders
@@ -40,6 +42,7 @@ interface IncidentDistributionChartProps {
 
 /* -------------------------- componente principal ------------------------- */
 export function IncidentDistributionChart({ fromDate, toDate, officeId }: IncidentDistributionChartProps) {
+  const router = useRouter();
   // Fetch incident types
   const { data: incidentTypesResponse, isLoading: isLoadingTypes } = useQuery({
     queryKey: ['incident-types'],
@@ -132,6 +135,10 @@ export function IncidentDistributionChart({ fromDate, toDate, officeId }: Incide
           <ChartAndTable
             data={distributionData}
             total={totalIncidents}
+            router={router}
+            fromDate={fromDate}
+            toDate={toDate}
+            officeId={officeId}
           />
         )}
       </CardContent>
@@ -177,9 +184,29 @@ type ChartAndTableProps = {
     color: string;
   }[];
   total: number;
+  router: AppRouterInstance;
+  fromDate: string;
+  toDate: string;
+  officeId: string;
 };
 
-function ChartAndTable({ data, total }: ChartAndTableProps) {
+function ChartAndTable({ data, total, router, fromDate, toDate, officeId }: ChartAndTableProps) {
+  
+  const handleRowClick = (incidentTypeName: string) => {
+    // Build the URL with filters
+    const params = new URLSearchParams();
+    
+    // Add incident type filter
+    params.set('IncidentType', incidentTypeName);
+    
+    // Add existing filters if they exist
+    if (fromDate) params.set('Date_after', fromDate);
+    if (toDate) params.set('Date_before', toDate);
+    if (officeId) params.set('Office', officeId);
+    
+    // Navigate to incidents page with filters
+    router.push(`/dashboard/incidentes?${params.toString()}`);
+  };
   return (
     <div className="flex flex-col w-full">
       {/* ---------------------------- PieChart ---------------------------- */}
@@ -242,20 +269,28 @@ function ChartAndTable({ data, total }: ChartAndTableProps) {
             {data.map((d) => {
               const pct = total ? Math.round((d.value / total) * 100) : 0;
               return (
-                <tr key={d.id} className="border-t border-border">
-                  <td className="px-4 py-2 text-sm">
+                <tr 
+                  key={d.id} 
+                  className="border-t border-border hover:bg-muted/50 cursor-pointer transition-colors group"
+                  onClick={() => handleRowClick(d.name)}
+                  title={`Ver incidentes de tipo "${d.name}"`}
+                >
+                  <td className="px-4 py-3 text-sm">
                     <div className="flex items-center gap-2">
                       <span
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: d.color }}
                       />
-                      {d.name}
+                      <span className="group-hover:text-primary transition-colors">
+                        {d.name}
+                      </span>
+                      <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </td>
-                  <td className="px-4 py-2 text-sm text-right font-medium">
+                  <td className="px-4 py-3 text-sm text-right font-medium group-hover:text-primary transition-colors">
                     {d.value}
                   </td>
-                  <td className="px-4 py-2 text-sm text-right">{pct}%</td>
+                  <td className="px-4 py-3 text-sm text-right">{pct}%</td>
                 </tr>
               );
             })}

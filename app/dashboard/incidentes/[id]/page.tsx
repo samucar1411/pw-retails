@@ -28,7 +28,6 @@ import {
 } from '@/components/ui/breadcrumb';
 import { IdCell } from '@/components/ui/id-cell';
 import { PoliceReportPreview } from '@/components/police-report-preview';
-import { ChangeHistoryComponent } from '@/components/change-history';
 
 // Services
 import { getIncidentById } from '@/services/incident-service';
@@ -39,6 +38,9 @@ import { getCompanyById } from '@/services/company-service';
 
 // Utils
 import { getSafeImageUrl } from '@/lib/utils';
+
+// Types
+import type { File } from '@/types/common';
 
 // Types
 import { Incident } from '@/types/incident';
@@ -165,6 +167,96 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
   // Handle back button
   const handleBack = () => {
     router.back();
+  };
+
+  // Handle file download
+  const handleFileDownload = async (file: File) => {
+    try {
+      console.log('Downloading file:', file);
+      
+      const downloadFile = async (url: string) => {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.blob();
+      };
+
+      let blob: Blob;
+      
+      // Try different download strategies
+      if (file.url.includes('cloudinary.com') || file.url.includes('res.cloudinary.com')) {
+        // For Cloudinary files, use the URL directly
+        console.log('Downloading from Cloudinary:', file.url);
+        blob = await downloadFile(file.url);
+      } else if (file.url.includes('/media/')) {
+        // For backend media files, try our API route first
+        const mediaPath = file.url.replace(/^.*\/media\//, '');
+        const apiUrl = `/api/media/${mediaPath}`;
+        
+        console.log('Trying API route:', apiUrl);
+        try {
+          blob = await downloadFile(apiUrl);
+        } catch (apiError) {
+          console.warn('API route failed, trying direct URL:', apiError);
+          // If API route fails, try direct URL with current cookies
+          blob = await downloadFile(file.url);
+        }
+      } else {
+        // For other files, try the URL directly
+        console.log('Downloading directly from:', file.url);
+        blob = await downloadFile(file.url);
+      }
+      
+      console.log('Blob created:', blob.size, 'bytes, type:', blob.type);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.name || 'archivo_adjunto';
+      link.style.display = 'none';
+      
+      // Add to DOM, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+      
+      toast({
+        title: "Descarga completada",
+        description: `El archivo "${file.name}" se ha descargado correctamente.`,
+      });
+      
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      
+      // Fallback: try opening the file in a new tab
+      console.log('Trying fallback: opening in new tab');
+      try {
+        const link = document.createElement('a');
+        link.href = file.url;
+        link.target = '_blank';
+        link.download = file.name || 'archivo_adjunto';
+        link.click();
+        
+        toast({
+          title: "Archivo abierto",
+          description: `Se abrió "${file.name}" en una nueva pestaña. Usa Ctrl+S para guardar.`,
+        });
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+        toast({
+          title: "Error al descargar",
+          description: `No se pudo descargar "${file.name}". Verifica tu conexión e inténtalo de nuevo.`,
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   // Generate PDF function using the improved component
@@ -733,9 +825,15 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                           <p className="font-medium text-foreground truncate">{file.name}</p>
                           <p className="text-sm text-muted-foreground">Archivo adjunto</p>
                     </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                      <Download className="h-4 w-4" />
-                    </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          onClick={() => handleFileDownload(file)}
+                          title={`Descargar ${file.name}`}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
                       </div>
                 ))}
                   </div>
@@ -749,12 +847,6 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
           </CardContent>
         </Card>
 
-            {/* Change History */}
-            <ChangeHistoryComponent
-              entityType="incident"
-              entityId={incident.id}
-              className="mt-6"
-            />
           </div>
         </div>
       </div>

@@ -58,8 +58,8 @@ export function useIncidentsWithFilters(pageSize: number = 10): UseIncidentsWith
         page: filters.page || currentPage,
         page_size: pageSize,
         ordering: '-Date', // Order by date descending
-        // Convertir IncidentType a número si existe
-        IncidentType: filters.IncidentType ? Number(filters.IncidentType) : undefined,
+        // Enviar IncidentType como string (nombre del tipo)
+        IncidentType: filters.IncidentType,
         // Incluir ID si existe
         id: filters.id
       };

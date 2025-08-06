@@ -108,10 +108,6 @@ const nextConfig: NextConfig = {
         source: "/api-token-auth2",
         destination: `${API_URL}/api-token-auth2/`,
       },
-      {
-        source: "/media/:path*",
-        destination: `${API_URL}/media/:path*`,
-      },
     ];
   },
   webpack: (config, { dev }) => {
