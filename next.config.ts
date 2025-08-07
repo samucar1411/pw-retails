@@ -117,6 +117,8 @@ const nextConfig: NextConfig = {
   },
   webpack: (config, { dev }) => {
     if (dev) {
+      // Ignore SSL certificate errors for axios/fetch in dev
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
       config.ignoreWarnings = [
         { module: /node_modules\/axios/ },
         { module: /node_modules\/https-proxy-agent/ }
