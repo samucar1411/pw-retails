@@ -43,7 +43,6 @@ const authenticateUser = async (username: string, password: string): Promise<Aut
     // Add a dummy token for backward compatibility
     return { ...userData, token: 'cookie-based-auth' };
   } catch (error) {
-    console.error('[Auth] Authentication error:', error);
     throw error;
   }
 };
@@ -72,7 +71,6 @@ const logout = async () => {
       method: 'POST',
     });
   } catch (error) {
-    console.error('Logout error:', error);
   }
 };
 
@@ -92,7 +90,6 @@ const getCurrentUser = async (): Promise<AuthResponse | null> => {
 
     return await response.json();
   } catch (error) {
-    console.error('[Auth] Error getting current user:', error);
     return null;
   }
 };

@@ -176,8 +176,8 @@ function SuspectsPageContent() {
       try {
         const statuses = await getSuspectStatuses();
         setSuspectStatuses(statuses);
-      } catch (error) {
-        console.error('Error loading suspect statuses:', error);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
         setSuspectStatuses([
           { id: 1, Name: 'Detenido' },
           { id: 2, Name: 'Libre' },

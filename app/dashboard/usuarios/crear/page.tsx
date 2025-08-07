@@ -68,8 +68,8 @@ export default function CreateUserPage() {
         description: "El nuevo usuario ha sido registrado en el sistema",
       });
       router.push("/dashboard/usuarios");
-    } catch (error) {
-      console.error("Error creating user:", error);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
       toast.error("Error al crear el usuario", {
         description: "Por favor verifique los datos e intente nuevamente",
       });

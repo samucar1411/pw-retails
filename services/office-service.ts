@@ -19,7 +19,6 @@ export const getOffices = async (params?: ListParams): Promise<PaginatedResponse
     });
     return response.data;
   } catch (error) {
-    console.error('[OfficeService] Error fetching offices:', error);
     // Return empty results on error to prevent UI from breaking
     return { 
       count: 0, 
@@ -50,7 +49,6 @@ export const getOffice = async (id: number): Promise<Office | null> => {
     }
     
     if (response.status >= 400) {
-      console.warn(`[OfficeService] Server error ${response.status} when fetching office ${id}`);
       return null;
     }
     
@@ -60,7 +58,6 @@ export const getOffice = async (id: number): Promise<Office | null> => {
     const axiosError = error as { response?: { status?: number } };
     if (!axiosError?.response || axiosError.response.status !== 404) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`[OfficeService] Error fetching office ${id}:`, errorMessage);
     }
     return null;
   }
@@ -76,7 +73,6 @@ export const createOffice = async (data: OfficeCreateInput): Promise<Office | nu
     const response = await api.post<Office>(OFFICES_ENDPOINT, data);
     return response.data;
   } catch (error) {
-    console.error('[OfficeService] Error creating office:', error);
     return null;
   }
 };
@@ -92,7 +88,6 @@ export const updateOffice = async (
   data: OfficeUpdateInput
 ): Promise<Office | null> => {
   if (!id) {
-    console.error('[OfficeService] No office ID provided for update');
     return null;
   }
   
@@ -100,7 +95,6 @@ export const updateOffice = async (
     const response = await api.patch<Office>(`${OFFICES_ENDPOINT}${id}/`, data);
     return response.data;
   } catch (error) {
-    console.error(`[OfficeService] Error updating office ${id}:`, error);
     return null;
   }
 };
@@ -112,7 +106,6 @@ export const updateOffice = async (
  */
 export const deleteOffice = async (id: number): Promise<boolean> => {
   if (!id) {
-    console.error('[OfficeService] No office ID provided for deletion');
     return false;
   }
   
@@ -120,7 +113,6 @@ export const deleteOffice = async (id: number): Promise<boolean> => {
     await api.delete(`${OFFICES_ENDPOINT}${id}/`);
     return true;
   } catch (error) {
-    console.error(`[OfficeService] Error deleting office ${id}:`, error);
     return false;
   }
 };
@@ -134,7 +126,6 @@ export const getAllOfficesComplete = async (): Promise<Office[]> => {
     const response = await api.get<Office[]>(`${OFFICES_ENDPOINT}?all=true&format=json`);
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
-    console.error('[OfficeService] Error fetching all offices with ?all=true:', error);
     return [];
   }
 };
@@ -156,7 +147,6 @@ export async function getAllOffices(): Promise<Office[]> {
       const response = await getOffices({ page, pageSize });
       
       if (!response.results || response.results.length === 0) {
-        console.log(': No more results, breaking loop');
         break;
       }
       
@@ -171,13 +161,10 @@ export async function getAllOffices(): Promise<Office[]> {
     }
     
     if (page > MAX_PAGES) {
-      console.warn(`: Reached maximum page limit (${MAX_PAGES}), stopping fetch`);
     }
     
-    console.log(`: Completed with ${allOffices.length} total offices`);
     return allOffices;
   } catch (error) {
-    console.error(': Error fetching all offices:', error);
     return allOffices; // Return whatever we've collected so far
   }
 }

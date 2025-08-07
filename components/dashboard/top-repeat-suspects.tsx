@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useAllIncidents } from "@/hooks/useAllIncidents";
 import { getSuspect } from "@/services/suspect-service";
 import { Suspect } from "@/types/suspect";
+import { getSafeImageUrl } from "@/lib/utils";
 
 interface TopRepeatSuspectsProps {
   fromDate?: string;
@@ -78,8 +79,8 @@ export function TopRepeatSuspects({}: TopRepeatSuspectsProps = {}) {
           }
         });
         setSuspectData(suspectMap);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
-        console.error('Error fetching suspect data:', error);
       } finally {
         setLoadingSuspects(false);
       }
@@ -191,7 +192,7 @@ export function TopRepeatSuspects({}: TopRepeatSuspectsProps = {}) {
                   
                   <Avatar className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
                     <AvatarImage 
-                      src={suspect?.PhotoUrl} 
+                      src={getSafeImageUrl(suspect?.PhotoUrl)} 
                       alt={suspect?.Alias || `Sospechoso`}
                     />
                     <AvatarFallback className="text-xs">{initials}</AvatarFallback>

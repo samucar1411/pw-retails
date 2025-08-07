@@ -63,8 +63,8 @@ const OfficeInfo = React.memo(function OfficeInfo({ officeId }: { officeId: numb
       try {
         const officeData = await getOffice(officeId);
         setOffice(officeData);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
-        console.error("Error fetching office:", error);
       } finally {
         setLoading(false);
       }
@@ -102,8 +102,8 @@ const IncidentTypeInfo = React.memo(function IncidentTypeInfo({ typeId }: { type
       try {
         const type = await getIncidentType(typeId);
         setIncidentType(type);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
-        console.error("Error fetching incident type:", error);
       } finally {
         setLoading(false);
       }

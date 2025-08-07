@@ -55,7 +55,6 @@ export async function getIncidents(
     
     return data;
   } catch (error) {
-    console.error("Error fetching incidents");
     throw error;
   }
 }
@@ -95,7 +94,6 @@ export async function getIncidentType(id: number): Promise<IncidentType | null> 
     });
     return data;
   } catch (error) {
-    console.error('Error fetching incident type');
     return null;
   }
 }
@@ -118,15 +116,12 @@ export async function getIncidentById(id: string | number): Promise<Incident> {
       
       // Add the incident item losses to the incident data
       data.IncidentItemLosses = incidentItemLosses;
-      console.log(`Loaded ${incidentItemLosses.length} incident item losses for incident ${id}`);
     } catch (itemLossError) {
-      console.warn('Error loading incident item losses:', itemLossError);
       data.IncidentItemLosses = [];
     }
     
     return data;
   } catch (error) {
-    console.error('Error fetching incident');
     throw error;
   }
 }
@@ -137,9 +132,7 @@ export async function getIncidentById(id: string | number): Promise<Incident> {
 export async function deleteIncident(id: string | number): Promise<void> {
   try {
     await api.delete(`/api/incidents/${id}/`);
-    console.log(`Incident ${id} deleted successfully`);
   } catch (error) {
-    console.error('Error deleting incident:', error);
     throw error;
   }
 }

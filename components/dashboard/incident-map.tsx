@@ -83,8 +83,9 @@ export function IncidentMap({ fromDate, toDate, officeId }: IncidentMapProps = {
               try {
                 const incidentType = await getIncidentTypeWithCache(incident.IncidentType);
                 incidentTypeName = incidentType?.Name || 'Tipo desconocido';
-              } catch (error) {
-                console.warn('Error loading incident type:', error);
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (error) {
+                // Error loading incident type - using default value
               }
             }
 
@@ -100,8 +101,9 @@ export function IncidentMap({ fromDate, toDate, officeId }: IncidentMapProps = {
               try {
                 const company = await getCompanyById(office.Company.toString());
                 logoUrl = company?.image_url || '';
-              } catch (error) {
-                console.warn('Error loading company:', error);
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (error) {
+                // Error loading company - using empty logo
               }
             }
 
@@ -131,16 +133,18 @@ export function IncidentMap({ fromDate, toDate, officeId }: IncidentMapProps = {
                 severity
               }
             };
-          } catch (error) {
-            console.error('Error processing incident location:', error);
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (error) {
+            // Error processing incident location
             return null;
           }
         });
 
         const locations = (await Promise.all(locationPromises)).filter((loc): loc is NonNullable<typeof loc> => loc !== null);
         setLocations(locations);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
-        console.error('Error loading locations:', error);
+        // Error loading locations
       } finally {
         setLoading(false);
       }

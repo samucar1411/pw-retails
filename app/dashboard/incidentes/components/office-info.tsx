@@ -32,7 +32,6 @@ export const OfficeInfo = React.memo(function OfficeInfo({ officeId }: OfficeInf
           setOffice(officeId);
         }
       } catch (error) {
-        console.error("Error fetching office:", error);
         setError(error instanceof Error ? error : new Error("Error fetching office"));
       } finally {
         setIsLoading(false);

@@ -79,41 +79,30 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
         
         // Fetch incident type
         if (data.IncidentType) {
-          console.log('Incident has IncidentType:', data.IncidentType);
           try {
             const typeData = await getIncidentTypeWithCache(data.IncidentType);
-            console.log('Retrieved incident type data:', typeData);
             const typeName = typeData?.Name || `Tipo ${data.IncidentType}`;
-            console.log('Setting incident type name to:', typeName);
             setIncidentType(typeName);
-          } catch (error) {
-            console.error('Error fetching incident type:', error);
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
             setIncidentType(`Tipo ${data.IncidentType}`);
           }
         } else {
-          console.log('Incident has no IncidentType');
           setIncidentType('Tipo no especificado');
         }
         
         // Fetch office data
         if (data.Office) {
           const officeId = typeof data.Office === 'number' ? data.Office : data.Office.id;
-          console.log('Fetching office with ID:', officeId);
           const officeData = await getOffice(officeId);
-          console.log('Office data received:', officeData);
           setOffice(officeData);
           
           // Fetch company data
           if (officeData?.Company) {
-            console.log('Office has company ID:', officeData.Company);
             const company = await getCompanyById(officeData.Company.toString());
-            console.log('Company data received:', company);
             setCompanyLogo(company?.image_url || null);
             setCompanyName(company?.name || 'Empresa no encontrada');
-            console.log('Company name set to:', company?.name);
           }
-        } else {
-          console.log('No office data in incident');
         }
         
         // Fetch suspects
@@ -137,8 +126,8 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
         setSuspectsLoading(false);
         
         setLoading(false);
-      } catch (error) {
-        console.error('Error fetching incident data:', error);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
         setLoading(false);
       }
     };
@@ -213,8 +202,8 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
         description: "El incidente ha sido eliminado correctamente.",
       });
       router.push('/dashboard/incidentes');
-    } catch (error) {
-      console.error('Error deleting incident:', error);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
       toast({
         title: "Error al eliminar",
         description: "No se pudo eliminar el incidente. Inténtalo de nuevo.",
@@ -229,8 +218,6 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
   // Handle file download
   const handleFileDownload = async (file: File) => {
     try {
-      console.log('Downloading file:', file);
-      
       const downloadFile = async (url: string) => {
         const response = await fetch(url);
         if (!response.ok) {
@@ -244,28 +231,23 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
       // Try different download strategies
       if (file.url.includes('cloudinary.com') || file.url.includes('res.cloudinary.com')) {
         // For Cloudinary files, use the URL directly
-        console.log('Downloading from Cloudinary:', file.url);
         blob = await downloadFile(file.url);
       } else if (file.url.includes('/media/')) {
         // For backend media files, try our API route first
         const mediaPath = file.url.replace(/^.*\/media\//, '');
         const apiUrl = `/api/media/${mediaPath}`;
         
-        console.log('Trying API route:', apiUrl);
         try {
           blob = await downloadFile(apiUrl);
-        } catch (apiError) {
-          console.warn('API route failed, trying direct URL:', apiError);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
           // If API route fails, try direct URL with current cookies
           blob = await downloadFile(file.url);
         }
       } else {
         // For other files, try the URL directly
-        console.log('Downloading directly from:', file.url);
         blob = await downloadFile(file.url);
       }
-      
-      console.log('Blob created:', blob.size, 'bytes, type:', blob.type);
       
       // Create download link
       const url = window.URL.createObjectURL(blob);
@@ -289,11 +271,9 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
         description: `El archivo "${file.name}" se ha descargado correctamente.`,
       });
       
-    } catch (error) {
-      console.error('Error downloading file:', error);
-      
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
       // Fallback: try opening the file in a new tab
-      console.log('Trying fallback: opening in new tab');
       try {
         const link = document.createElement('a');
         link.href = file.url;
@@ -305,8 +285,8 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
           title: "Archivo abierto",
           description: `Se abrió "${file.name}" en una nueva pestaña. Usa Ctrl+S para guardar.`,
         });
-      } catch (fallbackError) {
-        console.error('Fallback also failed:', fallbackError);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
         toast({
           title: "Error al descargar",
           description: `No se pudo descargar "${file.name}". Verifica tu conexión e inténtalo de nuevo.`,
@@ -400,8 +380,8 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
       pdf.save(`incidente-${incident.id}.pdf`);
       toast({ title: "PDF generado", description: "El PDF se ha descargado correctamente" });
       }
-    } catch (error) {
-      console.error('Error generating PDF:', error);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
       toast({ title: "Error", description: "No se pudo generar el PDF", variant: "destructive" });
     }
   };
@@ -864,7 +844,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                             <div className="h-12 w-12 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
                           {suspect.PhotoUrl ? (
                             <Image 
-                              src={suspect.PhotoUrl} 
+                              src={getSafeImageUrl(suspect.PhotoUrl)} 
                                   alt={suspect.Alias || 'Sospechoso'}
                               width={48}
                               height={48}

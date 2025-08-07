@@ -30,7 +30,6 @@ export const IncidentTypeInfo = React.memo(function IncidentTypeInfo({ typeId }:
         const data = await getIncidentTypeById(typeId);
         setIncidentType(data);
       } catch (error) {
-        console.error("Error fetching incident type:", error);
         setError(error instanceof Error ? error : new Error("Error fetching incident type"));
       } finally {
         setIsLoading(false);

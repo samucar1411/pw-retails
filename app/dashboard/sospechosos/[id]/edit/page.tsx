@@ -15,6 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { getSuspectById, updateSuspect, getSuspectStatuses } from '@/services/suspect-service';
 import { Suspect, SuspectStatus } from '@/types/suspect';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getSafeImageUrl } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUploader } from '@/components/ImageUploader';
 import {
@@ -98,13 +99,12 @@ export default function EditSuspectPage() {
           
           // Handle tags properly - convert to the expected format
           const suspectTags = suspectData.Tags || {};
-          console.log('Loading suspect tags:', suspectTags);
           setTags(suspectTags as Record<string, string>);
         }
 
         setStatuses(statusesData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
         toast({
           title: 'Error',
           description: 'No se pudieron cargar los datos',
@@ -134,7 +134,6 @@ export default function EditSuspectPage() {
   }
 
   function setTagValue(key: string, value: string) {
-    console.log('Setting tag:', key, 'to:', value);
     setTags(prev => ({
       ...prev,
       [key]: value
@@ -156,8 +155,6 @@ export default function EditSuspectPage() {
     setLoading(true);
 
     try {
-      console.log('Current tags state before submit:', tags);
-      
       // Prepare suspect data for update
       const suspectDataToUpdate: Partial<Suspect> = {
         Alias: values.Alias,
@@ -170,8 +167,6 @@ export default function EditSuspectPage() {
         Nationality: values.Nationality || undefined,
         Tags: tags as Record<string, string>,
       };
-      
-      console.log('Suspect data to update:', suspectDataToUpdate);
 
       // Update the suspect
       const updatedSuspect = await updateSuspect(params.id as string, suspectDataToUpdate);
@@ -186,8 +181,6 @@ export default function EditSuspectPage() {
         throw new Error('La actualización del sospechoso no devolvió un resultado exitoso.');
       }
     } catch (error) {
-      console.error('Error updating suspect:', error);
-      
       // Handle backend validation errors
       const axiosError = error as AxiosError<ApiError>;
       if (axiosError.response?.data) {
@@ -400,11 +393,10 @@ export default function EditSuspectPage() {
                     <div className="relative w-48 h-48 rounded-lg overflow-hidden border">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={form.watch('PhotoUrl')}
+                        src={getSafeImageUrl(form.watch('PhotoUrl'))}
                         alt="Imagen actual del sospechoso"
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          console.error('Error loading image:', e);
                           e.currentTarget.style.display = 'none';
                         }}
                       />

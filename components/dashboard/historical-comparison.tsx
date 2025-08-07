@@ -64,8 +64,8 @@ export function HistoricalComparison({ officeId }: HistoricalComparisonProps = {
       
       const response = await getIncidents(filters);
       return response.count || 0;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      console.error('Error fetching period data:', error);
       return 0;
     }
   }, [officeId]);

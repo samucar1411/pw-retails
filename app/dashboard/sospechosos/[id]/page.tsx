@@ -118,8 +118,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
             fetchedIncidents = incidentData.results || [];
             setIncidents(fetchedIncidents);
             setIncidentsLoading(false);
-          } catch (incidentError) {
-            console.error('Error fetching incidents:', incidentError);
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
             setIncidentsLoading(false);
             throw new Error('Failed to fetch incidents');
           }
@@ -222,8 +222,9 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     .filter(Boolean) as Suspect[];
                   setRelatedSuspects(fetchedSuspects);
                 }
-              } catch (error) {
-                console.error('Error loading related suspects:', error);
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+                // Failed to load related suspects
               }
               setRelatedSuspectsLoading(false);
             }
@@ -234,8 +235,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
         } else {
           setIncidentsLoading(false);
         }
-      } catch (error) {
-        console.error('Error loading suspect details:', error);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
         setError('Error al cargar los detalles del sospechoso');
         setLoading(false);
         setIncidentsLoading(false);
@@ -317,8 +318,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
           pdf.setTextColor(100, 100, 100);
           pdf.text('FOTO DEL SOSPECHOSO', 140, 95, { align: 'center' });
           
-        } catch (error) {
-          console.warn('Error loading suspect image:', error);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
           // If image fails to load, add a placeholder
           pdf.setFillColor(240, 240, 240);
           pdf.rect(140, 47, 35, 45, 'F');
@@ -526,8 +527,9 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
       pdf.text(`Generado el: ${new Date().toLocaleDateString('es-PY')} a las ${new Date().toLocaleTimeString('es-PY')}`, 105, pageHeight - 5, { align: 'center' });
       
       pdf.save(`Expediente-${suspect.Alias || suspectId}.pdf`);
-    } catch (error) {
-      console.error('Error al generar PDF:', error);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+      // Error generating PDF
     }
   };
 
@@ -580,7 +582,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                 <div className="relative w-40 h-40 overflow-hidden border-4 border-muted">
                   {suspect.PhotoUrl ? (
                     <Image
-                      src={suspect.PhotoUrl}
+                      src={getSafeImageUrl(suspect.PhotoUrl)}
                       alt={suspect.Alias || 'Sospechoso'}
                       fill
                       className="object-cover"
@@ -880,7 +882,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                           <div className="relative w-12 h-12 overflow-hidden border-2 border-muted">
                             {rs.PhotoUrl ? (
                               <Image
-                                src={rs.PhotoUrl}
+                                src={getSafeImageUrl(rs.PhotoUrl)}
                                 alt={rs.Alias || 'Sospechoso'}
                                 fill
                                 className="object-cover"

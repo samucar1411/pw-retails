@@ -79,15 +79,11 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
       
       try {
         // 1. Fetch all offices first
-        console.log('Fetching offices...');
         const allOffices = await getAllOfficesComplete();
-        console.log('Offices fetched:', allOffices.length);
-        console.log('Sample office data:', allOffices[0]);
         setOffices(allOffices);
         
         // 2. Get unique city IDs from offices
         const cityIds = [...new Set(allOffices.map(office => office.City).filter(Boolean))];
-        console.log('Unique city IDs found:', cityIds);
         
         if (cityIds.length > 0) {
           setIsLoadingCities(true);
@@ -96,37 +92,26 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
           const cityMap = new Map<number, string>();
           const cityPromises = cityIds.map(async (cityId) => {
             try {
-              console.log(`Fetching city ${cityId}...`);
               const city = await cityService.getCity(cityId);
-              console.log(`City ${cityId} fetched:`, city);
               
               // Store the city name, ensuring we have a valid name
               if (city && city.Name) {
                 cityMap.set(cityId, city.Name);
-                console.log(`City ${cityId} mapped to: ${city.Name}`);
               } else {
-                console.warn(`City ${cityId} has no Name property:`, city);
                 cityMap.set(cityId, `Ciudad ${cityId}`); // Fallback
               }
-            } catch (error) {
-              console.warn(`Failed to fetch city ${cityId}:`, error);
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          } catch (error) {
               cityMap.set(cityId, `Ciudad ${cityId}`); // Fallback
             }
           });
           
           await Promise.all(cityPromises);
-          console.log('All cities mapped:', Object.fromEntries(cityMap));
           setCities(cityMap);
           setIsLoadingCities(false);
-          
-          // Add a slight delay to ensure state is updated before calculations
-          setTimeout(() => {
-            console.log('Cities state after setCities:', Object.fromEntries(cityMap));
-          }, 100);
         }
         
       } catch (error) {
-        console.error("Error fetching data:", error);
         if (error instanceof Error) {
           setOfficesError(error);
         }
@@ -145,9 +130,6 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
   const allOfficeStats = React.useMemo(() => {
     if (!offices.length) return [];
     
-    console.log('Calculating office stats with:', offices.length, 'offices and', cities.size, 'cities');
-    console.log('Cities map content:', Object.fromEntries(cities));
-    console.log('Sample office with city data:', offices[0]);
     
     // Initialize stats for ALL offices
     const statsMap = new Map<number, OfficeStats>();
@@ -167,7 +149,6 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
           }
         }
         
-        console.log(`Office ${office.Name} (ID: ${office.id}) has city ID ${office.City} -> mapped to: ${cityName}`);
         
         statsMap.set(office.id, {
           id: office.id,

@@ -21,8 +21,8 @@ export default function DemoPreviewPage() {
         
         // Redirigir a la página de preview
         router.push('/dashboard/incidentes/preview');
-      } catch (error) {
-        console.error("Error al preparar la demostración:", error);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
         setIsLoading(false);
       }
     };

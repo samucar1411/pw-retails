@@ -43,8 +43,8 @@ export function IncidentActions({ incident }: IncidentActionsProps) {
       });
       // Refresh the page to update the list
       window.location.reload();
-    } catch (error) {
-      console.error('Error deleting incident:', error);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
       toast({
         title: "Error al eliminar",
         description: "No se pudo eliminar el incidente. Inténtalo de nuevo.",

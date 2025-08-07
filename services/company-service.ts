@@ -12,14 +12,12 @@ export const getCompanies = async (): Promise<Company[]> => {
   
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
-    console.error("Error fetching companies:", error);
     return [];
   }
 };
 
 export const getCompanyById = async (id: string): Promise<Company | null> => {
   if (!id) {
-    console.error("Invalid company ID provided");
     return null;
   }
 
@@ -38,7 +36,6 @@ export const getCompanyById = async (id: string): Promise<Company | null> => {
     
     // Fix validation - id can be number and we just need name
     if (!company.name) {
-      console.warn("Invalid company data received - missing name:", company);
       return null;
     }
 
@@ -46,7 +43,6 @@ export const getCompanyById = async (id: string): Promise<Company | null> => {
   } catch (error: any) {
     // Handle specific error cases
     if (!error.response) {
-      console.error("Network error:", error);
       throw new Error("Error de conexión");
     }
 
@@ -58,11 +54,6 @@ export const getCompanyById = async (id: string): Promise<Company | null> => {
       throw new Error("No autorizado");
     }
 
-    console.error("API error:", {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message,
-    });
 
     throw new Error(
       error.response?.data?.detail || 

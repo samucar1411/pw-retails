@@ -79,8 +79,8 @@ export function IncidentDistributionChart({ fromDate, toDate, officeId }: Incide
             value: response.data.count || 0,
             color: COLORS[incidentTypes.indexOf(type) % COLORS.length],
           };
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
-          console.error(`Error fetching count for incident type ${type.id}:`, error);
           return {
             id: type.id,
             name: type.Name,

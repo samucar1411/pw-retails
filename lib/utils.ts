@@ -13,16 +13,10 @@ export function getProxyUrl(url: string | null | undefined): string | null {
     return url;
   }
   
-  // If it's a full backend URL, convert to proxy
+  // If it's a full backend URL from sys.adminpy.com, use our media proxy to bypass SSL issues
   if (url.includes('sys.adminpy.com')) {
-    // Extract the path after /media/
-    const mediaMatch = url.match(/\/media\/(.+)$/);
-    if (mediaMatch) {
-      return `/media/${mediaMatch[1]}`;
-    }
-    
-    // If it's not a media URL, return the original
-    return url;
+    // Use our media proxy route that bypasses SSL certificate validation
+    return `/api/media?url=${encodeURIComponent(url)}`;
   }
   
   // If it's a relative URL without leading slash, add it

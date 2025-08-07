@@ -10,7 +10,6 @@ export const cityService = {
 
   getCity: async (id: number): Promise<City> => {
     const response = await api.get(`/api/cities/${id}/`);
-    console.log(`City service response for ID ${id}:`, response.data);
     return response.data;
   },
 

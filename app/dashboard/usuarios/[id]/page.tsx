@@ -25,6 +25,7 @@ import { Switch } from "@/components/ui/switch";
 import { userAdminService } from "@/services/user-admin-service";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { getSafeImageUrl } from "@/lib/utils";
 
 interface UserFormData {
   first_name: string;
@@ -70,8 +71,8 @@ export default function UserDetailPage() {
           contact: response.contact || "",
           job_position: response.job_position,
         });
-      } catch (error) {
-        console.error("Error loading user:", error);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
         toast.error("Error al cargar los datos del usuario");
       } finally {
         setLoading(false);
@@ -98,8 +99,8 @@ export default function UserDetailPage() {
         job_position: formData.job_position,
       });
       toast.success("Información del usuario actualizada correctamente");
-    } catch (error) {
-      console.error("Error updating user:", error);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
       toast.error("Error al actualizar el usuario");
     } finally {
       setSaving(false);
@@ -149,7 +150,7 @@ export default function UserDetailPage() {
             <div className="flex items-center gap-x-6">
               <div className="relative">
                 <Avatar className="h-24 w-24">
-                  <AvatarImage src={formData.avatar_url} />
+                  <AvatarImage src={getSafeImageUrl(formData.avatar_url)} />
                   <AvatarFallback>
                     {formData.first_name?.[0]}
                     {formData.last_name?.[0]}

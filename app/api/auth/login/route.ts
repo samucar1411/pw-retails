@@ -64,8 +64,8 @@ export async function POST(req: NextRequest) {
       last_name: authData.last_name,
     });
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    console.error('Login error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

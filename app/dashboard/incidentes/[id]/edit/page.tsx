@@ -136,8 +136,8 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
           
           form.reset(formData);
         }
-      } catch (error) {
-        console.error('Error fetching data:', error);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
         toast({
           title: 'Error',
           description: 'No se pudieron cargar los datos del incidente',
@@ -218,8 +218,8 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
           userInfo.user_id.toString(),
           ['Date', 'Time', 'IncidentType', 'Office', 'Description', 'Notes', 'CashLoss', 'MerchandiseLoss', 'OtherLosses', 'TotalLoss', 'Suspects']
         );
-      } catch (trackingError) {
-        console.error('Error tracking changes:', trackingError);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
         // Don't fail the update if change tracking fails
       }
 
@@ -230,8 +230,6 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
 
       router.push(`/dashboard/incidentes/${id}`);
     } catch (error) {
-      console.error('Error updating incident:', error);
-      
       const axiosError = error as AxiosError<Record<string, string[]>>;
       if (axiosError.response?.data) {
         const backendErrors = axiosError.response.data;
