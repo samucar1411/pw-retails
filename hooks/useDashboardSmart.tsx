@@ -27,13 +27,10 @@ export function useDashboardSmart(
   officeId: string = '',
   config: DashboardSmartConfig = DEFAULT_CONFIG
 ) {
-  console.log('🚀 Dashboard Smart: Loading with filters', { fromDate, toDate, officeId });
-
   // 1. Cargar primera página inmediatamente (UX rápida)
   const firstPageQuery = useQuery({
     queryKey: ['incidents-smart-first', fromDate, toDate, officeId, config.pageSize],
     queryFn: async () => {
-      console.log('📄 Loading first page...');
       const response = await getIncidents({ 
         page: 1, 
         page_size: config.pageSize || 100,
@@ -42,7 +39,6 @@ export function useDashboardSmart(
         officeId: officeId || undefined,
         ordering: '-Date', // Más recientes primero
       });
-      console.log(`✅ First page loaded: ${response?.results?.length || 0} incidents`);
       return response;
     },
     staleTime: 1000 * 60 * 5, // 5 min cache para primera página
@@ -54,7 +50,6 @@ export function useDashboardSmart(
     if (!firstPageQuery.data?.count || !config.pageSize) return 0;
     const calculated = Math.ceil(firstPageQuery.data.count / config.pageSize);
     const limited = Math.min(calculated, config.maxPages || 10);
-    console.log(`📊 Total pages: ${calculated}, Limited to: ${limited}`);
     return limited;
   }, [firstPageQuery.data?.count, config.pageSize, config.maxPages]);
     
@@ -65,7 +60,6 @@ export function useDashboardSmart(
           queryKey: ['incidents-smart-additional', fromDate, toDate, officeId, i + 2, config.pageSize],
           queryFn: async () => {
             const pageNum = i + 2;
-            console.log(`📄 Loading additional page ${pageNum}...`);
             const response = await getIncidents({
               page: pageNum,
               page_size: config.pageSize || 100,
@@ -74,7 +68,6 @@ export function useDashboardSmart(
               officeId: officeId || undefined,
               ordering: '-Date',
             });
-            console.log(`✅ Page ${pageNum} loaded: ${response?.results?.length || 0} incidents`);
             return response;
           },
           enabled: !!firstPageQuery.data && totalPages > 1,
@@ -148,15 +141,6 @@ export function useDashboardSmart(
           }
         });
       }
-    });
-
-    console.log(`🔄 Dashboard Smart Summary:`, {
-      totalCount,
-      loadedCount,
-      pagesLoaded,
-      totalPages,
-      memoryUsageMB,
-      uniqueSuspects: allSuspectIds.size,
     });
 
     return {

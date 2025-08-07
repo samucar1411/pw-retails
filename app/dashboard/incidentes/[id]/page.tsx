@@ -232,18 +232,6 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
       if (file.url.includes('cloudinary.com') || file.url.includes('res.cloudinary.com')) {
         // For Cloudinary files, use the URL directly
         blob = await downloadFile(file.url);
-      } else if (file.url.includes('/media/')) {
-        // For backend media files, try our API route first
-        const mediaPath = file.url.replace(/^.*\/media\//, '');
-        const apiUrl = `/api/media/${mediaPath}`;
-        
-        try {
-          blob = await downloadFile(apiUrl);
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
-          // If API route fails, try direct URL with current cookies
-          blob = await downloadFile(file.url);
-        }
       } else {
         // For other files, try the URL directly
         blob = await downloadFile(file.url);

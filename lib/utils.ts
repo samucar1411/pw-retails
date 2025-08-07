@@ -15,15 +15,9 @@ export function getProxyUrl(url: string | null | undefined): string | null {
     return cleanUrl;
   }
   
-  // If it's a full backend URL from sys.adminpy.com, use our media proxy to bypass SSL issues
-  if (cleanUrl.includes('sys.adminpy.com')) {
-    // Use our media proxy route that bypasses SSL certificate validation
-    return `/api/media?url=${encodeURIComponent(cleanUrl)}`;
-  }
-  
-  // If it's any HTTPS URL that might have SSL issues, proxy it
-  if (cleanUrl.startsWith('https://')) {
-    return `/api/media?url=${encodeURIComponent(cleanUrl)}`;
+  // Return URLs directly without proxy
+  if (cleanUrl.startsWith('http')) {
+    return cleanUrl;
   }
   
   // If it's a relative URL without leading slash, add it
@@ -41,9 +35,9 @@ export function getSafeImageUrl(url: string | null | undefined, fallback: string
   const cleanUrl = url.replace(/\s+/g, '').trim();
   if (!cleanUrl) return fallback;
   
-  // Always use proxy for external URLs to avoid CORS and SSL issues
+  // Return external URLs directly
   if (cleanUrl.startsWith('http')) {
-    return `/api/media?url=${encodeURIComponent(cleanUrl)}`;
+    return cleanUrl;
   }
   
   return cleanUrl.startsWith('/') ? cleanUrl : `/${cleanUrl}`;
