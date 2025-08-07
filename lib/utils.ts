@@ -38,7 +38,14 @@ export function getProxyUrl(url: string | null | undefined): string | null {
 export function getSafeImageUrl(url: string | null | undefined, fallback: string = '/logo-light.png'): string {
   if (!url) return fallback;
   
-  const proxyUrl = getProxyUrl(url);
-  return proxyUrl || fallback;
+  const cleanUrl = url.replace(/\s+/g, '').trim();
+  if (!cleanUrl) return fallback;
+  
+  // Always use proxy for external URLs to avoid CORS and SSL issues
+  if (cleanUrl.startsWith('http')) {
+    return `/api/media?url=${encodeURIComponent(cleanUrl)}`;
+  }
+  
+  return cleanUrl.startsWith('/') ? cleanUrl : `/${cleanUrl}`;
 }
 

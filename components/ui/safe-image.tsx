@@ -24,10 +24,19 @@ export function SafeImage({
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  const handleError = () => {
+    setHasError(true);
+    setIsLoading(false);
+  };
+
+  const handleLoad = () => {
+    setIsLoading(false);
+  };
+
   if (hasError || !src) {
     return (
       <div 
-        className={`bg-muted flex items-center justify-center ${className}`}
+        className={`bg-muted flex items-center justify-center rounded ${className}`}
         style={{ width, height }}
       >
         {fallbackIcon}
@@ -41,16 +50,13 @@ export function SafeImage({
         src={src}
         alt={alt}
         fill
-        className={`object-cover ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200`}
-        onLoad={() => setIsLoading(false)}
-        onError={() => {
-          setHasError(true);
-          setIsLoading(false);
-        }}
+        className={`object-cover rounded ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200`}
+        onLoad={handleLoad}
+        onError={handleError}
         unoptimized={true} // Permitir carga de imágenes sin SSL válido
       />
       {isLoading && (
-        <div className="absolute inset-0 bg-muted flex items-center justify-center">
+        <div className="absolute inset-0 bg-muted flex items-center justify-center rounded">
           <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
         </div>
       )}

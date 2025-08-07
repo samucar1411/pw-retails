@@ -160,18 +160,18 @@ export function IncidentMap({ fromDate, toDate, officeId }: IncidentMapProps = {
       </CardHeader>
       <CardContent className="flex-1 p-0">
         {loading ? (
-          <div className="flex flex-col items-center justify-center h-[450px] text-muted-foreground">
+          <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground">
             <Loader2 className="h-8 w-8 animate-spin mb-2" />
             <p className="text-sm font-medium">Cargando ubicaciones…</p>
           </div>
         ) : locations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-[450px] text-muted-foreground">
+          <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground">
             <MapPin className="h-12 w-12 mb-4 opacity-50" />
             <p className="text-sm font-medium">No hay ubicaciones disponibles</p>
             <p className="text-xs">Verifica que las oficinas tengan coordenadas asignadas</p>
           </div>
         ) : (
-          <div className="h-[450px]">
+          <div className="h-[400px]">
             <Map locations={locations} />
           </div>
         )}

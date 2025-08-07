@@ -210,7 +210,7 @@ function ChartAndTable({ data, total, router, fromDate, toDate, officeId }: Char
   return (
     <div className="flex flex-col w-full">
       {/* ---------------------------- PieChart ---------------------------- */}
-      <div className="h-[250px] mb-4">
+      <div className="h-[300px] mb-4">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Tooltip

@@ -240,8 +240,10 @@ export default function Map({ locations }: MapProps) {
           className: 'custom-popup'
         });
 
-        // Click handler with optimized popup content
-        el.addEventListener('click', async () => {
+        // Click handler with single click prevention
+        el.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
           console.log('Marker clicked!', location);
           
           // Build complete content immediately (no loading state needed)
@@ -309,12 +311,16 @@ export default function Map({ locations }: MapProps) {
           // Close the main div
           popupHTML += `</div>`;
           
+          // Close any existing popup first
+          const existingPopups = document.querySelectorAll('.mapboxgl-popup');
+          existingPopups.forEach(popup => popup.remove());
+          
           // Show popup immediately
           popup
             .setLngLat([location.lng, location.lat])
             .setHTML(popupHTML)
             .addTo(map);
-        });
+        }, { once: false });
 
         // Agregar marcador al mapa
         try {
