@@ -145,7 +145,10 @@ export default function Map({ locations }: MapProps) {
 
     // Agregar marcadores después de que el mapa esté listo
     const addMarkers = () => {
+      if (!locations || locations.length === 0) return;
+      
       locations.forEach(location => {
+        if (!location || !location.lat || !location.lng) return;
         const el = document.createElement('div');
         el.className = 'custom-marker';
         
@@ -314,9 +317,13 @@ export default function Map({ locations }: MapProps) {
         });
 
         // Agregar marcador al mapa
-        new mapboxgl.Marker(el)
-          .setLngLat([location.lng, location.lat])
-          .addTo(map);
+        try {
+          new mapboxgl.Marker(el)
+            .setLngLat([location.lng, location.lat])
+            .addTo(map);
+        } catch (error) {
+          console.error('Error adding marker:', error, location);
+        }
       });
     };
 
@@ -327,12 +334,18 @@ export default function Map({ locations }: MapProps) {
         addMarkers();
         
         // Fit map to show all markers if there are multiple locations
-        if (locations.length > 1) {
-          const bounds = new mapboxgl.LngLatBounds()
-          locations.forEach(location => {
-            bounds.extend([location.lng, location.lat])
-          })
-          map.fitBounds(bounds, { padding: 50 })
+        if (locations && locations.length > 1) {
+          const bounds = new mapboxgl.LngLatBounds();
+          const validLocations = locations.filter(location => 
+            location && location.lat && location.lng
+          );
+          
+          if (validLocations.length > 1) {
+            validLocations.forEach(location => {
+              bounds.extend([location.lng, location.lat]);
+            });
+            map.fitBounds(bounds, { padding: 50 });
+          }
         }
       }, 100);
     });

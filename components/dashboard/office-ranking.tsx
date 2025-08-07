@@ -71,57 +71,25 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
     error: incidentsError 
   } = useAllIncidents(fromDate, toDate, officeId);
   
-  // Fetch offices and their cities
+  // Fetch offices first
   React.useEffect(() => {
-    const fetchData = async () => {
+    const fetchOffices = async () => {
       setIsLoadingOffices(true);
       setOfficesError(null);
       
       try {
-        // 1. Fetch all offices first
         const allOffices = await getAllOfficesComplete();
         setOffices(allOffices);
-        
-        // 2. Get unique city IDs from offices
-        const cityIds = [...new Set(allOffices.map(office => office.City).filter(Boolean))];
-        
-        if (cityIds.length > 0) {
-          setIsLoadingCities(true);
-          
-          // 3. Fetch each city individually
-          const cityMap = new Map<number, string>();
-          const cityPromises = cityIds.map(async (cityId) => {
-            try {
-              const city = await cityService.getCity(cityId);
-              
-              // Store the city name, ensuring we have a valid name
-              if (city && city.Name) {
-                cityMap.set(cityId, city.Name);
-              } else {
-                cityMap.set(cityId, `Ciudad ${cityId}`); // Fallback
-              }
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          } catch (error) {
-              cityMap.set(cityId, `Ciudad ${cityId}`); // Fallback
-            }
-          });
-          
-          await Promise.all(cityPromises);
-          setCities(cityMap);
-          setIsLoadingCities(false);
-        }
-        
       } catch (error) {
         if (error instanceof Error) {
           setOfficesError(error);
         }
       } finally {
         setIsLoadingOffices(false);
-        setIsLoadingCities(false);
       }
     };
     
-    fetchData();
+    fetchOffices();
   }, []);
 
 
@@ -209,6 +177,51 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
   const displayedOffices = React.useMemo(() => {
     return allOfficeStats.slice(0, 3);
   }, [allOfficeStats]);
+
+  // Fetch cities only for the top 3 offices
+  React.useEffect(() => {
+    const fetchCitiesForTop3 = async () => {
+      if (displayedOffices.length === 0) return;
+      
+      setIsLoadingCities(true);
+      
+      try {
+        // Get unique city IDs from top 3 offices only
+        const top3Offices = displayedOffices.map(stats => 
+          offices.find(office => office.id === stats.id)
+        ).filter(Boolean);
+        
+        const cityIds = [...new Set(top3Offices.map(office => office?.City).filter(Boolean))] as number[];
+        
+        if (cityIds.length > 0) {
+          const cityMap = new Map<number, string>();
+          
+          const cityPromises = cityIds.map(async (cityId) => {
+            try {
+              const city = await cityService.getCity(cityId);
+              if (city && city.Name) {
+                cityMap.set(cityId, city.Name);
+              } else {
+                cityMap.set(cityId, `Ciudad ${cityId}`);
+              }
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            } catch (error) {
+              cityMap.set(cityId, `Ciudad ${cityId}`);
+            }
+          });
+          
+          await Promise.all(cityPromises);
+          setCities(cityMap);
+        }
+      } catch (error) {
+        console.error('Error fetching cities:', error);
+      } finally {
+        setIsLoadingCities(false);
+      }
+    };
+    
+    fetchCitiesForTop3();
+  }, [displayedOffices, offices]);
 
   const officesWithIncidents = allOfficeStats.filter(o => o.incidentCount > 0);
 
