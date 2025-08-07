@@ -5,28 +5,38 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/**
+ * Converts backend URLs to proxy URLs to avoid SSL certificate issues in production
+ * @param url - The original backend URL
+ * @returns The proxy URL or the original URL if no conversion is needed
+ */
 export function getProxyUrl(url: string | null | undefined): string | null {
-  if (!url || url.trim() === '') return null;
-  
-  const cleanUrl = url.trim();
+  if (!url) return null;
   
   // If it's already a relative URL, return as is
-  if (cleanUrl.startsWith('/')) {
-    return cleanUrl;
+  if (url.startsWith('/')) {
+    return url;
   }
   
-  // Return URLs directly without proxy
-  if (cleanUrl.startsWith('http')) {
-    return cleanUrl;
+  // If it's a full backend URL, convert to proxy
+  if (url.includes('sys.adminpy.com')) {
+    // Extract the path after /media/
+    const mediaMatch = url.match(/\/media\/(.+)$/);
+    if (mediaMatch) {
+      return `/media/${mediaMatch[1]}`;
+    }
+    
+    // If it's not a media URL, return the original
+    return url;
   }
   
   // If it's a relative URL without leading slash, add it
-  if (!cleanUrl.startsWith('http')) {
-    return `/${cleanUrl}`;
+  if (!url.startsWith('http')) {
+    return `/${url}`;
   }
   
-  // For HTTP URLs, return as is (no SSL issues)
-  return cleanUrl;
+  // Return original URL for other cases
+  return url;
 }
 
 export function getSafeImageUrl(url: string | null | undefined, fallback: string = '/logo-light.png'): string {
@@ -35,10 +45,9 @@ export function getSafeImageUrl(url: string | null | undefined, fallback: string
   const cleanUrl = url.replace(/\s+/g, '').trim();
   if (!cleanUrl) return fallback;
   
-  // Return external URLs directly
-  if (cleanUrl.startsWith('http')) {
-    return cleanUrl;
-  }
+  // Use proxy for backend URLs
+  const proxiedUrl = getProxyUrl(cleanUrl);
+  if (proxiedUrl) return proxiedUrl;
   
   return cleanUrl.startsWith('/') ? cleanUrl : `/${cleanUrl}`;
 }
