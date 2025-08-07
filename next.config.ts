@@ -16,6 +16,11 @@ const getBackendHostname = () => {
 const backendHostname = getBackendHostname();
 
 const nextConfig: NextConfig = {
+  serverRuntimeConfig: {
+    https: {
+      rejectUnauthorized: false
+    }
+  },
   images: {
     domains: [
       'asset.cloudinary.com',
