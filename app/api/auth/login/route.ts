@@ -20,7 +20,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Call the external API
     const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
     const response = await fetch(`${API_URL}/api-token-auth2/`, {
       method: 'POST',
@@ -46,7 +45,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Set httpOnly cookie with the token
     const cookieStore = await cookies();
     cookieStore.set('auth_token', authData.token, {
       httpOnly: true,
@@ -56,7 +54,6 @@ export async function POST(req: NextRequest) {
       path: '/',
     });
 
-    // Return user data without the token
     return NextResponse.json({
       user_id: authData.user_id,
       email: authData.email,

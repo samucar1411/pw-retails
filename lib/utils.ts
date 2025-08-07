@@ -6,26 +6,33 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getProxyUrl(url: string | null | undefined): string | null {
-  if (!url) return null;
+  if (!url || url.trim() === '') return null;
+  
+  const cleanUrl = url.trim();
   
   // If it's already a relative URL, return as is
-  if (url.startsWith('/')) {
-    return url;
+  if (cleanUrl.startsWith('/')) {
+    return cleanUrl;
   }
   
   // If it's a full backend URL from sys.adminpy.com, use our media proxy to bypass SSL issues
-  if (url.includes('sys.adminpy.com')) {
+  if (cleanUrl.includes('sys.adminpy.com')) {
     // Use our media proxy route that bypasses SSL certificate validation
-    return `/api/media?url=${encodeURIComponent(url)}`;
+    return `/api/media?url=${encodeURIComponent(cleanUrl)}`;
+  }
+  
+  // If it's any HTTPS URL that might have SSL issues, proxy it
+  if (cleanUrl.startsWith('https://')) {
+    return `/api/media?url=${encodeURIComponent(cleanUrl)}`;
   }
   
   // If it's a relative URL without leading slash, add it
-  if (!url.startsWith('http')) {
-    return `/${url}`;
+  if (!cleanUrl.startsWith('http')) {
+    return `/${cleanUrl}`;
   }
   
-  // Return original URL for other cases
-  return url;
+  // For HTTP URLs, return as is (no SSL issues)
+  return cleanUrl;
 }
 
 export function getSafeImageUrl(url: string | null | undefined, fallback: string = '/logo-light.png'): string {

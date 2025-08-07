@@ -60,7 +60,6 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
   const [offices, setOffices] = React.useState<Office[]>([]);
   const [cities, setCities] = React.useState<Map<number, string>>(new Map());
   const [isLoadingOffices, setIsLoadingOffices] = React.useState(true);
-  const [isLoadingCities, setIsLoadingCities] = React.useState(false);
   const [officesError, setOfficesError] = React.useState<Error | null>(null);
 
 
@@ -183,8 +182,6 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
     const fetchCitiesForTop3 = async () => {
       if (displayedOffices.length === 0) return;
       
-      setIsLoadingCities(true);
-      
       try {
         // Get unique city IDs from top 3 offices only
         const top3Offices = displayedOffices.map(stats => 
@@ -215,8 +212,6 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
         }
       } catch (error) {
         console.error('Error fetching cities:', error);
-      } finally {
-        setIsLoadingCities(false);
       }
     };
     
@@ -225,8 +220,8 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
 
   const officesWithIncidents = allOfficeStats.filter(o => o.incidentCount > 0);
 
-  // Loading state
-  if (isLoadingIncidents || isLoadingOffices || isLoadingCities) {
+  // Loading state - only block on critical data
+  if (isLoadingIncidents || isLoadingOffices) {
     return (
       <Card>
         <CardHeader>
