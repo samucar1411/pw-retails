@@ -112,7 +112,7 @@ export function IncidentDistributionChart({ fromDate, toDate, officeId }: Incide
   const isEmpty = !isLoading && !hasError && distributionData.length === 0;
 
   return (
-    <Card className="lg:col-span-3 flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader>
         <CardTitle>Distribución de incidentes</CardTitle>
         <CardDescription>

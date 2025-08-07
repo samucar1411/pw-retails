@@ -40,8 +40,6 @@ export default function Map({ locations }: MapProps) {
   const { theme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
-  // Debug logs
-  console.log('Map component received locations:', locations)
 
   // Function to create detailed popup content
   /* 
@@ -244,7 +242,6 @@ export default function Map({ locations }: MapProps) {
         el.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          console.log('Marker clicked!', location);
           
           // Build complete content immediately (no loading state needed)
           let popupHTML = `
@@ -451,7 +448,7 @@ export default function Map({ locations }: MapProps) {
           }
         }
       `}</style>
-      <div ref={mapRef} className="h-full w-full rounded-md" />
+      <div ref={mapRef} className="h-full w-full min-h-[400px] rounded-md" />
     </>
   )
 } 

@@ -154,24 +154,24 @@ export function IncidentMap({ fromDate, toDate, officeId }: IncidentMapProps = {
   }, [fromDate, toDate, officeId]);
 
   return (
-    <Card className="lg:col-span-3 flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader className="flex-none">
         <CardTitle>Últimos incidentes reportados</CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 p-0">
+      <CardContent className="flex-1 p-0 flex flex-col">
         {loading ? (
-          <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground">
+          <div className="flex flex-col items-center justify-center flex-1 text-muted-foreground">
             <Loader2 className="h-8 w-8 animate-spin mb-2" />
             <p className="text-sm font-medium">Cargando ubicaciones…</p>
           </div>
         ) : locations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground">
+          <div className="flex flex-col items-center justify-center flex-1 text-muted-foreground">
             <MapPin className="h-12 w-12 mb-4 opacity-50" />
             <p className="text-sm font-medium">No hay ubicaciones disponibles</p>
             <p className="text-xs">Verifica que las oficinas tengan coordenadas asignadas</p>
           </div>
         ) : (
-          <div className="h-[400px]">
+          <div className="flex-1">
             <Map locations={locations} />
           </div>
         )}
