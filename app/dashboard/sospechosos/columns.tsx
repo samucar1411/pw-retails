@@ -1,5 +1,6 @@
 import { ColumnDef } from '@tanstack/react-table';
-import { MoreVertical } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -117,28 +118,30 @@ export const columns: ColumnDef<Suspect>[] = [
   },
   {
     id: 'actions',
+    header: 'Acciones',
     cell: ({ row }) => {
       const suspect = row.original;
       
       return (
-        <div className="flex justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger className="cursor-pointer">
-              <MoreVertical className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => window.location.href = `/dashboard/sospechosos/${suspect.id}`}>
-                Ver detalles
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => window.location.href = `/dashboard/sospechosos/${suspect.id}/edit`}>
-                Editar
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">
-                Eliminar
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Abrir menú</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => window.location.href = `/dashboard/sospechosos/${suspect.id}`}>
+              Ver detalles
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => window.location.href = `/dashboard/sospechosos/${suspect.id}/edit`}>
+              Editar
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-destructive">
+              Eliminar
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       );
     },
   },
