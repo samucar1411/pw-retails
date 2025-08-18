@@ -20,6 +20,7 @@ import { ArrowLeft, Loader2, ChevronsUpDown, Check, Info, DollarSign, Users, Upl
 import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import { ImageUploader } from '@/components/ImageUploader';
+import { FileUploader } from '@/components/FileUploader';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { createSuspect } from '@/services/suspect-service';
 import { useAllSuspects } from '@/hooks/useAllSuspects';
@@ -30,6 +31,7 @@ import { ChevronDown as ChevronDownIcon, Trash } from 'lucide-react';
 import { Controller } from 'react-hook-form';
 import { useGuaraniFormatter } from '@/hooks/useGuaraniFormatter';
 import { useImageUpload } from '@/hooks/useImageUpload';
+import { useFileUpload } from '@/hooks/useFileUpload';
 import { createIncidentImageMetadata, IncidentImageMetadataCreateInput, IncidentImageMetadata } from '@/services/incident-image-metadata-service';
 import { getSafeImageUrl } from '@/lib/utils';
 import { createIncidentItemLoss, IncidentItemLoss } from '@/services/incident-item-losses-service';
@@ -464,6 +466,7 @@ export function IncidentForm() {
   const [suspectTags, setSuspectTags] = useState<Record<number, Record<string, unknown>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { uploadImage, isUploading: isImageUploading } = useImageUpload();
+  const { uploadFile, isUploading: isFileUploading } = useFileUpload();
   
   // State for incident image metadata (separate from attachments)
   const [incidentImageMetadata, setIncidentImageMetadata] = useState<{
@@ -2070,11 +2073,11 @@ export function IncidentForm() {
                   </div>
                   <div className="mb-6">
                     <FormLabel>Archivos del incidente</FormLabel>
-                    <ImageUploader
-                      onImageUpload={async (file) => {
+                    <FileUploader
+                      onFileUpload={async (file) => {
                         try {
-                          // Subir imagen a Cloudinary
-                          const cloudinaryUrl = await uploadImage(file);
+                          // Subir archivo a Cloudinary
+                          const cloudinaryUrl = await uploadFile(file);
                           
                           // Agregar a los adjuntos del formulario
                           const currentAttachments = form.getValues('attachments') || [];
@@ -2082,24 +2085,22 @@ export function IncidentForm() {
                             id: Date.now(),
                             name: file.name,
                             url: cloudinaryUrl,
-                            contentType: file.type || 'image/jpeg'
+                            contentType: file.type || 'application/octet-stream'
                           };
                           form.setValue('attachments', [...currentAttachments, newAttachment]);
                           
                           toast.success('Archivo subido correctamente');
                         } catch (error) {
-                          console.error('Error uploading image:', error);
+                          console.error('Error uploading file:', error);
                           toast.error('Error al subir el archivo');
                         }
                       }}
-                      onUploadComplete={async () => {
-                        // Esta función se llama después de onImageUpload
-                        // No necesitamos hacer nada adicional aquí
-                      }}
-                      maxSizeMB={5}
+                      acceptedTypes="all"
+                      maxSizeMB={10}
                       multiple={true}
                       maxFiles={5}
-                      disabled={isSubmitting || isImageUploading}
+                      isUploading={isFileUploading}
+                      disabled={isSubmitting || isFileUploading}
                     />
                     <FilePreviewList
                       files={form.watch('attachments') || []}

@@ -9,6 +9,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { 
   Building2, 
   Loader2, 
@@ -56,11 +57,14 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+type RankingMode = 'incidents' | 'losses';
+
 export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps) {
   const [offices, setOffices] = React.useState<Office[]>([]);
   const [cities, setCities] = React.useState<Map<number, string>>(new Map());
   const [isLoadingOffices, setIsLoadingOffices] = React.useState(true);
   const [officesError, setOfficesError] = React.useState<Error | null>(null);
+  const [rankingMode, setRankingMode] = React.useState<RankingMode>('incidents');
 
 
   // Get all incidents for the period
@@ -95,8 +99,9 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
 
   // Calculate stats for ALL offices
   const allOfficeStats = React.useMemo(() => {
-    if (!offices.length) return [];
-    
+    if (!offices.length) {
+      return [];
+    }
     
     // Initialize stats for ALL offices
     const statsMap = new Map<number, OfficeStats>();
@@ -166,18 +171,25 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
     
     const officeStatsArray = Array.from(statsMap.values());
     
-    // Sort by incidents (descending)
-    const sortedByIncidents = [...officeStatsArray].sort((a, b) => b.incidentCount - a.incidentCount);
-    
-    return sortedByIncidents; // Return sorted by incidents by default
+    return officeStatsArray;
   }, [incidentsData?.incidents, offices, cities]);
 
-  // Always show top 3 offices
-  const displayedOffices = React.useMemo(() => {
-    return allOfficeStats.slice(0, 3);
-  }, [allOfficeStats]);
+  // Sort offices based on ranking mode
+  const sortedOfficeStats = React.useMemo(() => {
+    if (rankingMode === 'incidents') {
+      return [...allOfficeStats].sort((a, b) => b.incidentCount - a.incidentCount);
+    } else {
+      return [...allOfficeStats].sort((a, b) => b.totalLoss - a.totalLoss);
+    }
+  }, [allOfficeStats, rankingMode]);
 
-  // Fetch cities only for the top 3 offices
+  // Always show top 3 offices based on current ranking mode
+  const displayedOffices = React.useMemo(() => {
+    const top3 = sortedOfficeStats.slice(0, 3);
+    return top3;
+  }, [sortedOfficeStats]);
+
+  // Fetch cities only for the top 3 offices (memoized to prevent excessive calls)
   React.useEffect(() => {
     const fetchCitiesForTop3 = async () => {
       if (displayedOffices.length === 0) return;
@@ -190,43 +202,56 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
         
         const cityIds = [...new Set(top3Offices.map(office => office?.City).filter(Boolean))] as number[];
         
-        if (cityIds.length > 0) {
-          const cityMap = new Map<number, string>();
+        // Only fetch cities that we don't already have cached
+        const newCityIds = cityIds.filter(cityId => !cities.has(cityId));
+        
+        if (newCityIds.length > 0) {
+          const cityMap = new Map(cities); // Start with existing cities
           
-          const cityPromises = cityIds.map(async (cityId) => {
-            try {
-              const city = await cityService.getCity(cityId);
-              if (city && city.Name) {
-                cityMap.set(cityId, city.Name);
-              } else {
+          // Limit concurrent requests to prevent overwhelming the API
+          const BATCH_SIZE = 3;
+          for (let i = 0; i < newCityIds.length; i += BATCH_SIZE) {
+            const batch = newCityIds.slice(i, i + BATCH_SIZE);
+            
+            const cityPromises = batch.map(async (cityId) => {
+              try {
+                const city = await cityService.getCity(cityId);
+                if (city && city.Name) {
+                  cityMap.set(cityId, city.Name);
+                } else {
+                  cityMap.set(cityId, `Ciudad ${cityId}`);
+                }
+              } catch {
                 cityMap.set(cityId, `Ciudad ${cityId}`);
               }
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            } catch (error) {
-              cityMap.set(cityId, `Ciudad ${cityId}`);
+            });
+            
+            await Promise.all(cityPromises);
+            
+            // Small delay between batches to prevent rate limiting
+            if (i + BATCH_SIZE < newCityIds.length) {
+              await new Promise(resolve => setTimeout(resolve, 100));
             }
-          });
+          }
           
-          await Promise.all(cityPromises);
           setCities(cityMap);
         }
-      } catch (error) {
-        console.error('Error fetching cities:', error);
+      } catch {
+        // Silent fail - cities will show as fallback names
       }
     };
     
     fetchCitiesForTop3();
-  }, [displayedOffices, offices]);
+  }, [displayedOffices, offices, cities]);
 
-  const officesWithIncidents = allOfficeStats.filter(o => o.incidentCount > 0);
 
   // Loading state - only block on critical data
   if (isLoadingIncidents || isLoadingOffices) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Building2 className="h-5 w-5 text-primary" />
             Ranking de Sucursales
           </CardTitle>
           <CardDescription>Comparación de todas las sucursales</CardDescription>
@@ -248,8 +273,8 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Building2 className="h-5 w-5 text-primary" />
             Ranking de Sucursales
           </CardTitle>
           <CardDescription>Comparación de todas las sucursales</CardDescription>
@@ -266,20 +291,37 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Building2 className="h-5 w-5" />
-          Ranking de Sucursales
-        </CardTitle>
-        <CardDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <span>Top 3 sucursales por número de incidentes</span>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs">
-              {allOfficeStats.length} sucursales
-            </Badge>
-            <Badge variant="secondary" className="text-xs">
-              {officesWithIncidents.length} con incidentes
-            </Badge>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Building2 className="h-5 w-5 text-primary" />
+            Ranking de Sucursales
+          </CardTitle>
+          
+          {/* Toggle buttons */}
+          <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+            <Button
+              variant={rankingMode === 'incidents' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setRankingMode('incidents')}
+              className="text-xs h-8 px-3"
+            >
+              <BarChart3 className="h-3 w-3 mr-1" />
+              Incidentes
+            </Button>
+            <Button
+              variant={rankingMode === 'losses' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setRankingMode('losses')}
+              className="text-xs h-8 px-3"
+            >
+              <DollarSign className="h-3 w-3 mr-1" />
+              Pérdidas
+            </Button>
           </div>
+        </div>
+        
+        <CardDescription>
+          Top 3 sucursales por {rankingMode === 'incidents' ? 'número de incidentes' : 'mayores pérdidas económicas'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -323,19 +365,23 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
                   
                   {/* Stats row */}
                   <div className="flex items-center gap-6 pt-2">
-                    <div className="flex items-center gap-2">
+                    <div className={`flex items-center gap-2 ${rankingMode === 'incidents' ? 'opacity-100' : 'opacity-70'}`}>
                       <div className="flex items-center gap-1">
-                        <BarChart3 className="h-4 w-4 text-blue-600" />
+                        <BarChart3 className={`h-4 w-4 ${rankingMode === 'incidents' ? 'text-primary' : 'text-blue-600'}`} />
                         <span className="text-sm text-muted-foreground">Incidentes:</span>
                       </div>
-                      <span className="text-sm font-semibold text-blue-600">{office.incidentCount}</span>
+                      <span className={`text-sm font-semibold ${rankingMode === 'incidents' ? 'text-primary text-base' : 'text-blue-600'}`}>
+                        {office.incidentCount}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className={`flex items-center gap-2 ${rankingMode === 'losses' ? 'opacity-100' : 'opacity-70'}`}>
                       <div className="flex items-center gap-1">
-                        <DollarSign className="h-4 w-4 text-red-600" />
+                        <DollarSign className={`h-4 w-4 ${rankingMode === 'losses' ? 'text-primary' : 'text-red-600'}`} />
                         <span className="text-sm text-muted-foreground">Pérdidas:</span>
                       </div>
-                      <span className="text-sm font-semibold text-red-600">{formatCurrency(office.totalLoss)}</span>
+                      <span className={`text-sm font-semibold ${rankingMode === 'losses' ? 'text-primary text-base' : 'text-red-600'}`}>
+                        {formatCurrency(office.totalLoss)}
+                      </span>
                     </div>
                   </div>
                 </div>

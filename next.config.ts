@@ -1,5 +1,8 @@
 import { NextConfig } from 'next';
 
+// Load SSL bypass for development
+require('./ssl-bypass');
+
 // Get backend hostname from API URL for secure configuration
 const getBackendHostname = () => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -16,9 +19,14 @@ const getBackendHostname = () => {
 const backendHostname = getBackendHostname();
 
 const nextConfig: NextConfig = {
+  experimental: {
+    proxyTimeout: 30_000,
+  },
+  serverExternalPackages: ['tls', 'https'],
   serverRuntimeConfig: {
     https: {
-      rejectUnauthorized: false
+      rejectUnauthorized: false,
+      checkServerIdentity: false,
     }
   },
   images: {
@@ -100,6 +108,11 @@ const nextConfig: NextConfig = {
   async rewrites() {
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
     
+    // Force SSL bypass again before creating rewrites
+    if (process.env.NODE_ENV === 'development') {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    }
+    
     if (!API_URL) {
       console.warn('NEXT_PUBLIC_API_URL not configured');
       return [];
@@ -112,6 +125,10 @@ const nextConfig: NextConfig = {
       {
         source: "/api-token-auth2",
         destination: `${API_URL}/api-token-auth2/`,
+      },
+      {
+        source: "/incidents_pivot_by_type/:path*",
+        destination: `${API_URL}/incidents_pivot_by_type/:path*/`,
       },
       {
         source: "/media/:path*",

@@ -6,10 +6,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import jsPDF from 'jspdf';
+import { generatePoliceReportPDF } from '@/utils/pdf-generator';
 import {
   DollarSign, Users, MapPin, FileText, AlertTriangle,
-  Calendar, Building, FileImage, Download, Printer, User, Edit, Trash2
+  Calendar, Building, FileImage, Download, Printer, User
 } from 'lucide-react';
 
 // UI Components
@@ -18,7 +18,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
 import Map from '@/components/ui/map';
-import { DeleteConfirmationDialog } from '@/components/ui/delete-confirmation-dialog';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -28,20 +27,13 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { IdCell } from '@/components/ui/id-cell';
-import { PoliceReportPreview } from '@/components/police-report-preview';
 
 // Services
-import { getIncidentById, deleteIncident } from '@/services/incident-service';
+import { getIncidentById } from '@/services/incident-service';
 import { getIncidentTypeWithCache } from '@/services/incident-type-service';
 import { getOffice } from '@/services/office-service';
 import { getSuspectById } from '@/services/suspect-service';
 import { getCompanyById } from '@/services/company-service';
-
-// Utils
-import { getSafeImageUrl } from '@/lib/utils';
-
-// Types
-import type { File } from '@/types/common';
 
 // Types
 import { Incident } from '@/types/incident';
@@ -65,9 +57,6 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
   const [suspects, setSuspects] = useState<Suspect[]>([]);
   const [suspectsLoading, setSuspectsLoading] = useState(true);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
-  const [companyName, setCompanyName] = useState<string>('');
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   
   // Fetch incident data
   useEffect(() => {
@@ -79,16 +68,8 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
         
         // Fetch incident type
         if (data.IncidentType) {
-          try {
-            const typeData = await getIncidentTypeWithCache(data.IncidentType);
-            const typeName = typeData?.Name || `Tipo ${data.IncidentType}`;
-            setIncidentType(typeName);
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
-            setIncidentType(`Tipo ${data.IncidentType}`);
-          }
-        } else {
-          setIncidentType('Tipo no especificado');
+          const typeData = await getIncidentTypeWithCache(data.IncidentType);
+          setIncidentType(typeData?.Name || 'Tipo desconocido');
         }
         
         // Fetch office data
@@ -97,11 +78,10 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
           const officeData = await getOffice(officeId);
           setOffice(officeData);
           
-          // Fetch company data
+          // Fetch company logo if office has company
           if (officeData?.Company) {
             const company = await getCompanyById(officeData.Company.toString());
             setCompanyLogo(company?.image_url || null);
-            setCompanyName(company?.name || 'Empresa no encontrada');
           }
         }
         
@@ -126,8 +106,8 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
         setSuspectsLoading(false);
         
         setLoading(false);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
+      } catch (error) {
+        console.error('Error fetching incident data:', error);
         setLoading(false);
       }
     };
@@ -142,24 +122,6 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
     return 'Gs. ' + new Intl.NumberFormat('es-PY').format(numValue);
   };
   
-  // Helper function to get incident loss items from either field
-  const getIncidentLossItems = () => {
-    if (!incident) return [];
-    
-    // Use IncidentItemLosses from API if available, otherwise use incidentLossItem from form
-    if (incident.IncidentItemLosses && incident.IncidentItemLosses.length > 0) {
-      return incident.IncidentItemLosses.map(item => ({
-        id: item.id,
-        description: item.Description || '',
-        quantity: item.Quantity || 0,
-        unitPrice: item.UnitPrice || 0,
-        type: item.ItemType === 'mercaderia' ? 'mercaderia' as const : 'material' as const,
-        total: item.TotalValue || 0
-      }));
-    }
-    return incident.incidentLossItem || [];
-  };
-
   const getTotalLoss = (): string => {
     if (!incident) return 'Gs. 0';
     
@@ -191,217 +153,50 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
     router.back();
   };
 
-  const handleDeleteIncident = async () => {
-    if (!incident) return;
-
-    setIsDeleting(true);
-    try {
-      await deleteIncident(incident.id);
-      toast({
-        title: "Incidente eliminado",
-        description: "El incidente ha sido eliminado correctamente.",
-      });
-      router.push('/dashboard/incidentes');
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
-      toast({
-        title: "Error al eliminar",
-        description: "No se pudo eliminar el incidente. Inténtalo de nuevo.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDeleting(false);
-      setShowDeleteDialog(false);
-    }
-  };
-
-  // Handle file download
-  const handleFileDownload = async (file: File) => {
-    try {
-      const downloadFile = async (url: string) => {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        return response.blob();
-      };
-
-      let blob: Blob;
-      
-      // Try different download strategies
-      if (file.url.includes('cloudinary.com') || file.url.includes('res.cloudinary.com')) {
-        // For Cloudinary files, use the URL directly
-        blob = await downloadFile(file.url);
-      } else {
-        // For other files, try the URL directly
-        blob = await downloadFile(file.url);
-      }
-      
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = file.name || 'archivo_adjunto';
-      link.style.display = 'none';
-      
-      // Add to DOM, click, and remove
-      document.body.appendChild(link);
-      link.click();
-      
-      // Cleanup
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }, 100);
-      
-      toast({
-        title: "Descarga completada",
-        description: `El archivo "${file.name}" se ha descargado correctamente.`,
-      });
-      
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
-      // Fallback: try opening the file in a new tab
-      try {
-        const link = document.createElement('a');
-        link.href = file.url;
-        link.target = '_blank';
-        link.download = file.name || 'archivo_adjunto';
-        link.click();
-        
-        toast({
-          title: "Archivo abierto",
-          description: `Se abrió "${file.name}" en una nueva pestaña. Usa Ctrl+S para guardar.`,
-        });
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
-        toast({
-          title: "Error al descargar",
-          description: `No se pudo descargar "${file.name}". Verifica tu conexión e inténtalo de nuevo.`,
-          variant: "destructive",
-        });
-      }
-    }
-  };
-
-  // Generate PDF function using the improved component
+  // Generate PDF function using the comprehensive utility
   const generatePDF = async () => {
     if (!incident) return;
-    
     try {
-      // Create a temporary container for the report
-      const tempContainer = document.createElement('div');
-      tempContainer.style.position = 'absolute';
-      tempContainer.style.left = '-9999px';
-      tempContainer.style.top = '0';
-      tempContainer.style.width = '800px';
-      tempContainer.style.backgroundColor = 'white';
-      tempContainer.style.padding = '20px';
-      document.body.appendChild(tempContainer);
-      
-      // Render the PoliceReportPreview component
-      const reportElement = (
-        <PoliceReportPreview 
-          incidentData={incident} 
-          incidentTypes={[{ id: incident.IncidentType, name: incidentType }]} 
-          office={office}
-          companyLogo={companyLogo}
-          companyName={companyName}
-          suspects={suspects}
-        />
-      );
-      
-      // Use ReactDOM to render the component
-      const ReactDOM = await import('react-dom/client');
-      const root = ReactDOM.createRoot(tempContainer);
-      root.render(reportElement);
-      
-      // Wait a bit for the component to render
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Generate PDF using html2canvas and jsPDF
-      const html2canvas = await import('html2canvas');
-      const canvas = await html2canvas.default(tempContainer, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff'
+      await generatePoliceReportPDF({
+        incidentData: incident,
+        suspects: suspects,
+        incidentTypes: [{ id: incident.IncidentType, name: incidentType }],
+        office: office,
+        companyLogo: companyLogo,
+        companyName: office?.Company ? 'Powervision' : 'Powervision'
       });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210;
-      const pageHeight = 295;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
-      // Clean up
-      document.body.removeChild(tempContainer);
-      
-      // Open PDF in new window for printing
-      const pdfBlob = pdf.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      const newWindow = window.open(pdfUrl, '_blank');
-      
-      if (newWindow) {
-        // Wait for the PDF to load and then trigger print
-        newWindow.onload = () => {
-          setTimeout(() => {
-            newWindow.print();
-          }, 1000);
-        };
-        toast({ title: "PDF generado", description: "El PDF se abrirá para imprimir" });
-      } else {
-        // Fallback: download the PDF
-      pdf.save(`incidente-${incident.id}.pdf`);
       toast({ title: "PDF generado", description: "El PDF se ha descargado correctamente" });
-      }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
+    } catch (error) {
+      console.error('Error generating PDF:', error);
       toast({ title: "Error", description: "No se pudo generar el PDF", variant: "destructive" });
     }
   };
   
-  // Map location with better coordinates handling
-  const mapLocations = office && incident ? [
+  // Map location with better coordinates handling and incident data
+  const mapLocations = office ? [
     {
-      id: `incident-${incident.id}`,
+      id: `incident-${incident?.id}`,
       lat: office.Geo ? parseFloat(office.Geo.split(',')[0]) : -25.2637, // Use actual coordinates or default to Asunción
       lng: office.Geo ? parseFloat(office.Geo.split(',')[1]) : -57.5759,
       title: office.Name,
       description: office.Address || 'Dirección no disponible',
       address: office.Address || 'Dirección no disponible',
-      logoUrl: getSafeImageUrl(companyLogo) || undefined,
+      logoUrl: companyLogo || undefined,
       officeId: office.id,
       incidentData: {
-        id: incident.id,
-        date: incident.Date,
-        time: incident.Time || '',
-        incidentType: incidentType,
-        totalLoss: incident.TotalLoss || '0',
+        id: incident?.id || '',
+        date: incident?.Date || '',
+        time: incident?.Time || '',
+        incidentType: incidentType || 'No especificado',
+        totalLoss: incident?.TotalLoss || '0',
         suspectCount: suspects.length,
-        status: 'Reportado',
-        severity: (() => {
-          const totalLoss = parseFloat(incident.TotalLoss || '0');
-          if (totalLoss > 1000000) return 'high' as const;
-          if (totalLoss > 100000) return 'medium' as const;
-          return 'low' as const;
-        })()
+        status: 'Registrado',
+        severity: parseFloat(incident?.TotalLoss || '0') > 1000000 ? 'high' as const : 
+                 parseFloat(incident?.TotalLoss || '0') > 500000 ? 'medium' as const : 'low' as const
       }
     }
   ] : [];
+
   
   if (loading) {
     return (
@@ -454,7 +249,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                 <div className="relative w-32 h-32 sm:w-40 sm:h-40 overflow-hidden border-4 border-muted flex items-center justify-center bg-muted">
                   {companyLogo ? (
                     <Image
-                      src={getSafeImageUrl(companyLogo) || ''}
+                      src={companyLogo}
                       alt="Logo de la empresa"
                       fill
                       className="object-contain p-4"
@@ -487,26 +282,12 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                       <span className="hidden sm:inline">Descargar PDF</span>
                       <span className="sm:hidden">PDF</span>
                     </Button>
-                    <Button variant="outline" asChild className="h-9 px-3 sm:h-10 sm:px-4">
-                      <Link href={`/dashboard/incidentes/${incident.id}/edit`}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        <span className="hidden sm:inline">Editar</span>
-                        <span className="sm:hidden">Editar</span>
-                      </Link>
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setShowDeleteDialog(true)}
-                      className="h-9 px-3 sm:h-10 sm:px-4 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">Eliminar</span>
-                      <span className="sm:hidden">Eliminar</span>
-                    </Button>
-                    <Button onClick={generatePDF} className="h-9 px-3 sm:h-10 sm:px-4">
+                    <Button asChild className="h-9 px-3 sm:h-10 sm:px-4">
+                      <Link href={`/dashboard/incidentes/${id}/edit`}>
                         <Printer className="h-4 w-4 mr-2" />
                         <span className="hidden sm:inline">Imprimir</span>
                         <span className="sm:hidden">Imprimir</span>
+                      </Link>
                     </Button>
                 </div>
                 </div>
@@ -651,138 +432,81 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                 Desglose de Pérdidas
               </h3>
                   <div className="bg-destructive/5 border border-destructive/20 p-4 rounded-lg space-y-3">
-                    {/* Efectivo Total */}
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Efectivo Total</span>
-                      <span className="font-medium text-foreground">
-                        {formatCurrency(incident.CashLoss || 0)}
-                      </span>
+                    {/* Efectivo con desglose */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground font-medium">Efectivo</span>
+                        <span className="font-medium text-foreground">
+                          {formatCurrency(incident.CashLoss || 0)}
+                        </span>
+                      </div>
+                      
+                      {/* Desglose de efectivo */}
+                      <div className="ml-4 space-y-1 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">• Fondo de caja</span>
+                          <span className="font-medium text-foreground">
+                            {formatCurrency(incident.Tags?.cashFondo || 0)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">• Recaudación</span>
+                          <span className="font-medium text-foreground">
+                            {formatCurrency(incident.Tags?.cashRecaudacion || 0)}
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Desglose de Efectivo si existe */}
-                    {(incident.Tags?.cashFondo || incident.Tags?.cashRecaudacion) && (
+                    {/* Items detallados si existen - revisar IncidentItemLosses o incidentLossItem */}
+                    {((incident.IncidentItemLosses && incident.IncidentItemLosses.length > 0) || 
+                      (incident.incidentLossItem && incident.incidentLossItem.length > 0)) && (
                       <>
-                        <div className="pl-4 space-y-2 border-l-2 border-destructive/20">
-                          <div className="text-sm font-medium text-muted-foreground">Desglose de Efectivo</div>
-                          {incident.Tags.cashFondo && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-muted-foreground">• Fondo de caja</span>
-                              <span className="text-sm font-medium text-foreground">
-                                {formatCurrency(incident.Tags.cashFondo)}
-                              </span>
-                            </div>
-                          )}
-                          {incident.Tags.cashRecaudacion && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-muted-foreground">• Recaudación</span>
-                              <span className="text-sm font-medium text-foreground">
-                                {formatCurrency(incident.Tags.cashRecaudacion)}
-                              </span>
-                            </div>
-                          )}
+                        <div className="pt-2">
+                          <span className="text-sm font-medium text-muted-foreground">Detalle de Mercadería</span>
+                          <div className="mt-2 space-y-2">
+                            {/* Usar IncidentItemLosses si está disponible, sino usar incidentLossItem */}
+                            {(incident.IncidentItemLosses || incident.incidentLossItem || []).map((item, index) => {
+                              // Manejar diferencias entre API y formato de form
+                              const apiItem = item as { Description?: string; Quantity?: number; UnitPrice?: number; TotalValue?: number; };
+                              const formItem = item as { description?: string; quantity?: number; unitPrice?: number; total?: number; };
+                              const description = apiItem.Description || formItem.description || '';
+                              const quantity = apiItem.Quantity || formItem.quantity || 0;
+                              const unitPrice = apiItem.UnitPrice || formItem.unitPrice || 0;
+                              const total = apiItem.TotalValue || formItem.total || 0;
+                              
+                              return (
+                                <div key={item.id || index} className="bg-background/50 p-3 rounded-md">
+                                  <div className="flex justify-between items-start">
+                                    <div className="space-y-1">
+                                      <p className="text-sm font-medium text-foreground">{description}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {quantity} unidades x {formatCurrency(unitPrice)}
+                                      </p>
+                                    </div>
+                                    <span className="font-medium text-foreground">
+                                      {formatCurrency(total)}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </>
-                    )}
-
-                    {/* Items detallados si existen */}
-                    {getIncidentLossItems().length > 0 && (
-                      <>
-                        <div className="pt-2 space-y-4">
-                          {/* Productos (Mercadería) */}
-                          {getIncidentLossItems().filter(item => item.type === 'mercaderia').length > 0 && (
-                            <div>
-                              <span className="text-sm font-medium text-muted-foreground">Productos Perdidos</span>
-                              <div className="mt-2 space-y-2">
-                                {getIncidentLossItems()
-                                  .filter(item => item.type === 'mercaderia')
-                                  .map((item, index) => (
-                                    <div key={item.id || `mercaderia-${index}`} className="bg-green-50 border border-green-200 p-3 rounded-md">
-                                      <div className="flex justify-between items-start">
-                                        <div className="space-y-1">
-                                          <p className="text-sm font-medium text-foreground">{item.description}</p>
-                                          <p className="text-xs text-muted-foreground">
-                                            {item.quantity} unidades x {formatCurrency(item.unitPrice)}
-                                          </p>
-                                          <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
-                                            Producto
-                                          </span>
-                                        </div>
-                                        <span className="font-medium text-foreground">
-                                          {formatCurrency(item.total)}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  ))}
-                              </div>
-                              <div className="border-t border-green-200 mt-2 pt-2">
-                                <div className="flex justify-between items-center">
-                                  <span className="text-sm font-medium text-muted-foreground">Total Productos</span>
-                                  <span className="font-medium text-foreground">
-                                    {formatCurrency(
-                                      getIncidentLossItems()
-                                        .filter(item => item.type === 'mercaderia')
-                                        .reduce((sum, item) => sum + item.total, 0)
-                                    )}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Daños Materiales */}
-                          {getIncidentLossItems().filter(item => item.type === 'material').length > 0 && (
-                            <div>
-                              <span className="text-sm font-medium text-muted-foreground">Daños Materiales</span>
-                              <div className="mt-2 space-y-2">
-                                {getIncidentLossItems()
-                                  .filter(item => item.type === 'material')
-                                  .map((item, index) => (
-                                    <div key={item.id || `material-${index}`} className="bg-orange-50 border border-orange-200 p-3 rounded-md">
-                                      <div className="flex justify-between items-start">
-                                        <div className="space-y-1">
-                                          <p className="text-sm font-medium text-foreground">{item.description}</p>
-                                          <p className="text-xs text-muted-foreground">
-                                            {item.quantity} unidades x {formatCurrency(item.unitPrice)}
-                                          </p>
-                                          <span className="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">
-                                            Daño Material
-                                          </span>
-                                        </div>
-                                        <span className="font-medium text-foreground">
-                                          {formatCurrency(item.total)}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  ))}
-                              </div>
-                              <div className="border-t border-orange-200 mt-2 pt-2">
-                                <div className="flex justify-between items-center">
-                                  <span className="text-sm font-medium text-muted-foreground">Total Daños Materiales</span>
-                                  <span className="font-medium text-foreground">
-                                    {formatCurrency(
-                                      getIncidentLossItems()
-                                        .filter(item => item.type === 'material')
-                                        .reduce((sum, item) => sum + item.total, 0)
-                                    )}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Total general si hay items */}
-                          {getIncidentLossItems().length > 0 && (
-                            <div className="border-t border-destructive/20 pt-2">
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm font-medium text-muted-foreground">Total Items</span>
-                                <span className="font-medium text-foreground">
-                                  {formatCurrency(
-                                    getIncidentLossItems().reduce((sum, item) => sum + item.total, 0)
-                                  )}
-                                </span>
-                              </div>
-                            </div>
-                          )}
+                        <div className="border-t border-destructive/20 pt-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-muted-foreground">Total Mercadería</span>
+                            <span className="font-medium text-foreground">
+                              {formatCurrency(
+                                (incident.IncidentItemLosses || incident.incidentLossItem || []).reduce((sum, item) => {
+                                  const apiItem = item as { TotalValue?: number; };
+                                  const formItem = item as { total?: number; };
+                                  const total = apiItem.TotalValue || formItem.total || 0;
+                                  return sum + total;
+                                }, 0)
+                              )}
+                            </span>
+                          </div>
                         </div>
                       </>
                     )}
@@ -832,7 +556,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                             <div className="h-12 w-12 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
                           {suspect.PhotoUrl ? (
                             <Image 
-                              src={getSafeImageUrl(suspect.PhotoUrl)} 
+                              src={suspect.PhotoUrl} 
                                   alt={suspect.Alias || 'Sospechoso'}
                               width={48}
                               height={48}
@@ -897,23 +621,21 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="h-80 relative">
-                  {office ? (
-                    <div className="absolute inset-0 rounded-b-lg overflow-hidden">
-                      <Map locations={mapLocations} />
+                {office && mapLocations.length > 0 ? (
+                  <div className="h-80 w-full">
+                    <Map locations={mapLocations} />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-80 bg-muted/30">
+                    <div className="text-center p-6">
+                      <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-foreground font-medium">Ubicación no disponible</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        No se encontraron coordenadas para esta oficina
+                      </p>
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-full bg-muted/30 rounded-b-lg">
-                      <div className="text-center p-6">
-                        <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                        <p className="text-foreground font-medium">Ubicación no disponible</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          No se encontraron coordenadas para esta oficina
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
                 {office && (
                   <div className="p-4 border-t border-border bg-muted/30">
                     <div className="flex items-start gap-3">
@@ -936,104 +658,100 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
               <CardHeader className="bg-muted/30 border-b border-border">
                 <CardTitle className="flex items-center text-lg text-foreground">
                   <FileImage className="h-5 w-5 mr-2 text-primary" />
-              Evidencias/Archivos adjuntos
+              Archivos Adjuntos
             </CardTitle>
           </CardHeader>
               <CardContent className="p-6">
-            {(incident.Attachments && incident.Attachments.length > 0) || (incident.Images && incident.Images.length > 0) ? (
-                  <div className="space-y-4">
-                {/* Show both Attachments and Images */}
-                {[...(incident.Attachments || []), ...(incident.Images || [])].map((file, index) => {
-                  const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(file.name || file.url || '');
-                  return (
-                      <div key={index} className="border border-border rounded-lg overflow-hidden">
-                        {isImage ? (
-                          <div className="space-y-3">
-                            <div className="relative aspect-video bg-muted">
-                              <Image 
-                                src={getSafeImageUrl(file.url) || file.url} 
-                                alt={file.name || 'Imagen de evidencia'}
-                                fill
-                                className="object-contain"
-                                onError={(e) => {
-                                  // Fallback if image fails to load
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                  target.nextElementSibling?.classList.remove('hidden');
-                                }}
-                              />
-                              <div className="hidden absolute inset-0 flex items-center justify-center bg-muted">
-                                <FileImage className="h-12 w-12 text-muted-foreground" />
-                              </div>
-                            </div>
-                            <div className="p-3 bg-muted/30">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="font-medium text-foreground">{file.name || 'Imagen de evidencia'}</p>
-                                  <p className="text-sm text-muted-foreground">Evidencia fotográfica</p>
-                                </div>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="h-8"
-                                  onClick={() => handleFileDownload(file)}
-                                  title={`Descargar ${file.name || 'imagen'}`}
-                                >
-                                  <Download className="h-4 w-4 mr-1" />
-                                  Descargar
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors">
-                            <div className="h-12 w-12 rounded bg-accent/20 flex items-center justify-center">
-                              <FileText className="h-6 w-6 text-accent-foreground" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-foreground">{file.name || 'Archivo adjunto'}</p>
-                              <p className="text-sm text-muted-foreground">Archivo de evidencia</p>
-                            </div>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="h-8"
-                              onClick={() => handleFileDownload(file)}
-                              title={`Descargar ${file.name || 'archivo'}`}
-                            >
-                              <Download className="h-4 w-4 mr-1" />
-                              Descargar
-                            </Button>
-                          </div>
-                        )}
+            {incident.Attachments && incident.Attachments.length > 0 ? (
+                  <div className="space-y-3">
+                {incident.Attachments.map((file, index) => (
+                      <div key={index} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="h-10 w-10 rounded bg-accent/20 flex items-center justify-center">
+                          <FileImage className="h-5 w-5 text-accent-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground truncate">{file.name}</p>
+                          <p className="text-sm text-muted-foreground">Archivo adjunto</p>
+                    </div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                      <Download className="h-4 w-4" />
+                    </Button>
                       </div>
-                  );
-                })}
+                ))}
                   </div>
             ) : (
                   <div className="flex flex-col items-center justify-center h-32 text-center bg-muted/30 rounded-lg">
                 <FileImage className="h-8 w-8 text-muted-foreground mb-2" />
-                    <p className="text-foreground font-medium">No hay evidencias</p>
+                    <p className="text-foreground font-medium">No hay archivos adjuntos</p>
                     <p className="text-sm text-muted-foreground">para este incidente</p>
               </div>
             )}
           </CardContent>
         </Card>
-
+        
+            {/* Images Card */}
+            <Card className="bg-card border-border">
+              <CardHeader className="bg-muted/30 border-b border-border">
+                <CardTitle className="flex items-center text-lg text-foreground">
+                  <FileImage className="h-5 w-5 mr-2 text-primary" />
+                  Imágenes del Incidente
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {incident.Images && incident.Images.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {incident.Images.map((image, index) => (
+                      <div key={index} className="group relative border border-border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                        <div className="aspect-video relative bg-muted/30 flex items-center justify-center">
+                          {image.url ? (
+                            <Image
+                              src={image.url}
+                              alt={image.name || `Imagen ${index + 1}`}
+                              fill
+                              className="object-cover"
+                              onError={(e) => {
+                                // Fallback si la imagen no carga
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <FileImage className="h-12 w-12 text-muted-foreground" />
+                          )}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                            <Button 
+                              variant="secondary" 
+                              size="sm" 
+                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => image.url && window.open(image.url, '_blank')}
+                            >
+                              Ver completa
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="p-3 bg-background">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {image.name || `Imagen ${index + 1}`}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Evidencia del incidente
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-32 text-center bg-muted/30 rounded-lg">
+                    <FileImage className="h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-foreground font-medium">No hay imágenes</p>
+                    <p className="text-sm text-muted-foreground">para este incidente</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
-
-      {/* Delete Confirmation Dialog */}
-      <DeleteConfirmationDialog
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        onConfirm={handleDeleteIncident}
-        title="¿Eliminar incidente?"
-        description="Esta acción no se puede deshacer. Se eliminará permanentemente el incidente y toda su información asociada."
-        itemName={incident ? `Incidente ${incident.id}` : undefined}
-        isLoading={isDeleting}
-      />
     </div>
   );
 }

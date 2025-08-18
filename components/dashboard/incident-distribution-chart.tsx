@@ -114,7 +114,10 @@ export function IncidentDistributionChart({ fromDate, toDate, officeId }: Incide
   return (
     <Card className="flex flex-col h-full">
       <CardHeader>
-        <CardTitle>Distribución de incidentes</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <PieChartIcon className="h-5 w-5 text-primary" />
+          Distribución de incidentes
+        </CardTitle>
         <CardDescription>
           Por tipo de incidente en el período seleccionado
           {totalIncidents > 0 ? ` (${totalIncidents} incidentes analizados)` : ''}

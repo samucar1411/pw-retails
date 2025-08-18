@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Image from 'next/image';
 import jsPDF from 'jspdf';
-import { Download, Edit, User } from 'lucide-react';
+import { Download, Edit, User, FileImage } from 'lucide-react';
 import { useEffect, useState, use } from 'react';
 import { getOffice } from '@/services/office-service';
 import { getIncidentTypeWithCache } from '@/services/incident-type-service';
@@ -662,22 +662,22 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
               {/* Información básica */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <h3 className="font-normal text-muted-foreground mb-2">Nombre</h3>
-                  <p className="text-foreground font-semibold">
+                  <h3 className="font-bold text-primary mb-2">Nombre</h3>
+                  <p className="text-secondary-foreground">
                     {suspect.Name || 'Sin información'}
                   </p>
                 </div>
                 
                 <div>
-                  <h3 className="font-normal text-muted-foreground mb-2">Apellido</h3>
-                  <p className="text-foreground font-semibold">
+                  <h3 className="font-bold text-primary mb-2">Apellido</h3>
+                  <p className="text-secondary-foreground">
                     {suspect.LastName || 'Sin información'}
                   </p>
                 </div>
                 
                 <div>
-                  <h3 className="font-normal text-muted-foreground mb-2">CI</h3>
-                  <p className="text-foreground font-semibold">
+                  <h3 className="font-bold text-primary mb-2">CI</h3>
+                  <p className="text-secondary-foreground">
                     {suspect.CI || 'Sin información'}
                   </p>
                 </div>
@@ -685,21 +685,21 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
 
               {/* Descripción física */}
               <div>
-                <h3 className="font-normal text-muted-foreground mb-2">Descripción física</h3>
-                <p className="text-foreground font-semibold">
+                <h3 className="font-bold text-primary mb-2">Descripción física</h3>
+                <p className="text-secondary-foreground">
                   {suspect.PhysicalDescription || 'Sin información'}
                 </p>
               </div>
 
               {/* Tags/Características */}
               <div>
-                <h3 className="font-medium mb-4">Características distintivas</h3>
+                <h3 className="font-bold mb-4">Características distintivas</h3>
                 <div className="bg-card border rounded-lg p-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Género */}
                     <div>
-                      <h4 className="text-sm font-normal text-muted-foreground mb-1">Género</h4>
-                      <p className="text-sm text-foreground font-semibold">
+                      <h4 className="text-sm font-bold text-primary mb-1">Género</h4>
+                      <p className="text-sm text-secondary-foreground">
                         {suspect.Tags?.sexo ? 
                           (suspect.Tags.sexo === 'masculino' ? 'Hombre' : 
                            suspect.Tags.sexo === 'femenino' ? 'Mujer' : 
@@ -711,8 +711,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     
                     {/* Contextura */}
                     <div>
-                      <h4 className="text-sm font-normal text-muted-foreground mb-1">Contextura</h4>
-                      <p className="text-sm text-foreground font-semibold">
+                      <h4 className="text-sm font-bold text-primary mb-1">Contextura</h4>
+                      <p className="text-sm text-secondary-foreground">
                         {suspect.Tags?.contextura ? 
                           suspect.Tags.contextura.charAt(0).toUpperCase() + suspect.Tags.contextura.slice(1).toLowerCase()
                           : 'Sin información'
@@ -722,8 +722,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     
                     {/* Estatura */}
                     <div>
-                      <h4 className="text-sm font-normal text-muted-foreground mb-1">Estatura</h4>
-                      <p className="text-sm text-foreground font-semibold">
+                      <h4 className="text-sm font-bold text-primary mb-1">Estatura</h4>
+                      <p className="text-sm text-secondary-foreground">
                         {suspect.Tags?.altura ? 
                           (() => {
                             switch(suspect.Tags.altura) {
@@ -741,8 +741,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     
                     {/* Tono de piel */}
                     <div>
-                      <h4 className="text-sm font-normal text-muted-foreground mb-1">Tono de piel</h4>
-                      <p className="text-sm text-foreground font-semibold">
+                      <h4 className="text-sm font-bold text-primary mb-1">Tono de piel</h4>
+                      <p className="text-sm text-secondary-foreground">
                         {suspect.Tags?.piel ? 
                           suspect.Tags.piel.charAt(0).toUpperCase() + suspect.Tags.piel.slice(1).toLowerCase()
                           : 'Sin información'
@@ -752,8 +752,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     
                     {/* Piercings */}
                     <div>
-                      <h4 className="text-sm font-normal text-muted-foreground mb-1">Piercings</h4>
-                      <p className="text-sm text-foreground font-semibold">
+                      <h4 className="text-sm font-bold text-primary mb-1">Piercings</h4>
+                      <p className="text-sm text-secondary-foreground">
                         {suspect.Tags?.piercings ? 
                           suspect.Tags.piercings.split(',').map(p => p.trim().charAt(0).toUpperCase() + p.trim().slice(1).toLowerCase()).join(', ')
                           : 'Sin información'
@@ -763,8 +763,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     
                     {/* Tatuajes */}
                     <div>
-                      <h4 className="text-sm font-normal text-muted-foreground mb-1">Tatuajes</h4>
-                      <p className="text-sm text-foreground font-semibold">
+                      <h4 className="text-sm font-bold text-primary mb-1">Tatuajes</h4>
+                      <p className="text-sm text-secondary-foreground">
                         {suspect.Tags?.tatuajes ? 
                           suspect.Tags.tatuajes.split(',').map(t => t.trim().charAt(0).toUpperCase() + t.trim().slice(1).toLowerCase()).join(', ')
                           : 'Sin información'
@@ -774,8 +774,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     
                     {/* Accesorios */}
                     <div>
-                      <h4 className="text-sm font-normal text-muted-foreground mb-1">Accesorios</h4>
-                      <p className="text-sm text-foreground font-semibold">
+                      <h4 className="text-sm font-bold text-primary mb-1">Accesorios</h4>
+                      <p className="text-sm text-secondary-foreground">
                         {suspect.Tags?.accesorios ? 
                           suspect.Tags.accesorios.split(',').map(a => a.trim().charAt(0).toUpperCase() + a.trim().slice(1).toLowerCase().replace('_', ' ')).join(', ')
                           : 'Sin información'
@@ -845,8 +845,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
               {/* Última vez visto */}
               {suspect.LastSeen && (
                 <div>
-                  <h3 className="font-normal text-muted-foreground mb-2">Última vez visto</h3>
-                  <p className="text-foreground font-semibold">
+                  <h3 className="font-bold text-primary mb-2">Última vez visto</h3>
+                  <p className="text-secondary-foreground">
                     {format(new Date(suspect.LastSeen), "d 'de' MMMM 'de' yyyy", { locale: es })}
                   </p>
                 </div>
@@ -855,68 +855,157 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
           </CardContent>
         </Card>
 
-        {/* Sospechosos relacionados */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Sospechosos relacionados</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Otros sospechosos involucrados en los mismos incidentes
-            </p>
-          </CardHeader>
-          <CardContent>
-            {relatedSuspectsLoading ? (
-              <div className="flex justify-center items-center h-32">
-                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-              </div>
-            ) : relatedSuspects.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {relatedSuspects.map((rs) => (
-                  <Link 
-                    key={rs.id} 
-                    href={`/dashboard/sospechosos/${rs.id}`}
-                    className="group"
-                  >
-                    <Card className="hover:bg-muted/50 transition-colors">
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="relative w-12 h-12 overflow-hidden border-2 border-muted">
-                            {rs.PhotoUrl ? (
-                              <Image
-                                src={getSafeImageUrl(rs.PhotoUrl)}
-                                alt={rs.Alias || 'Sospechoso'}
-                                fill
-                                className="object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-muted flex items-center justify-center">
-                                <User className="w-6 h-6 text-muted-foreground" />
+        {/* Grid para sospechosos relacionados e imágenes lado a lado */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Sospechosos relacionados */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Sospechosos relacionados</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Otros sospechosos involucrados en los mismos incidentes
+              </p>
+            </CardHeader>
+            <CardContent>
+              {relatedSuspectsLoading ? (
+                <div className="flex justify-center items-center h-32">
+                  <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+                </div>
+              ) : relatedSuspects.length > 0 ? (
+                <div className="grid grid-cols-1 gap-4">
+                  {relatedSuspects.map((rs) => (
+                    <Link 
+                      key={rs.id} 
+                      href={`/dashboard/sospechosos/${rs.id}`}
+                      className="group"
+                    >
+                      <Card className="hover:bg-muted/50 transition-colors">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="relative w-12 h-12 overflow-hidden border-2 border-muted">
+                              {rs.PhotoUrl ? (
+                                <Image
+                                  src={getSafeImageUrl(rs.PhotoUrl)}
+                                  alt={rs.Alias || 'Sospechoso'}
+                                  fill
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-muted flex items-center justify-center">
+                                  <User className="w-6 h-6 text-muted-foreground" />
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-medium group-hover:text-primary transition-colors">
+                                {rs.Alias}
+                              </p>
+                              <Badge 
+                                variant={rs.Status === 1 ? "destructive" : "secondary"}
+                                className="mt-1 text-xs"
+                              >
+                                {rs.Status === 1 ? "Detenido" : "Libre"}
+                              </Badge>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No se encontraron sospechosos relacionados
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Imágenes de incidentes relacionados */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Imágenes de Incidentes Relacionados</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {incidents.filter(inc => {
+                  const incWithImages = inc as { Images?: Array<{ url?: string; name?: string; }> };
+                  return incWithImages.Images && incWithImages.Images.length > 0;
+                }).length > 0 
+                  ? `Imágenes de los ${incidents.filter(inc => {
+                      const incWithImages = inc as { Images?: Array<{ url?: string; name?: string; }> };
+                      return incWithImages.Images && incWithImages.Images.length > 0;
+                    }).length} incidentes con fotografías`
+                  : 'Fotografías de incidentes relacionados'
+                }
+              </p>
+            </CardHeader>
+            <CardContent>
+              {incidents.some(incident => {
+                const incWithImages = incident as { Images?: Array<{ url?: string; name?: string; }> };
+                return incWithImages.Images && incWithImages.Images.length > 0;
+              }) ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {incidents.flatMap((incident) => {
+                    const incWithImages = incident as { Images?: Array<{ url?: string; name?: string; }> };
+                    return incWithImages.Images ? incWithImages.Images.map((image: { url?: string; name?: string; }, imageIndex: number) => {
+                      const office = incident.Office ? officeDetails.get(incident.Office) : null;
+                      const incidentType = incident.IncidentType ? incidentTypeNames.get(incident.IncidentType) : 'Desconocido';
+                      
+                      return (
+                        <div key={`${incident.id}-${imageIndex}`} className="group">
+                          <Link href={`/dashboard/incidentes/${incident.id}`}>
+                            <Card className="overflow-hidden hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
+                              <div className="relative aspect-video bg-muted">
+                                <Image 
+                                  src={getSafeImageUrl(image.url) || image.url || '/placeholder-image.jpg'}
+                                  alt={image.name || `Imagen del incidente ${incident.id}`}
+                                  fill
+                                  className="object-cover group-hover:scale-105 transition-transform duration-200"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    target.nextElementSibling?.classList.remove('hidden');
+                                  }}
+                                />
+                                <div className="hidden absolute inset-0 flex items-center justify-center bg-muted">
+                                  <FileImage className="h-12 w-12 text-muted-foreground" />
+                                </div>
+                                {/* Overlay con información del incidente */}
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-end">
+                                  <div className="p-3 text-white w-full">
+                                    <p className="text-sm font-medium truncate">{incidentType}</p>
+                                    <p className="text-xs opacity-90">
+                                      {format(new Date(incident.Date), "d MMM yyyy", { locale: es })}
+                                    </p>
+                                    {office && (
+                                      <p className="text-xs opacity-75 truncate">{office.Name}</p>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-medium group-hover:text-primary transition-colors">
-                              {rs.Alias}
-                            </p>
-                            <Badge 
-                              variant={rs.Status === 1 ? "destructive" : "secondary"}
-                              className="mt-1 text-xs"
-                            >
-                              {rs.Status === 1 ? "Detenido" : "Libre"}
-                            </Badge>
-                          </div>
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {image.name || `Imagen ${imageIndex + 1}`}
+                                </p>
+                                <Badge variant="outline" className="mt-1 text-xs">
+                                  Incidente {incident.id}
+                                </Badge>
+                              </CardContent>
+                            </Card>
+                          </Link>
                         </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                No se encontraron sospechosos relacionados
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      );
+                    }) : [];
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-32 text-center bg-muted/30 rounded-lg">
+                  <FileImage className="h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-foreground font-bold">No hay imágenes</p>
+                  <p className="text-sm text-muted-foreground">en los incidentes relacionados</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Grid para mapa e historial */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -944,7 +1033,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     {incidents.length} incidente{incidents.length !== 1 ? 's' : ''} registrado{incidents.length !== 1 ? 's' : ''}
                   </p>
                 </div>
-                <div className="flex items-center bg-red-500 gap-4">
+                <div className="flex items-center gap-4">
                   {/* Resumen de pérdidas */}
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">Pérdidas totales</p>

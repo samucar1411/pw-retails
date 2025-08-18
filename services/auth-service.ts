@@ -11,22 +11,27 @@ interface AuthResponse {
 const TOKEN_KEY = 'auth_token';
 
 const getToken = (): string | null => {
-  // Tokens are now handled via httpOnly cookies through middleware
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem(TOKEN_KEY);
+  }
   return null;
 };
 
 const setToken = (token: string) => {
-  // Tokens are now handled via httpOnly cookies
-  // This function is kept for backward compatibility but does nothing
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(TOKEN_KEY, token);
+  }
 };
 
 const clearAuthData = () => {
-  // Auth data is now cleared via API endpoint
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(TOKEN_KEY);
+  }
 };
 
 const authenticateUser = async (username: string, password: string): Promise<AuthResponse> => {
   try {
-    const response = await fetch('/api/auth/login', {
+    const response = await fetch('/api-token-auth2', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -40,8 +45,11 @@ const authenticateUser = async (username: string, password: string): Promise<Aut
     }
 
     const userData = await response.json();
-    // Add a dummy token for backward compatibility
-    return { ...userData, token: 'cookie-based-auth' };
+    // Save the real token and return the data
+    if (userData.token) {
+      setToken(userData.token);
+    }
+    return userData;
   } catch (error) {
     throw error;
   }
@@ -72,12 +80,12 @@ const logout = async () => {
     });
   } catch (error) {
   }
+  clearAuthData();
 };
 
 const isAuthenticated = (): boolean => {
-  // Check will be done server-side via middleware
-  // For client-side, we assume authenticated if not redirected to login
-  return true;
+  const token = getToken();
+  return !!token;
 };
 
 const getCurrentUser = async (): Promise<AuthResponse | null> => {

@@ -68,7 +68,10 @@ export function HourlyIncidentsChart({ data }: HourlyIncidentsChartProps) {
   return (
     <Card className="col-span-4">
       <CardHeader>
-        <CardTitle>Incidentes por hora del día</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Clock className="h-5 w-5 text-primary" />
+          Incidentes por hora del día
+        </CardTitle>
         <CardDescription>Todas las sucursales</CardDescription>
       </CardHeader>
       <CardContent className="pl-4 pr-4 pb-4">

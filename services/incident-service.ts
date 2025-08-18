@@ -111,7 +111,7 @@ export async function getIncidentById(id: string | number): Promise<Incident> {
     try {
       const allIncidentItemLosses = await getIncidentItemLosses();
       const incidentItemLosses = allIncidentItemLosses.filter(item => 
-        item.Incident === Number(id)
+        String(item.Incident) === String(id)
       );
       
       // Add the incident item losses to the incident data

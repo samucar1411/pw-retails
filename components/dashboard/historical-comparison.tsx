@@ -9,117 +9,231 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { 
-  TrendingUp, 
-  TrendingDown, 
-  Calendar as CalendarIcon,
-  Loader2,
-  Equal
+  BarChart3,
+  Loader2
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import { getIncidents } from "@/services/incident-service";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { api } from "@/services/api";
+import { useRouter } from "next/navigation";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 
 interface HistoricalComparisonProps {
   officeId?: string;
 }
 
-function formatPeriodLabel(fromDate: string, toDate: string): string {
-  const from = new Date(fromDate);
-  const to = new Date(toDate);
-  
-  const fromFormatted = from.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
-  const toFormatted = to.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
-  
-  return `${fromFormatted} - ${toFormatted}`;
+interface MonthlyData {
+  month: string;
+  monthIndex: number;
+  details: Array<{
+    type: string;
+    year1: number;
+    year2: number;
+  }>;
+  [key: string]: string | number | Array<{ type: string; year1: number; year2: number; }>;
 }
 
+const monthNames = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+];
+
+const monthMapping: { [key: string]: string } = {
+  'January': 'Enero',
+  'February': 'Febrero', 
+  'March': 'Marzo',
+  'April': 'Abril',
+  'May': 'Mayo',
+  'June': 'Junio',
+  'July': 'Julio',
+  'August': 'Agosto',
+  'September': 'Septiembre',
+  'October': 'Octubre',
+  'November': 'Noviembre',
+  'December': 'Diciembre'
+};
+
+const getCurrentYear = () => new Date().getFullYear();
+
 export function HistoricalComparison({ officeId }: HistoricalComparisonProps = {}) {
-  const [periodACount, setPeriodACount] = React.useState(0);
-  const [periodBCount, setPeriodBCount] = React.useState(0);
+  const currentYear = getCurrentYear();
+  const router = useRouter();
+  const [year1, setYear1] = React.useState(currentYear);
+  const [year2, setYear2] = React.useState(currentYear - 1);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [chartData, setChartData] = React.useState<MonthlyData[]>([]);
   
-  // Period A (first period)
-  const [periodAFromDate, setPeriodAFromDate] = React.useState<Date>();
-  const [periodAToDate, setPeriodAToDate] = React.useState<Date>();
+  // Generate year options (current year and previous 5 years)
+  const yearOptions = React.useMemo(() => {
+    const years = [];
+    for (let i = 0; i <= 5; i++) {
+      years.push(currentYear - i);
+    }
+    return years;
+  }, [currentYear]);
   
-  // Period B (second period)
-  const [periodBFromDate, setPeriodBFromDate] = React.useState<Date>();
-  const [periodBToDate, setPeriodBToDate] = React.useState<Date>();
 
-  const fetchPeriodData = React.useCallback(async (fromDate: string, toDate: string) => {
-    if (!fromDate || !toDate || fromDate.trim() === '' || toDate.trim() === '') {
-      return 0;
-    }
-
-    try {
-      const filters = {
-        fromDate,
-        toDate,
-        page_size: 1, // Only need count, not results
-        ...(officeId && { Office: officeId })
-      };
-      
-      const response = await getIncidents(filters);
-      return response.count || 0;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      return 0;
-    }
-  }, [officeId]);
-
+  // Load data using the new pivot endpoint
   const loadData = React.useCallback(async () => {
-    const periodAFromStr = periodAFromDate?.toISOString().slice(0, 10);
-    const periodAToStr = periodAToDate?.toISOString().slice(0, 10);
-    const periodBFromStr = periodBFromDate?.toISOString().slice(0, 10);
-    const periodBToStr = periodBToDate?.toISOString().slice(0, 10);
-    
-    // Only load if we have both periods defined
-    if (!periodAFromStr || !periodAToStr || !periodBFromStr || !periodBToStr) {
-      return;
-    }
-    
+    const controller = new AbortController();
     setIsLoading(true);
     
+    // Build the URL with parameters
+    const params = new URLSearchParams({
+      year1: year1.toString(),
+      year2: year2.toString()
+    });
+    
+    // Add Office parameter if officeId is provided
+    if (officeId) {
+      params.append('Office', officeId);
+    }
+    
     try {
-      // Fetch both periods in parallel
-      const [countA, countB] = await Promise.all([
-        fetchPeriodData(periodAFromStr, periodAToStr),
-        fetchPeriodData(periodBFromStr, periodBToStr)
-      ]);
       
-      setPeriodACount(countA);
-      setPeriodBCount(countB);
+      const { data } = await api.get(`/incidents_pivot_by_type/?${params.toString()}`, {
+        signal: controller.signal
+      });
+      
+      // Initialize data structure for all months
+      const monthlyData: MonthlyData[] = monthNames.map((month, index) => ({
+        month: month,
+        monthIndex: index + 1,
+        details: [],
+        [year1.toString()]: 0,
+        [year2.toString()]: 0
+      }));
+      
+      // Process the pivot API response
+      // Structure: [{month: "January", type: "Hurto", year1: 2, year2: 5, defs: {...}}, ...]
+      if (data && Array.isArray(data)) {
+        // Group data by month and collect all details
+        const monthDetails: { [month: string]: { 
+          year1: number; 
+          year2: number; 
+          types: Array<{type: string, year1: number, year2: number}>
+        } } = {};
+        
+        data.forEach((item: { month: string; type: string; year1: number; year2: number; }) => {
+          const englishMonth = item.month;
+          const spanishMonth = monthMapping[englishMonth];
+          const year1Count = item.year1 || 0;
+          const year2Count = item.year2 || 0;
+          const incidentType = item.type;
+          
+          if (!spanishMonth) return; // Skip if month mapping not found
+          
+          if (!monthDetails[spanishMonth]) {
+            monthDetails[spanishMonth] = { year1: 0, year2: 0, types: [] };
+          }
+          
+          monthDetails[spanishMonth].year1 += year1Count;
+          monthDetails[spanishMonth].year2 += year2Count;
+          monthDetails[spanishMonth].types.push({
+            type: incidentType,
+            year1: year1Count,
+            year2: year2Count
+          });
+        });
+        
+        // Map the details to our chart data structure
+        monthlyData.forEach((monthData) => {
+          const details = monthDetails[monthData.month];
+          
+          if (details) {
+            monthData[year1.toString()] = details.year1;
+            monthData[year2.toString()] = details.year2;
+            monthData.details = details.types;
+          }
+        });
+      }
+      
+      setChartData(monthlyData);
+    } catch (error: unknown) {
+      // Don't show error if request was aborted
+      if (error && typeof error === 'object' && 'name' in error && error.name !== 'AbortError') {
+        console.error('Error loading pivot data:', {
+          error,
+          url: `/incidents_pivot_by_type/?${params.toString()}`,
+          params: Object.fromEntries(params.entries()),
+          errorData: error && typeof error === 'object' && 'data' in error ? error.data : undefined,
+          errorStatus: error && typeof error === 'object' && 'status' in error ? error.status : undefined,
+          errorMessage: error && typeof error === 'object' && 'message' in error ? error.message : 'Unknown error'
+        });
+        // Fallback: create empty data structure
+        const emptyData = monthNames.map((month, index) => ({
+          month: month,
+          monthIndex: index + 1,
+          details: [],
+          [year1.toString()]: 0,
+          [year2.toString()]: 0
+        }));
+        setChartData(emptyData);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [periodAFromDate, periodAToDate, periodBFromDate, periodBToDate, fetchPeriodData]);
+    
+    return controller;
+  }, [year1, year2, officeId]);
 
-  // Load data when periods change
+  // Load data when years change with optimized debouncing
   React.useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      loadData();
-    }, 300); // 300ms debounce
+    let controller: AbortController | null = null;
+    
+    const timeoutId = setTimeout(async () => {
+      controller = await loadData();
+    }, 500); // Increased debounce to 500ms
 
-    return () => clearTimeout(timeoutId);
-  }, [loadData]);
+    return () => {
+      clearTimeout(timeoutId);
+      if (controller) {
+        controller.abort();
+      }
+    };
+  }, [year1, year2, officeId, loadData]);
 
-  const difference = periodACount - periodBCount;
-  const bothPeriodsSet = periodAFromDate && periodAToDate && periodBFromDate && periodBToDate;
+  // Memoize chart data to prevent unnecessary re-renders
+  const memoizedChartData = React.useMemo(() => chartData, [chartData]);
+
+  // Handle bar click to navigate to incidents list
+  const handleBarClick = React.useCallback((data: { payload?: MonthlyData; dataKey?: string; }) => {
+    if (!data || !data.payload) return;
+    
+    const monthData = data.payload as MonthlyData;
+    const clickedYear = data.dataKey;
+    
+    // Build URL with filters
+    const params = new URLSearchParams();
+    params.set('year', clickedYear || '');
+    params.set('month', monthData.monthIndex.toString());
+    
+    if (officeId) {
+      params.set('Office', officeId);
+    }
+    
+    router.push(`/dashboard/incidentes?${params.toString()}`);
+  }, [router, officeId]);
 
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5" />
-            Comparativo de Incidentes
+            <BarChart3 className="h-5 w-5" />
+            Comparativo de Períodos
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-24">
+          <div className="flex items-center justify-center h-[300px]">
             <Loader2 className="h-6 w-6 animate-spin" />
           </div>
         </CardContent>
@@ -131,225 +245,185 @@ export function HistoricalComparison({ officeId }: HistoricalComparisonProps = {
     <Card>
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2 text-lg">
-          <CalendarIcon className="h-5 w-5 text-primary" />
+          <BarChart3 className="h-5 w-5 text-primary" />
           Comparativo de Períodos
         </CardTitle>
         <CardDescription>
-          Compara la cantidad de incidentes entre dos períodos específicos
+          Comparación mensual de incidentes entre dos años
         </CardDescription>
       </CardHeader>
       
       <CardContent className="space-y-6">
-        {/* Period Selection */}
-        <div className="space-y-6">
-          {/* Period A */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-primary">Período A</h3>
-            <div className="flex items-center gap-3">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-[140px] justify-start text-left font-normal",
-                      !periodAFromDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {periodAFromDate ? format(periodAFromDate, "dd/MM/yyyy") : "Desde"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={periodAFromDate}
-                    onSelect={setPeriodAFromDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-
-              <span className="text-sm text-muted-foreground">hasta</span>
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-[140px] justify-start text-left font-normal",
-                      !periodAToDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {periodAToDate ? format(periodAToDate, "dd/MM/yyyy") : "Hasta"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={periodAToDate}
-                    onSelect={setPeriodAToDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+        {/* Year Selection Controls */}
+        <div className="flex items-center gap-4 flex-wrap px-6">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium">Año 1:</label>
+            <Select value={year1.toString()} onValueChange={(value) => setYear1(parseInt(value))}>
+              <SelectTrigger className="w-[100px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {yearOptions.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Period B */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-orange-600">Período B</h3>
-            <div className="flex items-center gap-3">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-[140px] justify-start text-left font-normal",
-                      !periodBFromDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {periodBFromDate ? format(periodBFromDate, "dd/MM/yyyy") : "Desde"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={periodBFromDate}
-                    onSelect={setPeriodBFromDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-
-              <span className="text-sm text-muted-foreground">hasta</span>
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-[140px] justify-start text-left font-normal",
-                      !periodBToDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {periodBToDate ? format(periodBToDate, "dd/MM/yyyy") : "Hasta"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={periodBToDate}
-                    onSelect={setPeriodBToDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium">Año 2:</label>
+            <Select value={year2.toString()} onValueChange={(value) => setYear2(parseInt(value))}>
+              <SelectTrigger className="w-[100px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {yearOptions.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
-        {!bothPeriodsSet ? (
-          <div className="text-center p-8 bg-muted/30 rounded-lg">
-            <CalendarIcon className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-            <h3 className="font-medium mb-1">Configura ambos períodos</h3>
-            <p className="text-sm text-muted-foreground">
-              Selecciona las fechas de inicio y fin para ambos períodos A y B
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Main Comparison Display */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Period A */}
-              <div className="relative p-6 rounded-lg border-2 border-primary/20 bg-primary/5">
-                <div className="text-center">
-                  <div className="text-sm font-medium text-primary/70 uppercase tracking-wide mb-1">
-                    Período A
-                  </div>
-                  <div className="text-3xl font-bold text-primary mb-1">
-                    {periodACount}
-                  </div>
-                  <div className="text-sm text-primary/70 mb-2">
-                    {periodACount === 1 ? 'incidente' : 'incidentes'}
-                  </div>
-                  <div className="text-xs text-muted-foreground border-t border-primary/20 pt-2">
-                    {periodAFromDate && periodAToDate ? 
-                      formatPeriodLabel(periodAFromDate.toISOString().slice(0, 10), periodAToDate.toISOString().slice(0, 10)) 
-                      : 'Sin fechas'
-                    }
-                  </div>
-                </div>
-              </div>
-              
-              {/* Period B */}
-              <div className="relative p-6 rounded-lg border-2 border-orange-200 bg-orange-50">
-                <div className="text-center">
-                  <div className="text-sm font-medium text-orange-700 uppercase tracking-wide mb-1">
-                    Período B
-                  </div>
-                  <div className="text-3xl font-bold text-orange-600 mb-1">
-                    {periodBCount}
-                  </div>
-                  <div className="text-sm text-orange-700 mb-2">
-                    {periodBCount === 1 ? 'incidente' : 'incidentes'}
-                  </div>
-                  <div className="text-xs text-muted-foreground border-t border-orange-200 pt-2">
-                    {periodBFromDate && periodBToDate ? 
-                      formatPeriodLabel(periodBFromDate.toISOString().slice(0, 10), periodBToDate.toISOString().slice(0, 10))
-                      : 'Sin fechas'
-                    }
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* Bar Chart */}
+        <div className="h-[380px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={memoizedChartData}
+              margin={{
+                top: 20,
+                right: 5,
+                left: -10,
+                bottom: 40,
+              }}
+              barCategoryGap="5%"
+              maxBarSize={60}
+            >
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis 
+                dataKey="month" 
+                className="text-xs"
+                tick={{ fontSize: 11 }}
+                angle={-45}
+                textAnchor="end"
+                height={70}
+                interval={0}
+              />
+              <YAxis 
+                className="text-xs"
+                tick={{ fontSize: 10 }}
+                width={35}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    const monthData = payload[0]?.payload as MonthlyData;
+                    return (
+                      <div className="rounded-lg border bg-background p-4 shadow-lg max-w-xs">
+                        <p className="text-sm font-semibold mb-3 text-center">{label}</p>
+                        
+                        {/* Year totals */}
+                        <div className="space-y-2 mb-3">
+                          {payload.map((item, index) => (
+                            <div key={index} className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full" 
+                                  style={{ backgroundColor: item.color }}
+                                />
+                                <span className="text-sm font-medium">
+                                  {item.dataKey}:
+                                </span>
+                              </div>
+                              <span className="text-sm font-bold">
+                                {item.value} incidentes
+                              </span>
+                            </div>
+                          ))}
+                        </div>
 
-            {/* Simple Comparison Result */}
-            <div className="relative">
-              <div className={`p-6 rounded-lg border-2 text-center ${
-                difference === 0 
-                  ? 'border-blue-200 bg-blue-50' 
-                  : difference > 0 
-                    ? 'border-green-200 bg-green-50' 
-                    : 'border-yellow-200 bg-yellow-50'
-              }`}>
-                <div className="flex items-center justify-center gap-3">
-                  {difference === 0 ? (
-                    <>
-                      <Equal className="h-8 w-8 text-blue-600" />
-                      <span className="text-2xl font-bold text-blue-600">
-                        Misma cantidad de incidentes
-                      </span>
-                    </>
-                  ) : difference > 0 ? (
-                    <>
-                      <TrendingUp className="h-8 w-8 text-green-600" />
-                      <span className="text-2xl font-bold text-green-600">
-                        Período A tuvo {Math.abs(difference)} incidente{Math.abs(difference) !== 1 ? 's' : ''} más
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <TrendingDown className="h-8 w-8 text-yellow-600" />
-                      <span className="text-2xl font-bold text-yellow-600">
-                        Período B tuvo {Math.abs(difference)} incidente{Math.abs(difference) !== 1 ? 's' : ''} más
-                      </span>
-                    </>
-                  )}
-                </div>
-                
-                {difference === 0 && (
-                  <div className="text-sm text-blue-600/70 mt-2">
-                    Ambos períodos tuvieron exactamente {periodACount} incidente{periodACount !== 1 ? 's' : ''}
-                  </div>
-                )}
-              </div>
+                        {/* Incident type breakdown */}
+                        {monthData?.details && monthData.details.length > 0 && (
+                          <>
+                            <hr className="my-2" />
+                            <p className="text-xs font-medium mb-2 text-muted-foreground">Desglose por tipo:</p>
+                            <div className="space-y-1">
+                              {monthData.details.map((detail, index) => (
+                                <div key={index} className="text-xs">
+                                  <div className="font-medium">{detail.type}</div>
+                                  <div className="flex justify-between text-muted-foreground ml-2">
+                                    <span>{year1}: {detail.year1}</span>
+                                    <span>{year2}: {detail.year2}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-2 text-center">
+                              Click para ver incidentes
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Legend 
+                wrapperStyle={{ paddingTop: '5px', paddingBottom: '0px' }}
+                iconType="rect"
+              />
+              <Bar 
+                dataKey={year1.toString()} 
+                fill="hsl(var(--primary))" 
+                name={`Año ${year1}`}
+                radius={[2, 2, 0, 0]}
+                onClick={handleBarClick}
+                className="cursor-pointer hover:opacity-80 transition-opacity"
+              />
+              <Bar 
+                dataKey={year2.toString()} 
+                fill="hsl(var(--secondary-foreground))" 
+                name={`Año ${year2}`}
+                radius={[2, 2, 0, 0]}
+                onClick={handleBarClick}
+                className="cursor-pointer hover:opacity-80 transition-opacity"
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Summary Statistics */}
+        <div className="grid grid-cols-2 gap-4 -mt-6 px-6">
+          <div className="p-4 rounded-lg border bg-primary/5">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-3 h-3 rounded-full bg-primary" />
+              <h3 className="text-sm font-semibold">Año {year1}</h3>
             </div>
+            <div className="text-2xl font-bold text-primary">
+              {chartData.reduce((sum, item) => sum + (item[year1.toString()] as number), 0)}
+            </div>
+            <div className="text-sm text-muted-foreground">Total incidentes</div>
           </div>
-        )}
+
+          <div className="p-4 rounded-lg border bg-secondary/10">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-3 h-3 rounded-full bg-secondary-foreground" />
+              <h3 className="text-sm font-semibold">Año {year2}</h3>
+            </div>
+            <div className="text-2xl font-bold text-secondary-foreground">
+              {chartData.reduce((sum, item) => sum + (item[year2.toString()] as number), 0)}
+            </div>
+            <div className="text-sm text-muted-foreground">Total incidentes</div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
-} 
+}

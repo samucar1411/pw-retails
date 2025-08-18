@@ -31,6 +31,7 @@ import { SuspectSelector } from '@/components/incident-form/suspect-selector';
 
 // Services
 import { getIncidentById, updateIncident } from '@/services/incident-service';
+import { createIncidentItemLoss, updateIncidentItemLoss, deleteIncidentItemLoss } from '@/services/incident-item-losses-service';
 import { getIncidentTypes } from '@/services/incident-service';
 import { getAllOfficesComplete } from '@/services/office-service';
 import { trackMultipleChanges } from '@/services/change-history-service';
@@ -123,15 +124,24 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
               image: '',
               isNew: false,
             })) || [],
-            incidentLossItem: incidentData.incidentLossItem?.map(item => ({
-              id: item.id,
-              description: item.description,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              total: item.total,
-              type: (item.type || 'mercaderia') as 'mercaderia' | 'material',
+            incidentLossItem: (incidentData.IncidentItemLosses || incidentData.incidentLossItem)?.map(item => {
+              // Handle both API format (IncidentItemLosses) and form format (incidentLossItem)
+              const isApiFormat = 'Description' in item;
+              return {
+                id: item.id,
+                description: isApiFormat ? (item as { Description?: string }).Description || '' : (item as { description?: string }).description || '',
+                quantity: isApiFormat ? (item as { Quantity?: number }).Quantity || 0 : (item as { quantity?: number }).quantity || 0,
+                unitPrice: parseFloat(String(isApiFormat ? (item as { UnitPrice?: number }).UnitPrice || 0 : (item as { unitPrice?: number }).unitPrice || 0)),
+                total: parseFloat(String(isApiFormat ? (item as { TotalValue?: number }).TotalValue || 0 : (item as { total?: number }).total || 0)),
+                type: (isApiFormat ? (item as { ItemType?: string }).ItemType || 'mercaderia' : (item as { type?: string }).type || 'mercaderia') as 'mercaderia' | 'material',
+              };
+            }) || [],
+            attachments: incidentData.Attachments?.map(attachment => ({
+              id: attachment.id || Date.now(),
+              url: attachment.url,
+              name: attachment.name || 'Archivo adjunto',
+              contentType: attachment.contentType || 'application/octet-stream'
             })) || [],
-            attachments: [],
           };
           
           form.reset(formData);
@@ -167,10 +177,17 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
   }, [merchandiseFields, form, calculateMerchandiseTotal]);
 
   const onSubmit = async (values: IncidentFormValues) => {
-    if (!incident || !originalIncident || !userInfo?.user_id) return;
+    if (!incident || !originalIncident || !userInfo?.user_id) {
+      return;
+    }
 
     setSaving(true);
     try {
+      const cashFondo = values.cashFondo || 0;
+      const cashRecaudacion = values.cashRecaudacion || 0;
+      const cashLoss = cashFondo + cashRecaudacion;
+      const totalLoss = cashLoss + values.merchandiseLoss + values.otherLosses;
+
       const updateData = {
         Date: values.date,
         Time: values.time,
@@ -178,23 +195,68 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
         Office: values.officeId,
         Description: values.description,
         Notes: values.notes,
-        CashLoss: values.cashLoss.toString(),
+        CashLoss: cashLoss.toString(),
         MerchandiseLoss: values.merchandiseLoss.toString(),
         OtherLosses: values.otherLosses.toString(),
-        TotalLoss: (values.cashLoss + values.merchandiseLoss + values.otherLosses).toString(),
+        TotalLoss: totalLoss.toString(),
+        Tags: {
+          cashFondo: cashFondo.toString(),
+          cashRecaudacion: cashRecaudacion.toString()
+        },
+        Attachments: values.attachments,
         Suspects: values.selectedSuspects?.map(s => s.apiId).filter((id): id is string => Boolean(id)) || [],
-        incidentLossItem: values.incidentLossItem.map(item => ({
-          id: item.id,
-          description: item.description || '',
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          total: item.quantity * item.unitPrice,
-          type: item.type,
-        })),
       };
 
       // Update the incident
       await updateIncident(id, updateData);
+
+      // Update incident item losses
+      if (values.incidentLossItem && values.incidentLossItem.length > 0) {
+        // Get existing incident item losses
+        const existingLosses = incident.IncidentItemLosses || [];
+        const existingLossIds = existingLosses.map(loss => loss.id);
+        
+        for (const item of values.incidentLossItem) {
+          const lossItemPayload = {
+            ItemType: item.type,
+            Description: item.description || '',
+            Quantity: item.quantity,
+            UnitPrice: item.unitPrice,
+            TotalValue: item.quantity * item.unitPrice,
+            Incident: parseInt(id)
+          };
+          
+          try {
+            if (item.id && existingLossIds.includes(item.id)) {
+              // Update existing item
+              await updateIncidentItemLoss(item.id, lossItemPayload);
+            } else {
+              // Create new item
+              await createIncidentItemLoss(lossItemPayload);
+            }
+          } catch (error) {
+            console.error('Error updating loss item:', error);
+            // Continue with other items even if one fails
+          }
+        }
+        
+        // Delete items that were removed (exist in original but not in current)
+        const currentItemIds = values.incidentLossItem.map(item => item.id).filter(Boolean);
+        const itemsToDelete = existingLosses.filter(loss => 
+          loss.id && !currentItemIds.includes(loss.id)
+        );
+        
+        for (const itemToDelete of itemsToDelete) {
+          try {
+            if (itemToDelete.id) {
+              await deleteIncidentItemLoss(itemToDelete.id);
+            }
+          } catch (error) {
+            console.error('Error deleting loss item:', error);
+            // Continue with other deletions even if one fails
+          }
+        }
+      }
 
       // Track changes in history
       try {

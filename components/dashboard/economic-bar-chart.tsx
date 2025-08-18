@@ -49,19 +49,44 @@ export function EconomicBarChart({ fromDate, toDate, officeId }: EconomicBarChar
   } = useAllIncidents(fromDate, toDate, officeId);
 
   const economicData = React.useMemo(() => {
-    if (!incidentsData?.incidents?.length) return [];
-
-    const incidents = incidentsData.incidents;
-    const sumCash = incidents.reduce((sum, incident) => 
+    const incidents = incidentsData?.incidents || [];
+    
+    // New separated cash fields
+    const sumCashBox = incidents.reduce((sum, incident) => {
+      const incidentWithCash = incident as { cashFondo?: string | number };
+      return sum + parseNumeric(incidentWithCash.cashFondo);
+    }, 0);
+    let sumCashCollection = incidents.reduce((sum, incident) => {
+      const incidentWithCash = incident as { cashRecaudacion?: string | number };
+      return sum + parseNumeric(incidentWithCash.cashRecaudacion);
+    }, 0);
+    
+    // Legacy cash field (for existing data that doesn't have separated cash)
+    const sumLegacyCash = incidents.reduce((sum, incident) => 
       sum + parseNumeric(incident.CashLoss), 0);
+    
+    // If no separated cash but have legacy cash, put all legacy cash in "Efectivo Recaudación"
+    if (sumCashBox === 0 && sumCashCollection === 0 && sumLegacyCash > 0) {
+      sumCashCollection = sumLegacyCash;
+    }
+    
     const sumMerch = incidents.reduce((sum, incident) => 
       sum + parseNumeric(incident.MerchandiseLoss), 0);
+    const sumOther = incidents.reduce((sum, incident) => 
+      sum + parseNumeric(incident.OtherLosses), 0);
 
+    // Always return the same 4 categories
     return [
       { 
-        name: "Efectivo", 
-        value: sumCash,
-        formattedValue: formatCurrency(sumCash),
+        name: "Efectivo Caja", 
+        value: sumCashBox,
+        formattedValue: formatCurrency(sumCashBox),
+        fill: "#3b82f6"
+      },
+      { 
+        name: "Efectivo Recaudación", 
+        value: sumCashCollection,
+        formattedValue: formatCurrency(sumCashCollection),
         fill: "#10b981"
       },
       { 
@@ -69,8 +94,14 @@ export function EconomicBarChart({ fromDate, toDate, officeId }: EconomicBarChar
         value: sumMerch,
         formattedValue: formatCurrency(sumMerch),
         fill: "#f59e0b"
+      },
+      { 
+        name: "Otros", 
+        value: sumOther,
+        formattedValue: formatCurrency(sumOther),
+        fill: "#ef4444"
       }
-    ].filter(item => item.value > 0);
+    ];
   }, [incidentsData]);
 
   const totalLoss = React.useMemo(() => {
@@ -81,8 +112,8 @@ export function EconomicBarChart({ fromDate, toDate, officeId }: EconomicBarChar
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <DollarSign className="h-5 w-5 text-primary" />
             Pérdidas económicas
           </CardTitle>
           <CardDescription>Por tipo de pérdida en el período seleccionado</CardDescription>
@@ -100,8 +131,8 @@ export function EconomicBarChart({ fromDate, toDate, officeId }: EconomicBarChar
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <DollarSign className="h-5 w-5 text-primary" />
             Pérdidas económicas
           </CardTitle>
           <CardDescription>Por tipo de pérdida en el período seleccionado</CardDescription>
@@ -113,12 +144,13 @@ export function EconomicBarChart({ fromDate, toDate, officeId }: EconomicBarChar
     );
   }
 
-  if (economicData.length === 0) {
+  // Only show "no data" if there are no incidents at all
+  if (!incidentsData?.incidents?.length) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <DollarSign className="h-5 w-5 text-primary" />
             Pérdidas económicas
           </CardTitle>
           <CardDescription>Por tipo de pérdida en el período seleccionado</CardDescription>
@@ -126,8 +158,8 @@ export function EconomicBarChart({ fromDate, toDate, officeId }: EconomicBarChar
         <CardContent>
           <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
             <DollarSign className="h-12 w-12 mb-4 opacity-50" />
-            <p className="text-sm font-medium">Sin datos de pérdidas</p>
-            <p className="text-xs">No se registraron pérdidas en este período</p>
+            <p className="text-sm font-medium">Sin incidentes registrados</p>
+            <p className="text-xs">No hay datos para el período seleccionado</p>
           </div>
         </CardContent>
       </Card>
@@ -137,8 +169,8 @@ export function EconomicBarChart({ fromDate, toDate, officeId }: EconomicBarChar
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <DollarSign className="h-5 w-5" />
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <DollarSign className="h-5 w-5 text-primary" />
           Pérdidas económicas
         </CardTitle>
         <CardDescription>
@@ -201,31 +233,30 @@ export function EconomicBarChart({ fromDate, toDate, officeId }: EconomicBarChar
           </ResponsiveContainer>
         </div>
         
-        {/* Summary table */}
-        <div className="mt-4 sm:mt-6 space-y-2 sm:space-y-3">
+        {/* Summary cards grid */}
+        <div className="mt-4 sm:mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3">
           {economicData.map((item) => {
             const percentage = totalLoss > 0 ? ((item.value / totalLoss) * 100).toFixed(1) : 0;
             return (
-              <div key={item.name} className="flex items-center justify-between p-2 sm:p-3 rounded-lg border bg-card/50">
-                <div className="flex items-center gap-2 sm:gap-3">
+              <div key={item.name} className="p-3 rounded-lg border bg-card/50 text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
                   <div
-                    className="w-3 h-3 sm:w-4 sm:h-4 rounded-full"
+                    className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: item.fill }}
                   />
-                  <span className="text-xs sm:text-sm font-medium">{item.name}</span>
+                  <span className="text-xs font-medium text-muted-foreground">{item.name}</span>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs sm:text-sm font-bold">{item.formattedValue}</p>
-                  <p className="text-xs text-muted-foreground">{percentage}%</p>
-                </div>
+                <p className="text-sm font-bold">{item.formattedValue}</p>
+                <p className="text-xs text-muted-foreground">{percentage}%</p>
               </div>
             );
           })}
-          
-          <div className="flex items-center justify-between p-2 sm:p-3 rounded-lg border-2 bg-muted/20 font-bold">
-            <span className="text-xs sm:text-sm">Total</span>
-            <span className="text-xs sm:text-sm">{formatCurrency(totalLoss)}</span>
-          </div>
+        </div>
+        
+        {/* Total */}
+        <div className="mt-3 p-3 rounded-lg border-2 bg-muted/20 text-center">
+          <p className="text-xs text-muted-foreground mb-1">Total Pérdidas</p>
+          <p className="text-sm font-bold">{formatCurrency(totalLoss)}</p>
         </div>
       </CardContent>
     </Card>

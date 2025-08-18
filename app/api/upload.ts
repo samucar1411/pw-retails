@@ -22,18 +22,26 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await imageFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
+    // Determine resource type and folder based on file type
+    const isImage = imageFile.type.startsWith('image/');
+    const isDocument = imageFile.type === 'application/pdf' || 
+                      imageFile.type.includes('document') || 
+                      imageFile.type.includes('word') ||
+                      imageFile.type === 'text/plain' ||
+                      imageFile.type === 'application/rtf';
+
     const uploadResult = await new Promise<UploadApiResponse | UploadApiErrorResponse>((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
-          folder: 'incident_photos', // Changed from 'suspect_photos' to 'incident_photos'
-          // Cloudinary can often infer resource_type and format.
-          // You can specify them if needed, e.g., based on imageFile.type
-          // resource_type: 'image',
-          // format: imageFile.type.split('/')[1], // e.g., 'png', 'jpeg'
+          folder: isImage ? 'incident_photos' : 'incident_documents',
+          resource_type: isDocument ? 'raw' : 'auto', // 'raw' for non-image files
+          // Keep original filename for documents
+          use_filename: isDocument,
+          unique_filename: true,
         },
         (error, result) => {
           if (error) {
-            console.error('Cloudinary stream upload error');
+            console.error('Cloudinary stream upload error:', error);
             reject(error);
             return;
           }
@@ -50,13 +58,13 @@ export async function POST(req: NextRequest) {
 
     // Check if the uploadResult indicates an error (some errors might not throw but return an error object)
     if ('error' in uploadResult && uploadResult.error) {
-        console.error('Cloudinary upload failed');
+        console.error('Cloudinary upload failed with error object:', uploadResult.error);
         return NextResponse.json({ success: false, message: `Cloudinary upload error: ${uploadResult.error.message}` }, { status: 500 });
     }
     
     // Ensure secure_url is present in a successful response
     if (!('secure_url' in uploadResult) || !uploadResult.secure_url) {
-        console.error('Cloudinary upload result missing secure_url');
+        console.error('Cloudinary upload result missing secure_url:', uploadResult);
         return NextResponse.json({ success: false, message: 'Cloudinary upload did not return a secure URL.' }, { status: 500 });
     }
 
@@ -68,7 +76,7 @@ export async function POST(req: NextRequest) {
     }, { status: 200 });
 
   } catch (error: unknown) {
-    console.error('API Error in upload endpoint');
+    console.error('Overall API Error in /api/upload:', error);
     let errorMessage = 'Image upload failed due to an unexpected server error.';
     
     // Use the error's message directly if available and more specific
