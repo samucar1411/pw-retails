@@ -9,7 +9,7 @@ import { es } from 'date-fns/locale';
 import { generatePoliceReportPDF } from '@/utils/pdf-generator';
 import {
   DollarSign, Users, MapPin, FileText, AlertTriangle,
-  Calendar, Building, FileImage, Download, Printer, User
+  Calendar, Building, FileImage, Download, Printer, User, ExternalLink
 } from 'lucide-react';
 
 // UI Components
@@ -125,6 +125,38 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
     if (isNaN(numValue)) return 'Gs. 0';
     return 'Gs. ' + new Intl.NumberFormat('es-PY').format(numValue);
+  };
+
+  const handleDownloadFile = async (url: string, filename: string) => {
+    try {
+      // Use the safe image URL function to handle CORS
+      const safeUrl = getSafeImageUrl(url);
+      
+      const response = await fetch(safeUrl);
+      if (!response.ok) {
+        throw new Error('Error al descargar el archivo');
+      }
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      window.URL.revokeObjectURL(downloadUrl);
+      toast({ title: "Descarga completada", description: `${filename} se ha descargado correctamente` });
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast({ 
+        title: "Error al descargar", 
+        description: "No se pudo descargar el archivo", 
+        variant: "destructive" 
+      });
+    }
   };
   
   const getTotalLoss = (): string => {
@@ -678,9 +710,26 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                           <p className="font-medium text-foreground truncate">{file.name}</p>
                           <p className="text-sm text-muted-foreground">Archivo adjunto</p>
                     </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                      <Download className="h-4 w-4" />
-                    </Button>
+                        <div className="flex gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleDownloadFile(file.url, file.name)}
+                            title="Descargar archivo"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() => window.open(getSafeImageUrl(file.url), '_blank')}
+                            title="Abrir en nueva pestaña"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                 ))}
                   </div>
