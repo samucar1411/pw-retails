@@ -126,7 +126,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: `${API_URL}/api/:path*`,
+        destination: `${API_URL}/api/:path*/`,
       },
       {
         source: "/api-token-auth2",
@@ -138,7 +138,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/media/:path*",
-        destination: `${API_URL}/media/:path*`,
+        destination: `${API_URL}/media/:path*/`,
       },
     ];
   },
