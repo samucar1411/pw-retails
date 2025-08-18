@@ -63,9 +63,21 @@ const monthMapping: { [key: string]: string } = {
 
 const getCurrentYear = () => new Date().getFullYear();
 
+interface Incident {
+  Date?: string;
+  IncidentType?: number;
+}
+
+interface PivotData {
+  month: string;
+  type: string;
+  year1: number;
+  year2: number;
+}
+
 // Fallback function to process regular incidents into pivot format
-const processIncidentsForPivot = (incidents: any[], year1: number, year2: number) => {
-  const pivotData: any[] = [];
+const processIncidentsForPivot = (incidents: Incident[], year1: number, year2: number): PivotData[] => {
+  const pivotData: PivotData[] = [];
   const monthlyStats = new Map<string, Map<string, { year1: number; year2: number }>>();
   
   incidents.forEach((incident) => {
@@ -154,7 +166,7 @@ export function HistoricalComparison({ officeId }: HistoricalComparisonProps = {
           signal: controller.signal
         });
         data = response.data;
-      } catch (pivotError) {
+      } catch {
         console.warn('Pivot endpoint not available, using fallback approach');
         // Fallback: Get regular incidents and process them client-side
         const response = await api.get(`/incidents/?${params.toString()}&page_size=1000`, {
