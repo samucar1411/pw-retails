@@ -45,6 +45,14 @@ export function getSafeImageUrl(url: string | null | undefined, fallback: string
   const cleanUrl = url.replace(/\s+/g, '').trim();
   if (!cleanUrl) return fallback;
   
+  // Always use proxy for sys.adminpy.com URLs to avoid CORS
+  if (cleanUrl.includes('sys.adminpy.com')) {
+    const mediaMatch = cleanUrl.match(/\/media\/(.+)$/);
+    if (mediaMatch) {
+      return `/media/${mediaMatch[1]}`;
+    }
+  }
+  
   // Use proxy for backend URLs
   const proxiedUrl = getProxyUrl(cleanUrl);
   if (proxiedUrl) return proxiedUrl;

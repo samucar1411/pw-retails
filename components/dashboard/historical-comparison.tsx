@@ -63,6 +63,54 @@ const monthMapping: { [key: string]: string } = {
 
 const getCurrentYear = () => new Date().getFullYear();
 
+// Fallback function to process regular incidents into pivot format
+const processIncidentsForPivot = (incidents: any[], year1: number, year2: number) => {
+  const pivotData: any[] = [];
+  const monthlyStats = new Map<string, Map<string, { year1: number; year2: number }>>();
+  
+  incidents.forEach((incident) => {
+    if (!incident.Date || !incident.IncidentType) return;
+    
+    const date = new Date(incident.Date);
+    const year = date.getFullYear();
+    const month = date.toLocaleString('en-US', { month: 'long' });
+    const incidentTypeName = `Tipo ${incident.IncidentType}`; // Simplified type name
+    
+    // Only process data for the requested years
+    if (year !== year1 && year !== year2) return;
+    
+    const key = `${month}-${incidentTypeName}`;
+    if (!monthlyStats.has(key)) {
+      monthlyStats.set(key, new Map([
+        ['year1', { year1: 0, year2: 0 }],
+        ['year2', { year1: 0, year2: 0 }]
+      ]));
+    }
+    
+    const stats = monthlyStats.get(key)!.get('year1')!;
+    if (year === year1) {
+      stats.year1++;
+    } else if (year === year2) {
+      stats.year2++;
+    }
+  });
+  
+  // Convert map to array format expected by the component
+  monthlyStats.forEach((typeStats, key) => {
+    const [month, type] = key.split('-');
+    const stats = typeStats.get('year1')!;
+    
+    pivotData.push({
+      month,
+      type,
+      year1: stats.year1,
+      year2: stats.year2
+    });
+  });
+  
+  return pivotData;
+};
+
 export function HistoricalComparison({ officeId }: HistoricalComparisonProps = {}) {
   const currentYear = getCurrentYear();
   const router = useRouter();
@@ -98,10 +146,22 @@ export function HistoricalComparison({ officeId }: HistoricalComparisonProps = {
     }
     
     try {
+      let data;
       
-      const { data } = await api.get(`/incidents_pivot_by_type/?${params.toString()}`, {
-        signal: controller.signal
-      });
+      // Try the pivot endpoint first, fallback to regular incidents if not available
+      try {
+        const response = await api.get(`/incidents_pivot_by_type/?${params.toString()}`, {
+          signal: controller.signal
+        });
+        data = response.data;
+      } catch (pivotError) {
+        console.warn('Pivot endpoint not available, using fallback approach');
+        // Fallback: Get regular incidents and process them client-side
+        const response = await api.get(`/incidents/?${params.toString()}&page_size=1000`, {
+          signal: controller.signal
+        });
+        data = processIncidentsForPivot(response.data?.results || [], year1, year2);
+      }
       
       // Initialize data structure for all months
       const monthlyData: MonthlyData[] = monthNames.map((month, index) => ({

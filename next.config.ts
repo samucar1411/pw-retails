@@ -34,6 +34,7 @@ const nextConfig: NextConfig = {
       'asset.cloudinary.com',
       'res.cloudinary.com',
       'res-console.cloudinary.com',
+      'sys.adminpy.com',
       ...(backendHostname ? [backendHostname] : [])
     ],
     remotePatterns: [
@@ -51,6 +52,11 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'res-console.cloudinary.com',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'sys.adminpy.com',
+        pathname: '/media/**',
       },
       ...(backendHostname ? [{
         protocol: 'https' as const,
