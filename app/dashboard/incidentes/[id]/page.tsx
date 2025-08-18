@@ -35,6 +35,9 @@ import { getOffice } from '@/services/office-service';
 import { getSuspectById } from '@/services/suspect-service';
 import { getCompanyById } from '@/services/company-service';
 
+// Utils
+import { getSafeImageUrl } from '@/lib/utils';
+
 // Types
 import { Incident } from '@/types/incident';
 import { Suspect } from '@/types/suspect';
@@ -81,7 +84,9 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
           // Fetch company logo if office has company
           if (officeData?.Company) {
             const company = await getCompanyById(officeData.Company.toString());
-            setCompanyLogo(company?.image_url || null);
+            if (company?.image_url) {
+              setCompanyLogo(getSafeImageUrl(company.image_url));
+            }
           }
         }
         

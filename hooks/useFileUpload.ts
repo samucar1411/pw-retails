@@ -22,11 +22,28 @@ export function useFileUpload() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to upload file');
+        let errorMessage = 'Failed to upload file';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // If response is not JSON, use the response status text
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error('Server returned invalid response');
+      }
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Upload failed');
+      }
+      
       return data.url;
     } catch (err) {
       console.error('Upload error:', err);
