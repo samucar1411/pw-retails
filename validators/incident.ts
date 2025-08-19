@@ -87,6 +87,7 @@ export const incidentFormSchema = z.object({
   totalLoss: monetaryFieldSchema(),
   notes: z.string().optional(),
   attachments: z.array(attachmentSchema).optional(),
+  incidentImages: z.array(attachmentSchema).optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   suspects: z.array(z.string().uuid()).optional(),

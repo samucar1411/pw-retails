@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/components/ui/use-toast';
 import { AxiosError } from 'axios';
-import { ArrowLeft, Loader2, FileText, DollarSign, Users, Plus, X } from 'lucide-react';
+import { ArrowLeft, Loader2, FileText, DollarSign, Users, Plus, X, Upload, Image as ImageIcon, Trash, UploadCloud } from 'lucide-react';
 import Link from 'next/link';
 
 // UI Components
@@ -38,6 +38,8 @@ import { trackMultipleChanges } from '@/services/change-history-service';
 
 // Hooks
 import { useAuth } from '@/context/auth-context';
+import { useImageUpload } from '@/hooks/useImageUpload';
+import { useFileUpload } from '@/hooks/useFileUpload';
 
 // Types and Validators
 import { Incident } from '@/types/incident';
@@ -59,6 +61,10 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
   const [saving, setSaving] = useState(false);
   const [incidentTypes, setIncidentTypes] = useState<{id: number; Name: string}[]>([]);
   const [offices, setOffices] = useState<{id: number; Name: string; Address: string}[]>([]);
+  
+  // Upload hooks
+  const { uploadImage, isUploading: isImageUploading } = useImageUpload();
+  const { uploadFile, isUploading: isFileUploading } = useFileUpload();
 
   const form = useForm<IncidentFormValues>({
     resolver: zodResolver(incidentFormSchema),
@@ -75,6 +81,7 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
       selectedSuspects: [],
       incidentLossItem: [],
       attachments: [],
+      incidentImages: [],
     },
   });
 
@@ -142,6 +149,12 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
               name: attachment.name || 'Archivo adjunto',
               contentType: attachment.contentType || 'application/octet-stream'
             })) || [],
+            incidentImages: incidentData.Images?.map(image => ({
+              id: image.id || Date.now(),
+              url: image.url,
+              name: image.name || 'Imagen del incidente',
+              contentType: 'image/jpeg'
+            })) || [],
           };
           
           form.reset(formData);
@@ -175,6 +188,87 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
     const total = calculateMerchandiseTotal();
     form.setValue('merchandiseLoss', total);
   }, [merchandiseFields, form, calculateMerchandiseTotal]);
+
+  // Handle file upload for attachments
+  const handleFileUpload = async (files: FileList) => {
+    for (const file of Array.from(files)) {
+      try {
+        const url = await uploadFile(file);
+        const newAttachment = {
+          id: Date.now() + Math.random(), // Temporary ID
+          url: url,
+          name: file.name,
+          contentType: file.type || 'application/octet-stream'
+        };
+        
+        const currentAttachments = form.getValues('attachments') || [];
+        form.setValue('attachments', [...currentAttachments, newAttachment]);
+        
+        toast({
+          title: 'Éxito',
+          description: `${file.name} se ha subido correctamente`,
+        });
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        toast({
+          title: 'Error',
+          description: `No se pudo subir ${file.name}`,
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
+  // Handle image upload for incident images
+  const handleImageUpload = async (files: FileList) => {
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: 'Error',
+          description: 'Solo se permiten archivos de imagen',
+          variant: 'destructive',
+        });
+        continue;
+      }
+      
+      try {
+        const url = await uploadImage(file);
+        const newImage = {
+          id: Date.now() + Math.random(), // Temporary ID
+          url: url,
+          name: file.name,
+          contentType: file.type
+        };
+        
+        const currentImages = form.getValues('incidentImages') || [];
+        form.setValue('incidentImages', [...currentImages, newImage]);
+        
+        toast({
+          title: 'Éxito',
+          description: `Imagen ${file.name} se ha subido correctamente`,
+        });
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        toast({
+          title: 'Error',
+          description: `No se pudo subir la imagen ${file.name}`,
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
+  // Remove attachment
+  const removeAttachment = (index: number) => {
+    const currentAttachments = form.getValues('attachments') || [];
+    form.setValue('attachments', currentAttachments.filter((_, i) => i !== index));
+  };
+
+  // Remove image
+  const removeImage = (index: number) => {
+    const currentImages = form.getValues('incidentImages') || [];
+    form.setValue('incidentImages', currentImages.filter((_, i) => i !== index));
+  };
 
   const onSubmit = async (values: IncidentFormValues) => {
     if (!incident || !originalIncident || !userInfo?.user_id) {
@@ -525,39 +619,74 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="cashLoss"
-                    render={({ field }) => (
-                      <FormItem>
-                        <CurrencyInput
-                          label="Efectivo perdido"
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="0"
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                {/* Cash breakdown section */}
+                <div className="space-y-4">
+                  <div className="border-l-4 border-primary pl-4">
+                    <h4 className="text-sm font-medium">Desglose de Efectivo</h4>
+                    <p className="text-xs text-muted-foreground">Especifica el fondo de caja y la recaudación</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="cashFondo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <CurrencyInput
+                            label="Fondo de caja"
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="0"
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="otherLosses"
-                    render={({ field }) => (
-                      <FormItem>
-                        <CurrencyInput
-                          label="Otras pérdidas"
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="0"
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="cashRecaudacion"
+                      render={({ field }) => (
+                        <FormItem>
+                          <CurrencyInput
+                            label="Recaudación"
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="0"
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="bg-muted/50 p-3 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Total Efectivo:</span>
+                      <span className="text-sm font-bold">
+                        {new Intl.NumberFormat('es-PY').format(
+                          (form.watch('cashFondo') || 0) + (form.watch('cashRecaudacion') || 0)
+                        )} Gs.
+                      </span>
+                    </div>
+                  </div>
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="otherLosses"
+                  render={({ field }) => (
+                    <FormItem>
+                      <CurrencyInput
+                        label="Otras pérdidas"
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="0"
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 {/* Merchandise Items */}
                 <div className="space-y-4">
@@ -662,6 +791,133 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
               </CardHeader>
               <CardContent>
                 <SuspectSelector control={form.control} />
+              </CardContent>
+            </Card>
+
+            {/* Attachments Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <div className="rounded-lg bg-primary/10 p-2">
+                    <UploadCloud className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium">Archivos Adjuntos</h3>
+                    <p className="text-sm text-muted-foreground">Documentos relacionados al incidente</p>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Upload Area */}
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8">
+                  <div className="text-center">
+                    <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Arrastra archivos aquí o haz clic para seleccionar</p>
+                      <p className="text-xs text-muted-foreground">PDF, DOC, DOCX, TXT hasta 10MB</p>
+                    </div>
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf,.doc,.docx,.txt,.rtf"
+                      onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      disabled={isFileUploading || saving}
+                    />
+                  </div>
+                </div>
+
+                {/* Existing Attachments */}
+                {form.watch('attachments') && form.watch('attachments')!.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Archivos adjuntos:</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {form.watch('attachments')!.map((attachment, index) => (
+                        <div key={attachment.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium truncate">{attachment.name}</p>
+                            <p className="text-xs text-muted-foreground">{attachment.contentType}</p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeAttachment(index)}
+                            className="text-destructive hover:text-destructive"
+                            disabled={saving}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Images Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <div className="rounded-lg bg-primary/10 p-2">
+                    <ImageIcon className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium">Imágenes del Incidente</h3>
+                    <p className="text-sm text-muted-foreground">Fotografías del lugar y evidencias visuales</p>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Upload Area */}
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8">
+                  <div className="text-center">
+                    <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Arrastra imágenes aquí o haz clic para seleccionar</p>
+                      <p className="text-xs text-muted-foreground">JPG, PNG, WEBP hasta 5MB cada una</p>
+                    </div>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      disabled={isImageUploading || saving}
+                    />
+                  </div>
+                </div>
+
+                {/* Existing Images */}
+                {form.watch('incidentImages') && form.watch('incidentImages')!.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Imágenes del incidente:</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {form.watch('incidentImages')!.map((image, index) => (
+                        <div key={image.id} className="relative group">
+                          <div className="aspect-square rounded-lg overflow-hidden border">
+                            <img 
+                              src={image.url} 
+                              alt={image.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => removeImage(index)}
+                            className="absolute -top-2 -right-2 w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            disabled={saving}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
