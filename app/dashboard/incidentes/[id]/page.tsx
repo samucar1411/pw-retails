@@ -9,7 +9,7 @@ import { es } from 'date-fns/locale';
 import { generatePoliceReportPDF } from '@/utils/pdf-generator';
 import {
   DollarSign, Users, MapPin, FileText, AlertTriangle,
-  Calendar, Building, FileImage, Download, Printer, User, ExternalLink
+  Calendar, Building, FileImage, Download, User, ExternalLink, Edit
 } from 'lucide-react';
 
 // UI Components
@@ -321,9 +321,9 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                     </Button>
                     <Button asChild className="h-9 px-3 sm:h-10 sm:px-4">
                       <Link href={`/dashboard/incidentes/${id}/edit`}>
-                        <Printer className="h-4 w-4 mr-2" />
-                        <span className="hidden sm:inline">Imprimir</span>
-                        <span className="sm:hidden">Imprimir</span>
+                        <Edit className="h-4 w-4 mr-2" />
+                        <span className="hidden sm:inline">Editar</span>
+                        <span className="sm:hidden">Editar</span>
                       </Link>
                     </Button>
                 </div>
