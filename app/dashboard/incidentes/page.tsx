@@ -21,7 +21,7 @@ interface IncidentFiltersState {
   suspect_alias?: string;
   fromDate?: string;
   toDate?: string;
-  search?: string;
+  Search?: string;
 }
 
 function IncidentesPageContent() {
@@ -65,9 +65,9 @@ function IncidentesPageContent() {
     const suspectAlias = searchParams.get('suspect_alias');
     if (suspectAlias) urlFilters.suspect_alias = suspectAlias;
     
-    const search = searchParams.get('search');
+    const search = searchParams.get('Search');
     if (search) {
-      urlFilters.search = search;
+      urlFilters.Search = search;
       setSearchTerm(search);
     }
     
@@ -81,7 +81,7 @@ function IncidentesPageContent() {
   const handleFiltersChange = (newFilters: IncidentFiltersState) => {
     const updatedFilters = { 
       ...newFilters, 
-      search: searchTerm
+      Search: searchTerm
     };
     setFilters(updatedFilters);
     applyFilters(updatedFilters);
@@ -91,7 +91,7 @@ function IncidentesPageContent() {
     setSearchTerm(value);
     const updatedFilters = { 
       ...filters, 
-      search: value
+      Search: value
     };
     setFilters(updatedFilters);
     applyFilters(updatedFilters);
@@ -115,7 +115,7 @@ function IncidentesPageContent() {
     if (key === 'suspect_alias') {
       return `Sospechoso: ${value}`;
     }
-    if (key === 'search') {
+    if (key === 'Search') {
       return `Búsqueda: ${value}`;
     }
     return `${key}: ${value}`;
@@ -125,7 +125,7 @@ function IncidentesPageContent() {
     const updatedFilters = { ...filters };
     delete updatedFilters[key as keyof IncidentFiltersState];
     
-    if (key === 'search') {
+    if (key === 'Search') {
       setSearchTerm('');
     }
     

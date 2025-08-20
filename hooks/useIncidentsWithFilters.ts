@@ -10,7 +10,7 @@ interface IncidentFilters {
   suspect_alias?: string;
   fromDate?: string;
   toDate?: string;
-  search?: string;
+  Search?: string;
   page?: number;
   page_size?: number;
   id?: string;
