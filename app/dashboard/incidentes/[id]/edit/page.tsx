@@ -91,8 +91,7 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
   });
 
   // Fetch incident data and populate form
-  useEffect(() => {
-    const fetchData = async () => {
+  const fetchData = async () => {
       try {
         setLoading(true);
         
@@ -169,10 +168,12 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
       } finally {
         setLoading(false);
       }
-    };
+  };
 
+  useEffect(() => {
     fetchData();
-  }, [id, form]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   // Calculate merchandise total
   const calculateMerchandiseTotal = useCallback(() => {
@@ -272,6 +273,21 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
 
   const onSubmit = async (values: IncidentFormValues) => {
     if (!incident || !originalIncident || !userInfo?.user_id) {
+      toast({
+        title: 'Error',
+        description: 'Faltan datos necesarios para actualizar el incidente',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate required fields
+    if (!values.date || !values.incidentTypeId || !values.officeId) {
+      toast({
+        title: 'Error',
+        description: 'Por favor completa todos los campos obligatorios',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -297,12 +313,17 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
           cashFondo: cashFondo.toString(),
           cashRecaudacion: cashRecaudacion.toString()
         },
-        Attachments: values.attachments,
+        Attachments: values.attachments || [],
+        Images: values.incidentImages || [],
         Suspects: values.selectedSuspects?.map(s => s.apiId).filter((id): id is string => Boolean(id)) || [],
       };
 
       // Update the incident
-      await updateIncident(id, updateData);
+      const updatedIncident = await updateIncident(id, updateData);
+      
+      if (!updatedIncident) {
+        throw new Error('No se pudo actualizar el incidente');
+      }
 
       // Update incident item losses
       if (values.incidentLossItem && values.incidentLossItem.length > 0) {
@@ -326,11 +347,19 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
               await updateIncidentItemLoss(item.id, lossItemPayload);
             } else {
               // Create new item
-              await createIncidentItemLoss(lossItemPayload);
+              const newItem = await createIncidentItemLoss(lossItemPayload);
+              // Update the item with the new ID from backend
+              if (newItem && newItem.id) {
+                item.id = newItem.id;
+              }
             }
           } catch (error) {
             console.error('Error updating loss item:', error);
-            // Continue with other items even if one fails
+            toast({
+              title: 'Advertencia',
+              description: `Error al procesar ítem: ${item.description}`,
+              variant: 'destructive',
+            });
           }
         }
         
@@ -347,7 +376,11 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
             }
           } catch (error) {
             console.error('Error deleting loss item:', error);
-            // Continue with other deletions even if one fails
+            toast({
+              title: 'Advertencia',
+              description: `Error al eliminar ítem: ${itemToDelete.Description || 'Ítem sin nombre'}`,
+              variant: 'destructive',
+            });
           }
         }
       }
@@ -374,8 +407,8 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
           userInfo.user_id.toString(),
           ['Date', 'Time', 'IncidentType', 'Office', 'Description', 'Notes', 'CashLoss', 'MerchandiseLoss', 'OtherLosses', 'TotalLoss', 'Suspects']
         );
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
+      } catch (error) {
+        console.error('Error tracking changes:', error);
         // Don't fail the update if change tracking fails
       }
 
@@ -384,26 +417,46 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
         description: 'Incidente actualizado correctamente',
       });
 
+      // Refresh the form with updated data
+      await fetchData();
+      
       router.push(`/dashboard/incidentes/${id}`);
     } catch (error) {
+      console.error('Error updating incident:', error);
+      
       const axiosError = error as AxiosError<Record<string, string[]>>;
+      let errorMessage = 'No se pudo actualizar el incidente';
+      
       if (axiosError.response?.data) {
         const backendErrors = axiosError.response.data;
         Object.entries(backendErrors).forEach(([field, errors]) => {
-          if (Array.isArray(errors)) {
+          if (Array.isArray(errors) && errors.length > 0) {
             // Map backend field names to form field names if needed
-            const formField = field as keyof IncidentFormValues;
+            const fieldMapping: Record<string, keyof IncidentFormValues> = {
+              'Date': 'date',
+              'Time': 'time',
+              'IncidentType': 'incidentTypeId',
+              'Office': 'officeId',
+              'Description': 'description',
+              'Notes': 'notes'
+            };
+            
+            const formField = fieldMapping[field] || field as keyof IncidentFormValues;
             form.setError(formField, {
               type: 'manual',
               message: errors[0]
             });
+            
+            errorMessage = errors[0];
           }
         });
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
       }
 
       toast({
         title: 'Error',
-        description: 'No se pudo actualizar el incidente',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
