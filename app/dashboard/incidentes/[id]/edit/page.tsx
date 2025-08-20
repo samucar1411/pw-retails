@@ -6,7 +6,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/components/ui/use-toast';
 import { AxiosError } from 'axios';
-import { ArrowLeft, Loader2, FileText, DollarSign, Users, Plus, X, Upload, Image as ImageIcon, Trash, UploadCloud } from 'lucide-react';
+import { ArrowLeft, Loader2, FileText, DollarSign, Users, Plus, X, Image as ImageIcon, Trash, UploadCloud } from 'lucide-react';
+import { ImageUploader } from '@/components/ImageUploader';
+import { FileUploader } from '@/components/FileUploader';
 import Link from 'next/link';
 
 // UI Components
@@ -190,74 +192,6 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
     form.setValue('merchandiseLoss', total);
   }, [merchandiseFields, form, calculateMerchandiseTotal]);
 
-  // Handle file upload for attachments
-  const handleFileUpload = async (files: FileList) => {
-    for (const file of Array.from(files)) {
-      try {
-        const url = await uploadFile(file);
-        const newAttachment = {
-          id: Date.now() + Math.random(), // Temporary ID
-          url: url,
-          name: file.name,
-          contentType: file.type || 'application/octet-stream'
-        };
-        
-        const currentAttachments = form.getValues('attachments') || [];
-        form.setValue('attachments', [...currentAttachments, newAttachment]);
-        
-        toast({
-          title: 'Éxito',
-          description: `${file.name} se ha subido correctamente`,
-        });
-      } catch (error) {
-        console.error('Error uploading file:', error);
-        toast({
-          title: 'Error',
-          description: `No se pudo subir ${file.name}`,
-          variant: 'destructive',
-        });
-      }
-    }
-  };
-
-  // Handle image upload for incident images
-  const handleImageUpload = async (files: FileList) => {
-    for (const file of Array.from(files)) {
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: 'Error',
-          description: 'Solo se permiten archivos de imagen',
-          variant: 'destructive',
-        });
-        continue;
-      }
-      
-      try {
-        const url = await uploadImage(file);
-        const newImage = {
-          id: Date.now() + Math.random(), // Temporary ID
-          url: url,
-          name: file.name,
-          contentType: file.type
-        };
-        
-        const currentImages = form.getValues('incidentImages') || [];
-        form.setValue('incidentImages', [...currentImages, newImage]);
-        
-        toast({
-          title: 'Éxito',
-          description: `Imagen ${file.name} se ha subido correctamente`,
-        });
-      } catch (error) {
-        console.error('Error uploading image:', error);
-        toast({
-          title: 'Error',
-          description: `No se pudo subir la imagen ${file.name}`,
-          variant: 'destructive',
-        });
-      }
-    }
-  };
 
   // Remove attachment
   const removeAttachment = (index: number) => {
@@ -281,11 +215,17 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
       return;
     }
 
-    // Validate required fields
-    if (!values.date || !values.incidentTypeId || !values.officeId) {
+    // Validate required fields with specific messages
+    const missingFields = [];
+    if (!values.date) missingFields.push('Fecha del incidente');
+    if (!values.incidentTypeId) missingFields.push('Tipo de incidente');
+    if (!values.officeId) missingFields.push('Sucursal');
+    if (!values.description || values.description.trim() === '') missingFields.push('Descripción del incidente');
+    
+    if (missingFields.length > 0) {
       toast({
-        title: 'Error',
-        description: 'Por favor completa todos los campos obligatorios',
+        title: 'Campos obligatorios faltantes',
+        description: `Por favor completa: ${missingFields.join(', ')}`,
         variant: 'destructive',
       });
       return;
@@ -862,22 +802,41 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Upload Area */}
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 relative">
-                  <div className="text-center">
-                    <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Arrastra archivos aquí o haz clic para seleccionar</p>
-                      <p className="text-xs text-muted-foreground">PDF, DOC, DOCX, TXT hasta 10MB</p>
-                    </div>
-                    <input
-                      type="file"
-                      multiple
-                      accept=".pdf,.doc,.docx,.txt,.rtf"
-                      onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                      disabled={isFileUploading || saving}
-                    />
-                  </div>
+                <div className="space-y-4">
+                  <FileUploader
+                    onFileUpload={async (file) => {
+                      try {
+                        const url = await uploadFile(file);
+                        const newAttachment = {
+                          id: Date.now() + Math.random(),
+                          url: url,
+                          name: file.name,
+                          contentType: file.type || 'application/octet-stream'
+                        };
+                        
+                        const currentAttachments = form.getValues('attachments') || [];
+                        form.setValue('attachments', [...currentAttachments, newAttachment]);
+                        
+                        toast({
+                          title: 'Éxito',
+                          description: `${file.name} se ha subido correctamente`,
+                        });
+                      } catch (error) {
+                        console.error('Error uploading file:', error);
+                        toast({
+                          title: 'Error',
+                          description: `No se pudo subir ${file.name}`,
+                          variant: 'destructive',
+                        });
+                      }
+                    }}
+                    isUploading={isFileUploading}
+                    disabled={saving}
+                    multiple={true}
+                    maxFiles={10}
+                    acceptedTypes="documents"
+                    className="w-full"
+                  />
                 </div>
 
                 {/* Existing Attachments */}
@@ -924,22 +883,40 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Upload Area */}
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 relative">
-                  <div className="text-center">
-                    <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Arrastra imágenes aquí o haz clic para seleccionar</p>
-                      <p className="text-xs text-muted-foreground">JPG, PNG, WEBP hasta 5MB cada una</p>
-                    </div>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                      disabled={isImageUploading || saving}
-                    />
-                  </div>
+                <div className="space-y-4">
+                  <ImageUploader
+                    onImageUpload={async (file) => {
+                      try {
+                        const url = await uploadImage(file);
+                        const newImage = {
+                          id: Date.now() + Math.random(),
+                          url: url,
+                          name: file.name,
+                          contentType: file.type
+                        };
+                        
+                        const currentImages = form.getValues('incidentImages') || [];
+                        form.setValue('incidentImages', [...currentImages, newImage]);
+                        
+                        toast({
+                          title: 'Éxito',
+                          description: `Imagen ${file.name} se ha subido correctamente`,
+                        });
+                      } catch (error) {
+                        console.error('Error uploading image:', error);
+                        toast({
+                          title: 'Error',
+                          description: `No se pudo subir la imagen ${file.name}`,
+                          variant: 'destructive',
+                        });
+                      }
+                    }}
+                    isUploading={isImageUploading}
+                    disabled={saving}
+                    multiple={true}
+                    maxFiles={10}
+                    className="w-full min-h-[200px] border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 flex items-center justify-center"
+                  />
                 </div>
 
                 {/* Existing Images */}
