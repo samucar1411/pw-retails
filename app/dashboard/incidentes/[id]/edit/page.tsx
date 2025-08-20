@@ -862,7 +862,7 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Upload Area */}
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8">
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 relative">
                   <div className="text-center">
                     <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <div className="space-y-2">
@@ -874,7 +874,7 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
                       multiple
                       accept=".pdf,.doc,.docx,.txt,.rtf"
                       onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
                       disabled={isFileUploading || saving}
                     />
                   </div>
@@ -924,7 +924,7 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Upload Area */}
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8">
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 relative">
                   <div className="text-center">
                     <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <div className="space-y-2">
@@ -936,7 +936,7 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
                       multiple
                       accept="image/*"
                       onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
                       disabled={isImageUploading || saving}
                     />
                   </div>
