@@ -246,12 +246,19 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
 
   const onSubmit = async (values: IncidentFormValues) => {
     // Debug logging to identify what's missing
-    console.log('onSubmit - Debug info:', {
+    console.log('onSubmit - Starting submit. Debug info:', {
       incident: !!incident,
       originalIncident: !!originalIncident,
       hasToken: !!authService.getToken(),
+      saving: saving,
       formValues: values
     });
+    
+    // Check if already saving to prevent double submission
+    if (saving) {
+      console.log('onSubmit - Already saving, aborting');
+      return;
+    }
 
     // Check what specific data is missing (solo lo esencial)
     const missingData = [];
@@ -459,9 +466,9 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
         description: 'Incidente actualizado correctamente',
       });
 
-      // Refresh the form with updated data
-      await fetchData();
+      console.log('onSubmit - Success, navigating to details page');
       
+      // Navigate to details page without fetching data again
       router.push(`/dashboard/incidentes/${id}`);
     } catch (error) {
       console.error('Error updating incident:', error);
@@ -502,6 +509,7 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
         variant: 'destructive',
       });
     } finally {
+      console.log('onSubmit - Resetting saving state');
       setSaving(false);
     }
   };

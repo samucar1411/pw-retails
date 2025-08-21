@@ -2,6 +2,7 @@ import { Incident, IncidentType } from '@/types/incident';
 import { PaginatedResponse, ListParams } from '@/types/api';
 import { api } from '@/services/api';
 import { getIncidentItemLosses, IncidentItemLoss } from './incident-item-losses-service';
+import { getAllIncidentImageMetadata } from './incident-image-metadata-service';
 
 
 export async function getIncidents(
@@ -118,6 +119,32 @@ export async function getIncidentById(id: string | number): Promise<Incident> {
       data.IncidentItemLosses = incidentItemLosses;
     } catch (itemLossError) {
       data.IncidentItemLosses = [];
+    }
+    
+    // Load images from IncidentImageMetadata if Images contains IDs
+    try {
+      if (data.Images && data.Images.length > 0) {
+        // Check if Images contains IDs (numbers) instead of File objects
+        const firstImage = data.Images[0];
+        if (typeof firstImage === 'number') {
+          // Images are IDs, fetch the actual IncidentImageMetadata
+          const allImageMetadata = await getAllIncidentImageMetadata();
+          const relatedImages = allImageMetadata.results.filter(img => 
+            (data.Images as unknown as number[]).includes(img.id!)
+          );
+          
+          // Convert IncidentImageMetadata to File format expected by frontend
+          data.Images = relatedImages.map(img => ({
+            id: img.id!,
+            name: img.filename,
+            url: img.file_path,
+            contentType: 'image/jpeg' // Default, could be improved
+          }));
+        }
+      }
+    } catch (imageError) {
+      console.error('Error loading incident images:', imageError);
+      // Keep original Images if error
     }
     
     return data;
