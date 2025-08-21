@@ -146,20 +146,20 @@ export async function getIncidentById(id: string | number): Promise<Incident> {
             if (img!.img_file) {
               if (typeof img!.img_file === 'string') {
                 imageUrl = img!.img_file;
+                // Fix URL if it's missing the port :18001
+                if (imageUrl.includes('sys.adminpy.com') && !imageUrl.includes(':18001')) {
+                  imageUrl = imageUrl.replace('sys.adminpy.com', 'sys.adminpy.com:18001');
+                }
               } else if (img!.img_file instanceof File) {
                 imageUrl = URL.createObjectURL(img!.img_file);
               }
             } else {
               imageUrl = img!.file_path || '';
+              // Fix URL if it's missing the port :18001
+              if (imageUrl.includes('sys.adminpy.com') && !imageUrl.includes(':18001')) {
+                imageUrl = imageUrl.replace('sys.adminpy.com', 'sys.adminpy.com:18001');
+              }
             }
-            
-            console.log('Processing image:', {
-              id: img!.id,
-              filename: img!.filename,
-              img_file: img!.img_file,
-              file_path: img!.file_path,
-              finalUrl: imageUrl
-            });
             
             return {
               id: img!.id!,

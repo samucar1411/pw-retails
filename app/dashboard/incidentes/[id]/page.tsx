@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
 import Map from '@/components/ui/map';
 import {
   Breadcrumb,
@@ -754,13 +754,9 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                                   fill
                                   className="object-cover"
                                   onError={(e) => {
-                                    console.error('Error loading image:', image.url, e);
                                     // Fallback si la imagen no carga
                                     const target = e.target as HTMLImageElement;
                                     target.style.display = 'none';
-                                  }}
-                                  onLoad={() => {
-                                    console.log('Image loaded successfully:', image.url);
                                   }}
                                 />
                               ) : (
@@ -778,6 +774,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                             </div>
                           </DialogTrigger>
                           <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+                            <DialogTitle className="sr-only">{image.name || `Imagen ${index + 1}`}</DialogTitle>
                             <div className="relative w-full h-full flex items-center justify-center bg-black">
                               {image.url && (
                                 <Image
