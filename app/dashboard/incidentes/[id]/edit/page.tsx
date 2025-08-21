@@ -104,6 +104,17 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
           getAllOfficesComplete()
         ]);
 
+        console.log('fetchData - Incident data loaded:', {
+          incidentData: !!incidentData,
+          incidentId: incidentData?.id,
+          typesCount: typesResponse.results?.length || 0,
+          officesCount: officesData?.length || 0
+        });
+
+        if (!incidentData) {
+          throw new Error('No se pudieron cargar los datos del incidente');
+        }
+
         setIncident(incidentData);
         setOriginalIncident(incidentData); // Store original data for change tracking
         setIncidentTypes(typesResponse.results || []);
@@ -206,10 +217,26 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
   };
 
   const onSubmit = async (values: IncidentFormValues) => {
-    if (!incident || !originalIncident || !userInfo?.user_id) {
+    // Debug logging to identify what's missing
+    console.log('onSubmit - Debug info:', {
+      incident: !!incident,
+      originalIncident: !!originalIncident,
+      userInfo: !!userInfo,
+      userId: userInfo?.user_id,
+      formValues: values
+    });
+
+    // Check what specific data is missing
+    const missingData = [];
+    if (!incident) missingData.push('datos del incidente');
+    if (!originalIncident) missingData.push('datos originales del incidente');
+    if (!userInfo?.user_id) missingData.push('información del usuario');
+    
+    if (missingData.length > 0) {
+      console.error('Missing data for incident update:', missingData);
       toast({
-        title: 'Error',
-        description: 'Faltan datos necesarios para actualizar el incidente',
+        title: 'Error de datos',
+        description: `Faltan: ${missingData.join(', ')}. Por favor recarga la página.`,
         variant: 'destructive',
       });
       return;
@@ -268,7 +295,7 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
       // Update incident item losses
       if (values.incidentLossItem && values.incidentLossItem.length > 0) {
         // Get existing incident item losses
-        const existingLosses = incident.IncidentItemLosses || [];
+        const existingLosses = incident!.IncidentItemLosses || [];
         const existingLossIds = existingLosses.map(loss => loss.id);
         
         for (const item of values.incidentLossItem) {
@@ -331,20 +358,20 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
           'incident',
           id,
           {
-            Date: originalIncident.Date,
-            Time: originalIncident.Time,
-            IncidentType: originalIncident.IncidentType,
-            Office: originalIncident.Office,
-            Description: originalIncident.Description,
-            Notes: originalIncident.Notes,
-            CashLoss: originalIncident.CashLoss,
-            MerchandiseLoss: originalIncident.MerchandiseLoss,
-            OtherLosses: originalIncident.OtherLosses,
-            TotalLoss: originalIncident.TotalLoss,
-            Suspects: originalIncident.Suspects,
+            Date: originalIncident!.Date,
+            Time: originalIncident!.Time,
+            IncidentType: originalIncident!.IncidentType,
+            Office: originalIncident!.Office,
+            Description: originalIncident!.Description,
+            Notes: originalIncident!.Notes,
+            CashLoss: originalIncident!.CashLoss,
+            MerchandiseLoss: originalIncident!.MerchandiseLoss,
+            OtherLosses: originalIncident!.OtherLosses,
+            TotalLoss: originalIncident!.TotalLoss,
+            Suspects: originalIncident!.Suspects,
           },
           updateData,
-          userInfo.user_id.toString(),
+          userInfo!.user_id!.toString(),
           ['Date', 'Time', 'IncidentType', 'Office', 'Description', 'Notes', 'CashLoss', 'MerchandiseLoss', 'OtherLosses', 'TotalLoss', 'Suspects']
         );
       } catch (error) {
@@ -415,11 +442,18 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
     );
   }
 
-  if (!incident) {
+  if (!incident || !originalIncident) {
     return (
       <div className="container mx-auto py-6 px-4 md:px-6">
         <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded">
-          <p>No se pudo encontrar el incidente</p>
+          <p>No se pudo encontrar el incidente o faltan datos necesarios</p>
+          <Button 
+            variant="outline" 
+            className="mt-2" 
+            onClick={() => window.location.reload()}
+          >
+            Recargar página
+          </Button>
         </div>
       </div>
     );
@@ -961,11 +995,16 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={saving}>
+              <Button type="submit" disabled={saving || loading || !incident}>
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Guardando...
+                  </>
+                ) : loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Cargando...
                   </>
                 ) : (
                   'Guardar cambios'
