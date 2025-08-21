@@ -39,6 +39,7 @@ import { getAllOfficesComplete } from '@/services/office-service';
 import { trackMultipleChanges } from '@/services/change-history-service';
 import { getSuspectById } from '@/services/suspect-service';
 import { authService } from '@/services/auth-service';
+import { createIncidentImageMetadata, IncidentImageMetadataCreateInput } from '@/services/incident-image-metadata-service';
 
 // Hooks
 import { useAuth } from '@/context/auth-context';
@@ -310,12 +311,59 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
         Suspects: values.selectedSuspects?.map(s => s.apiId).filter((id): id is string => Boolean(id)) || [],
       };
 
+      // Process images: create IncidentImageMetadata for new images
+      const imageIds: number[] = [];
+      
+      if (values.incidentImages && values.incidentImages.length > 0) {
+        const existingImages = incident!.Images || [];
+        const existingImageIds = existingImages.map(img => img.id).filter(Boolean);
+        
+        for (const image of values.incidentImages) {
+          // If image already exists, use its ID
+          if (image.id && existingImageIds.includes(image.id)) {
+            imageIds.push(Number(image.id));
+          } else {
+            // Create new IncidentImageMetadata for new images
+            try {
+              // Download image from Cloudinary to create File object
+              const response = await fetch(image.url);
+              const blob = await response.blob();
+              const file = new File([blob], image.name, { type: image.contentType || 'image/jpeg' });
+              
+              const imageMetadataInput: IncidentImageMetadataCreateInput = {
+                filename: image.name,
+                user_id: userInfo?.user_id?.toString() || 'anonymous',
+                description: image.name || 'Imagen del incidente',
+                img_file: file,
+                Tags: null
+              };
+              
+              const createdMetadata = await createIncidentImageMetadata(imageMetadataInput);
+              if (createdMetadata.id) {
+                imageIds.push(createdMetadata.id);
+              }
+            } catch (error) {
+              console.error('Error creating image metadata:', error);
+              toast({
+                title: 'Advertencia',
+                description: `Error al procesar imagen: ${image.name}`,
+                variant: 'destructive',
+              });
+            }
+          }
+        }
+      }
+      
+      // Update Images in payload to use IDs
+      const updateDataWithImageIds = { ...updateData, Images: imageIds };
+
       // Update the incident
-      const updatedIncident = await updateIncident(id, updateData);
+      const updatedIncident = await updateIncident(id, updateDataWithImageIds as unknown as Partial<Incident>);
       
       if (!updatedIncident) {
         throw new Error('No se pudo actualizar el incidente');
       }
+
 
       // Update incident item losses
       if (values.incidentLossItem && values.incidentLossItem.length > 0) {
