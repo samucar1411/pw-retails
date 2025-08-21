@@ -5,15 +5,16 @@ export interface IncidentImageMetadata {
   filename: string;
   user_id: string;
   description: string;
-  file_path: string;
+  upload_time?: string;
+  file_path?: string | null;
   received_data?: any;
-  status: string;
-  message: string;
+  status?: string | null;
+  message?: string | null;
   similarity_percentage?: number | null;
   threshold?: number | null;
   is_match: boolean;
   is_blacklisted: boolean;
-  img_file?: File | null;
+  img_file?: File | string | null; // Can be File for create/update, string URL for GET
   Tags?: any;
 }
 

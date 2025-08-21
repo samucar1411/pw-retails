@@ -2,7 +2,7 @@ import { Incident, IncidentType } from '@/types/incident';
 import { PaginatedResponse, ListParams } from '@/types/api';
 import { api } from '@/services/api';
 import { getIncidentItemLosses, IncidentItemLoss } from './incident-item-losses-service';
-import { getAllIncidentImageMetadata } from './incident-image-metadata-service';
+import { getIncidentImageMetadataById } from './incident-image-metadata-service';
 
 
 export async function getIncidents(
@@ -127,19 +127,39 @@ export async function getIncidentById(id: string | number): Promise<Incident> {
         // Check if Images contains IDs (numbers) instead of File objects
         const firstImage = data.Images[0];
         if (typeof firstImage === 'number') {
-          // Images are IDs, fetch the actual IncidentImageMetadata
-          const allImageMetadata = await getAllIncidentImageMetadata();
-          const relatedImages = allImageMetadata.results.filter(img => 
-            (data.Images as unknown as number[]).includes(img.id!)
+          // Images are IDs, fetch each IncidentImageMetadata by ID
+          const imageIds = data.Images as unknown as number[];
+          const imagePromises = imageIds.map(imageId => 
+            getIncidentImageMetadataById(imageId).catch(error => {
+              console.error(`Error loading image metadata for ID ${imageId}:`, error);
+              return null;
+            })
           );
           
+          const imageResults = await Promise.all(imagePromises);
+          const validImages = imageResults.filter(Boolean);
+          
           // Convert IncidentImageMetadata to File format expected by frontend
-          data.Images = relatedImages.map(img => ({
-            id: img.id!,
-            name: img.filename,
-            url: img.file_path,
-            contentType: 'image/jpeg' // Default, could be improved
-          }));
+          data.Images = validImages.map(img => {
+            // Handle img_file which can be File or string URL
+            let imageUrl = '';
+            if (img!.img_file) {
+              if (typeof img!.img_file === 'string') {
+                imageUrl = img!.img_file;
+              } else if (img!.img_file instanceof File) {
+                imageUrl = URL.createObjectURL(img!.img_file);
+              }
+            } else {
+              imageUrl = img!.file_path || '';
+            }
+            
+            return {
+              id: img!.id!,
+              name: img!.filename,
+              url: imageUrl,
+              contentType: 'image/jpeg' // Default, could be improved
+            };
+          });
         }
       }
     } catch (imageError) {
