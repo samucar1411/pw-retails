@@ -13,7 +13,13 @@ export interface Suspect {
   LastSeen?: string;
   IncidentsCount?: number;
   PhysicalDescription?: string;
-  Tags?: string[];
+  Tags?: Record<string, string>; // Changed to object format
+  // Nuevos campos
+  CI?: string;
+  Name?: string;
+  LastName?: string;
+  LastName2?: string;
+  Nationality?: string;
 }
 
 // For table display

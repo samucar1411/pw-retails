@@ -20,7 +20,6 @@ export async function getIncidentTypes(params?: ListParams): Promise<PaginatedRe
     return data;
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error fetching incident types:', errorMessage);
     return {
       count: 0,
       results: [],
@@ -41,12 +40,11 @@ export async function getIncidentTypeById(id: number): Promise<IncidentType> {
     if (error && typeof error === 'object' && 'response' in error && 
         error.response && typeof error.response === 'object' && 
         'status' in error.response && error.response.status === 404) {
-      console.warn(`Incident type with ID ${id} not found, returning default`);
     } else {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`Error fetching incident type ${id}:`, errorMessage);
     }
-    return { id } as IncidentType;
+    // Return a default incident type with minimal info - the cache function will handle it
+    return { id, Name: '', Description: '' } as IncidentType;
   }
 }
 
@@ -54,20 +52,23 @@ export async function getIncidentTypeById(id: number): Promise<IncidentType> {
  * Get incident type by ID with caching
  */
 export async function getIncidentTypeWithCache(id: number): Promise<IncidentType> {
+  
   // Check cache first
   if (incidentTypeCache.has(id)) {
-    return incidentTypeCache.get(id)!;
+    const cached = incidentTypeCache.get(id)!;
+    return cached;
   }
   
   // Fetch from API if not in cache
   const incidentType = await getIncidentTypeById(id);
   
-  // If we got a valid incident type (not the default one), cache it
-  if (incidentType.id !== 0) {
+  // If we got a valid incident type with a Name, cache it
+  if (incidentType && incidentType.Name) {
     incidentTypeCache.set(id, incidentType);
     return incidentType;
   }
   
   // Return a default incident type with the requested ID
-  return { id, Name: `Tipo ${id}`, Description: '' } as IncidentType;
+  const defaultType = { id, Name: `Tipo ${id}`, Description: '' } as IncidentType;
+  return defaultType;
 }

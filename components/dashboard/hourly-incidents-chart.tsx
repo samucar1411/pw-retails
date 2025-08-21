@@ -35,8 +35,8 @@ const getColorClass = (value: number): string => {
 };
 
 export function HourlyIncidentsChart({ data }: HourlyIncidentsChartProps) {
-  const days = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
-  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const days = React.useMemo(() => ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"], []);
+  const hours = React.useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
 
   const heatmapData = React.useMemo(() => {
     const cells: HeatmapCell[] = [];
@@ -61,14 +61,17 @@ export function HourlyIncidentsChart({ data }: HourlyIncidentsChartProps) {
     });
 
     return cells;
-  }, [data]);
+  }, [data, days, hours]);
 
   const isEmpty = data.length === 0;
 
   return (
     <Card className="col-span-4">
       <CardHeader>
-        <CardTitle>Incidentes por hora del día</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Clock className="h-5 w-5 text-primary" />
+          Incidentes por hora del día
+        </CardTitle>
         <CardDescription>Todas las sucursales</CardDescription>
       </CardHeader>
       <CardContent className="pl-4 pr-4 pb-4">

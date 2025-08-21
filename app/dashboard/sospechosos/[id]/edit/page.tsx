@@ -10,129 +10,39 @@ import { AxiosError } from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, User, Camera, Tags, AlertTriangle } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { getSuspectById, updateSuspect, getSuspectStatuses } from '@/services/suspect-service';
 import { Suspect, SuspectStatus } from '@/types/suspect';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getSafeImageUrl } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUploader } from '@/components/ImageUploader';
-import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import { 
+  SUSPECT_TAG_OPTIONS,
+  CheckboxGroup,
+  SingleSelect 
+} from '@/components/suspect-form/tag-selector';
 import Link from 'next/link';
 
-// Opciones para los tags (same as create form)
-const genderOptions = [
-  { label: 'Hombre', value: 'male' },
-  { label: 'Mujer', value: 'female' },
-  { label: 'Desconocido', value: 'unknown' },
-];
-
-const contexturaOptions = [
-  { label: 'Flaco', value: 'flaco' },
-  { label: 'Normal', value: 'normal' },
-  { label: 'Musculoso', value: 'musculoso' },
-  { label: 'Sobrepeso', value: 'sobrepeso' },
-  { label: 'Desconocido', value: 'desconocido' },
-];
-
-const alturaOptions = [
-  { label: 'Bajo (<1.60m)', value: 'bajo' },
-  { label: 'Normal (1.60m-1.75m)', value: 'normal' },
-  { label: 'Alto (1.76m-1.85m)', value: 'alto' },
-  { label: 'Muy Alto (>1.85m)', value: 'muy_alto' },
-  { label: 'Desconocido', value: 'desconocido' },
-];
-
-const pielOptions = [
-  { label: 'Clara', value: 'clara' },
-  { label: 'Trigueña', value: 'triguena' },
-  { label: 'Oscura', value: 'oscura' },
-  { label: 'Negra', value: 'negra' },
-  { label: 'Desconocido', value: 'desconocido' },
-];
-
-const piercingsOptions = [
-  { label: 'Nariz', value: 'nariz' },
-  { label: 'Oreja', value: 'oreja' },
-  { label: 'Cejas', value: 'cejas' },
-  { label: 'Lengua', value: 'lengua' },
-  { label: 'Labios', value: 'labios' },
-  { label: 'Desconocido', value: 'desconocido' },
-];
-
-const tatuajesOptions = [
-  { label: 'Brazos', value: 'brazos' },
-  { label: 'Cara', value: 'cara' },
-  { label: 'Cuello', value: 'cuello' },
-  { label: 'Piernas', value: 'piernas' },
-  { label: 'Mano', value: 'mano' },
-  { label: 'Desconocido', value: 'desconocido' },
-];
-
-const accesoriosOptions = [
-  { label: 'Lentes de sol', value: 'lentes_sol' },
-  { label: 'Bolsa', value: 'bolsa' },
-  { label: 'Lentes', value: 'lentes' },
-  { label: 'Casco', value: 'casco' },
-  { label: 'Mochila', value: 'mochila' },
-  { label: 'Desconocido', value: 'desconocido' },
-];
-
-const comportamientoOptions = [
-  { label: 'Nervioso', value: 'nervioso' },
-  { label: 'Agresivo', value: 'agresivo' },
-  { label: 'Portaba Armas', value: 'portaba_armas' },
-  { label: 'Abuso Físico', value: 'abuso_fisico' },
-  { label: 'Alcoholizado/Drogado', value: 'alcohol_droga' },
-];
-
-const dificultanIdOptions = [
-  { label: 'Mascarilla/barbijo', value: 'mascarilla' },
-  { label: 'Casco', value: 'casco' },
-  { label: 'Pasamontañas', value: 'pasamontanas' },
-  { label: 'Capucha', value: 'capucha' },
-  { label: 'Lentes Oscuros', value: 'lentes_oscuros' },
-];
-
-// Custom square select group
-type SquareSelectOption = { label: string; value: string };
-interface SquareSelectGroupProps {
-  options: SquareSelectOption[];
-  value: string;
-  onChange: (val: string) => void;
-  className?: string;
-}
-
-function SquareSelectGroup({ options, value, onChange, className = '' }: SquareSelectGroupProps) {
-  return (
-    <div className={`flex flex-row gap-[10px] overflow-x-auto pb-2 mt-2 ${className}`}>
-      {options.map((opt: SquareSelectOption, idx: number) => {
-        const selected = String(value) === String(opt.value);
-        return (
-          <button
-            key={`${opt.value}-${idx}`}
-            type="button"
-            onClick={() => onChange(String(opt.value))}
-            className={
-              'min-w-[100px] w-[100px] h-[100px] rounded-xl flex flex-col items-center justify-center text-xs font-medium transition-colors outline-none ' +
-              (selected
-                ? 'bg-primary/40 border-2 border-primary text-primary-foreground'
-                : 'bg-background border border-border text-foreground hover:border-primary hover:bg-muted/50')
-            }
-          >
-            {opt.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 const suspectFormSchema = z.object({
   Alias: z.string().min(1, 'El alias es requerido'),
+  Name: z.string().optional(),
+  LastName: z.string().optional(),
+  LastName2: z.string().optional(),
   PhysicalDescription: z.string().min(1, 'La descripción física es requerida'),
   PhotoUrl: z.string().min(1, 'La foto es requerida'),
   Status: z.number(),
+  Nationality: z.string().optional(),
 });
 
 type SuspectFormValues = z.infer<typeof suspectFormSchema>;
@@ -150,15 +60,19 @@ export default function EditSuspectPage() {
   const [loadingStatuses, setLoadingStatuses] = useState(true);
   const [loading, setLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [tags, setTags] = useState<Record<string, unknown>>({});
+  const [tags, setTags] = useState<Record<string, string>>({});
 
   const form = useForm<SuspectFormValues>({
     resolver: zodResolver(suspectFormSchema),
     defaultValues: {
       Alias: '',
+      Name: '',
+      LastName: '',
+      LastName2: '',
       PhysicalDescription: '',
       PhotoUrl: '',
       Status: 1,
+      Nationality: '',
     },
   });
 
@@ -174,16 +88,23 @@ export default function EditSuspectPage() {
         if (suspectData) {
           form.reset({
             Alias: suspectData.Alias || '',
+            Name: suspectData.Name || '',
+            LastName: suspectData.LastName || '',
+            LastName2: suspectData.LastName2 || '',
             PhysicalDescription: suspectData.PhysicalDescription || '',
             PhotoUrl: suspectData.PhotoUrl || '',
             Status: suspectData.Status || 1,
+            Nationality: suspectData.Nationality || '',
           });
-          setTags(suspectData.Tags ? { tags: suspectData.Tags } : {});
+          
+          // Handle tags properly - convert to the expected format
+          const suspectTags = suspectData.Tags || {};
+          setTags(suspectTags as Record<string, string>);
         }
 
         setStatuses(statusesData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
         toast({
           title: 'Error',
           description: 'No se pudieron cargar los datos',
@@ -205,10 +126,14 @@ export default function EditSuspectPage() {
 
   // Functions to handle tags
   function getTagValue(key: string): string {
-    return (tags[key] as string) || '';
+    const value = tags[key];
+    if (typeof value === 'string') {
+      return value;
+    }
+    return '';
   }
 
-  function setTagValue(key: string, value: unknown) {
+  function setTagValue(key: string, value: string) {
     setTags(prev => ({
       ...prev,
       [key]: value
@@ -216,7 +141,14 @@ export default function EditSuspectPage() {
   }
 
   function getTagArray(key: string): string[] {
-    return Array.isArray(tags[key]) ? tags[key] as string[] : [];
+    const value = tags[key];
+    if (Array.isArray(value)) {
+      return value;
+    }
+    if (typeof value === 'string' && value) {
+      return value.split(', ').filter(v => v.trim() !== '');
+    }
+    return [];
   }
 
   const onSubmit = useCallback(async (values: SuspectFormValues) => {
@@ -226,10 +158,14 @@ export default function EditSuspectPage() {
       // Prepare suspect data for update
       const suspectDataToUpdate: Partial<Suspect> = {
         Alias: values.Alias,
+        Name: values.Name || undefined,
+        LastName: values.LastName || undefined,
+        LastName2: values.LastName2 || undefined,
         PhysicalDescription: values.PhysicalDescription,
         Status: Number(values.Status),
         PhotoUrl: values.PhotoUrl,
-        Tags: Array.isArray(tags.tags) ? tags.tags : [],
+        Nationality: values.Nationality || undefined,
+        Tags: tags as Record<string, string>,
       };
 
       // Update the suspect
@@ -245,8 +181,6 @@ export default function EditSuspectPage() {
         throw new Error('La actualización del sospechoso no devolvió un resultado exitoso.');
       }
     } catch (error) {
-      console.error('Error updating suspect:', error);
-      
       // Handle backend validation errors
       const axiosError = error as AxiosError<ApiError>;
       if (axiosError.response?.data) {
@@ -280,27 +214,56 @@ export default function EditSuspectPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href={`/dashboard/sospechosos/${params.id}`}>
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-xl font-semibold">Editar Sospechoso</h1>
-            <p className="text-sm text-muted-foreground">ID: {params.id}</p>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Breadcrumb */}
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/dashboard/sospechosos">Sospechosos</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href={`/dashboard/sospechosos/${params.id}`}>
+                {form.watch('Alias') || 'Detalle de sospechoso'}
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Editar</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="icon" asChild>
+              <Link href={`/dashboard/sospechosos/${params.id}`}>
+                <ArrowLeft className="h-5 w-5" />
+              </Link>
+            </Button>
+            <div>
+              <h1 className="text-xl font-semibold">Editar Sospechoso</h1>
+              <p className="text-sm text-muted-foreground">ID: {params.id}</p>
+            </div>
           </div>
         </div>
-      </div>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          {/* Basic Information Section */}
           <Card>
             <CardHeader>
-              <CardTitle>Información Personal</CardTitle>
+              <CardTitle className="flex items-center gap-3">
+                <div className="rounded-lg bg-primary/10 p-2">
+                  <User className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium">Información Personal</h3>
+                  <p className="text-sm text-muted-foreground">Datos básicos del sospechoso</p>
+                </div>
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -309,7 +272,7 @@ export default function EditSuspectPage() {
                   name="Alias"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Alias</FormLabel>
+                      <FormLabel>Alias *</FormLabel>
                       <FormControl>
                         <Input {...field} placeholder="Alias del sospechoso" />
                       </FormControl>
@@ -348,199 +311,225 @@ export default function EditSuspectPage() {
                 />
               </div>
 
-              {/* Upload de foto */}
-              <div>
-                <FormLabel>Fotos del sospechoso</FormLabel>
-                <div className="rounded-lg border border-dashed border-border bg-muted/10 p-6 flex flex-col items-center justify-center">
-                  <ImageUploader
-                    onImageUpload={async (file) => {
-                      // Por ahora solo simularemos la carga
-                      const url = URL.createObjectURL(file);
-                      form.setValue('PhotoUrl', url);
-                    }}
-                    onUploadComplete={url => form.setValue('PhotoUrl', url)}
-                    maxSizeMB={5}
-                    className="w-full"
-                  />
-                </div>
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="Name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Nombre del sospechoso" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {/* Gender */}
-              <div>
-                <FormLabel>Género</FormLabel>
-                <SquareSelectGroup
-                  options={genderOptions}
-                  value={getTagValue('gender')}
-                  onChange={(value) => setTagValue('gender', value)}
+                <FormField
+                  control={form.control}
+                  name="LastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Apellido</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Primer apellido" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="LastName2"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Segundo Apellido</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Segundo apellido" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
 
-              {/* Contextura */}
-              <div>
-                <FormLabel>Contextura</FormLabel>
-                <SquareSelectGroup
-                  options={contexturaOptions}
-                  value={getTagValue('contextura')}
-                  onChange={(value) => setTagValue('contextura', value)}
+              <FormField
+                control={form.control}
+                name="Nationality"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nacionalidad</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Nacionalidad del sospechoso" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Photo Upload Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <div className="rounded-lg bg-primary/10 p-2">
+                  <Camera className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium">Fotografía</h3>
+                  <p className="text-sm text-muted-foreground">Imagen del sospechoso</p>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Current image display */}
+              {form.watch('PhotoUrl') && (
+                <div className="mb-4">
+                  <FormLabel>Imagen actual</FormLabel>
+                  <div className="mt-2 flex justify-center">
+                    <div className="relative w-48 h-48 rounded-lg overflow-hidden border">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={getSafeImageUrl(form.watch('PhotoUrl'))}
+                        alt="Imagen actual del sospechoso"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <FormLabel>Actualizar imagen</FormLabel>
+              <div className="rounded-lg border border-dashed border-border bg-muted/10 p-6 flex flex-col items-center justify-center mt-2">
+                <ImageUploader
+                  onImageUpload={async (file) => {
+                    // Por ahora solo simularemos la carga
+                    const url = URL.createObjectURL(file);
+                    form.setValue('PhotoUrl', url);
+                  }}
+                  onUploadComplete={url => form.setValue('PhotoUrl', url)}
+                  maxSizeMB={5}
+                  className="w-full"
                 />
               </div>
+            </CardContent>
+          </Card>
 
-              {/* Altura estimada */}
-              <div>
-                <FormLabel>Altura estimada</FormLabel>
-                <SquareSelectGroup
-                  options={alturaOptions}
-                  value={getTagValue('altura')}
-                  onChange={(value) => setTagValue('altura', value)}
-                />
-              </div>
-
-              {/* Tono de piel */}
-              <div>
-                <FormLabel>Tono de piel</FormLabel>
-                <SquareSelectGroup
-                  options={pielOptions}
-                  value={getTagValue('piel')}
-                  onChange={(value) => setTagValue('piel', value)}
-                />
-              </div>
-
-              {/* Piercings */}
-              <div>
-                <FormLabel>Piercings</FormLabel>
-                <div className="grid grid-cols-3 gap-y-2 gap-x-6 mt-2">
-                  {piercingsOptions.map(opt => {
-                    const piercings = getTagArray('piercings');
-                    return (
-                      <div key={opt.value} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`piercings-${opt.value}`}
-                          checked={piercings.includes(opt.value)}
-                          onCheckedChange={(checked) => {
-                            const newPiercings = checked
-                              ? [...piercings, opt.value]
-                              : piercings.filter(v => v !== opt.value);
-                            setTagValue('piercings', newPiercings);
-                          }}
-                        />
-                        <label htmlFor={`piercings-${opt.value}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                          {opt.label}
-                        </label>
-                      </div>
-                    );
-                  })}
+          {/* Physical Characteristics Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <div className="rounded-lg bg-primary/10 p-2">
+                  <Tags className="h-5 w-5 text-primary" />
                 </div>
-              </div>
-
-              {/* Tatuajes */}
-              <div>
-                <FormLabel>Tatuajes</FormLabel>
-                <div className="grid grid-cols-3 gap-y-2 gap-x-6 mt-2">
-                  {tatuajesOptions.map(opt => {
-                    const tatuajes = getTagArray('tatuajes');
-                    return (
-                      <div key={opt.value} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`tatuajes-${opt.value}`}
-                          checked={tatuajes.includes(opt.value)}
-                          onCheckedChange={(checked) => {
-                            const newTatuajes = checked
-                              ? [...tatuajes, opt.value]
-                              : tatuajes.filter(v => v !== opt.value);
-                            setTagValue('tatuajes', newTatuajes);
-                          }}
-                        />
-                        <label htmlFor={`tatuajes-${opt.value}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                          {opt.label}
-                        </label>
-                      </div>
-                    );
-                  })}
+                <div>
+                  <h3 className="text-lg font-medium">Características Físicas</h3>
+                  <p className="text-sm text-muted-foreground">Descripción detallada del sospechoso</p>
                 </div>
-              </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <SingleSelect
+                label="Género"
+                options={SUSPECT_TAG_OPTIONS.gender}
+                value={getTagValue('gender')}
+                onChange={(value) => setTagValue('gender', value)}
+              />
 
-              {/* Otros accesorios */}
-              <div>
-                <FormLabel>Otros accesorios</FormLabel>
-                <div className="grid grid-cols-3 gap-y-2 gap-x-6 mt-2">
-                  {accesoriosOptions.map(opt => {
-                    const accesorios = getTagArray('accesorios');
-                    return (
-                      <div key={opt.value} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`accesorios-${opt.value}`}
-                          checked={accesorios.includes(opt.value)}
-                          onCheckedChange={(checked) => {
-                            const newAccesorios = checked
-                              ? [...accesorios, opt.value]
-                              : accesorios.filter(v => v !== opt.value);
-                            setTagValue('accesorios', newAccesorios);
-                          }}
-                        />
-                        <label htmlFor={`accesorios-${opt.value}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                          {opt.label}
-                        </label>
-                      </div>
-                    );
-                  })}
+              <SingleSelect
+                label="Contextura"
+                options={SUSPECT_TAG_OPTIONS.contextura}
+                value={getTagValue('contextura')}
+                onChange={(value) => setTagValue('contextura', value)}
+              />
+
+              <SingleSelect
+                label="Altura estimada"
+                options={SUSPECT_TAG_OPTIONS.altura}
+                value={getTagValue('altura')}
+                onChange={(value) => setTagValue('altura', value)}
+              />
+
+              <SingleSelect
+                label="Tono de piel"
+                options={SUSPECT_TAG_OPTIONS.piel}
+                value={getTagValue('piel')}
+                onChange={(value) => setTagValue('piel', value)}
+              />
+
+              <CheckboxGroup
+                label="Piercings"
+                options={SUSPECT_TAG_OPTIONS.piercings}
+                value={getTagArray('piercings')}
+                onChange={(values) => setTagValue('piercings', values.join(', '))}
+              />
+
+              <CheckboxGroup
+                label="Tatuajes"
+                options={SUSPECT_TAG_OPTIONS.tatuajes}
+                value={getTagArray('tatuajes')}
+                onChange={(values) => setTagValue('tatuajes', values.join(', '))}
+              />
+
+              <CheckboxGroup
+                label="Otros accesorios"
+                options={SUSPECT_TAG_OPTIONS.accesorios}
+                value={getTagArray('accesorios')}
+                onChange={(values) => setTagValue('accesorios', values.join(', '))}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Behavioral Characteristics Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <div className="rounded-lg bg-destructive/10 p-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
                 </div>
-              </div>
-
-              {/* Comportamiento */}
-              <div>
-                <FormLabel>Comportamiento</FormLabel>
-                <div className="grid grid-cols-3 gap-y-2 gap-x-6 mt-2">
-                  {comportamientoOptions.map(opt => {
-                    const comportamiento = getTagArray('comportamiento');
-                    return (
-                      <div key={opt.value} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`comportamiento-${opt.value}`}
-                          checked={comportamiento.includes(opt.value)}
-                          onCheckedChange={(checked) => {
-                            const newComportamiento = checked
-                              ? [...comportamiento, opt.value]
-                              : comportamiento.filter(v => v !== opt.value);
-                            setTagValue('comportamiento', newComportamiento);
-                          }}
-                        />
-                        <label htmlFor={`comportamiento-${opt.value}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                          {opt.label}
-                        </label>
-                      </div>
-                    );
-                  })}
+                <div>
+                  <h3 className="text-lg font-medium">Comportamiento y Elementos Distintivos</h3>
+                  <p className="text-sm text-muted-foreground">Comportamiento observado y elementos que dificultan identificación</p>
                 </div>
-              </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <CheckboxGroup
+                label="Comportamiento"
+                options={SUSPECT_TAG_OPTIONS.comportamiento}
+                value={getTagArray('comportamiento')}
+                onChange={(values) => setTagValue('comportamiento', values.join(', '))}
+              />
 
-              {/* Elementos que dificultan identificación */}
-              <div>
-                <FormLabel>Elementos que dificultan identificación</FormLabel>
-                <div className="grid grid-cols-3 gap-y-2 gap-x-6 mt-2">
-                  {dificultanIdOptions.map(opt => {
-                    const dificultanId = getTagArray('dificultan_id');
-                    return (
-                      <div key={opt.value} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`dificultan-${opt.value}`}
-                          checked={dificultanId.includes(opt.value)}
-                          onCheckedChange={(checked) => {
-                            const newDificultanId = checked
-                              ? [...dificultanId, opt.value]
-                              : dificultanId.filter(v => v !== opt.value);
-                            setTagValue('dificultan_id', newDificultanId);
-                          }}
-                        />
-                        <label htmlFor={`dificultan-${opt.value}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                          {opt.label}
-                        </label>
-                      </div>
-                    );
-                  })}
+              <CheckboxGroup
+                label="Elementos que dificultan identificación"
+                options={SUSPECT_TAG_OPTIONS.dificultan_id}
+                value={getTagArray('dificultan_id')}
+                onChange={(values) => setTagValue('dificultan_id', values.join(', '))}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Additional Notes Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <div className="rounded-lg bg-primary/10 p-2">
+                  <User className="h-5 w-5 text-primary" />
                 </div>
-              </div>
-
-              {/* Observaciones adicionales */}
+                <div>
+                  <h3 className="text-lg font-medium">Observaciones Adicionales</h3>
+                  <p className="text-sm text-muted-foreground">Información complementaria sobre el sospechoso</p>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <FormField
                 control={form.control}
                 name="PhysicalDescription"
@@ -583,6 +572,7 @@ export default function EditSuspectPage() {
           </div>
         </form>
       </Form>
+      </div>
     </div>
   );
 } 

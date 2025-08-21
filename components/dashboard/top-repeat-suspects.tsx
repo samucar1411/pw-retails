@@ -11,9 +11,11 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { UserMinus, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useAllIncidents } from "@/hooks/useAllIncidents";
 import { getSuspect } from "@/services/suspect-service";
 import { Suspect } from "@/types/suspect";
+import { getSafeImageUrl } from "@/lib/utils";
 
 interface TopRepeatSuspectsProps {
   fromDate?: string;
@@ -77,8 +79,8 @@ export function TopRepeatSuspects({}: TopRepeatSuspectsProps = {}) {
           }
         });
         setSuspectData(suspectMap);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
-        console.error('Error fetching suspect data:', error);
       } finally {
         setLoadingSuspects(false);
       }
@@ -99,8 +101,8 @@ export function TopRepeatSuspects({}: TopRepeatSuspectsProps = {}) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserMinus className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <UserMinus className="h-5 w-5 text-primary" />
             Sospechosos Recurrentes
           </CardTitle>
           <CardDescription>
@@ -121,8 +123,8 @@ export function TopRepeatSuspects({}: TopRepeatSuspectsProps = {}) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserMinus className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <UserMinus className="h-5 w-5 text-primary" />
             Sospechosos Recurrentes
           </CardTitle>
           <CardDescription>
@@ -141,8 +143,8 @@ export function TopRepeatSuspects({}: TopRepeatSuspectsProps = {}) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserMinus className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <UserMinus className="h-5 w-5 text-primary" />
             Sospechosos Recurrentes
           </CardTitle>
           <CardDescription>
@@ -174,7 +176,7 @@ export function TopRepeatSuspects({}: TopRepeatSuspectsProps = {}) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2 sm:space-y-3">
+        <div className="space-y-4 sm:space-y-4">
           {topSuspects.map((suspectStat, index) => {
             const suspect = suspectStat.suspect;
             const initials = suspect?.Alias 
@@ -182,46 +184,48 @@ export function TopRepeatSuspects({}: TopRepeatSuspectsProps = {}) {
               : suspectStat.id.slice(0, 2).toUpperCase();
 
             return (
-              <div key={suspectStat.id} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border bg-card/50 hover:bg-muted/30 transition-colors">
-                <Badge variant={index === 0 ? "destructive" : index === 1 ? "default" : "secondary"} className="text-xs px-1.5 sm:px-2">
-                  #{index + 1}
-                </Badge>
-                
-                <Avatar className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
-                  <AvatarImage 
-                    src={suspect?.PhotoUrl} 
-                    alt={suspect?.Alias || `Sospechoso`}
-                  />
-                  <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-                </Avatar>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <p className="text-xs sm:text-sm font-medium truncate">
-                      {suspect?.Alias || `SIN ALIAS`}
-                    </p>
-                    <code className="text-xs bg-muted px-1 sm:px-1.5 py-0.5 rounded shrink-0">
-                      {suspectStat.id.slice(-8)}
-                    </code>
+              <Link key={suspectStat.id} href={`/dashboard/sospechosos/${suspectStat.id}`}>
+                <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border bg-card/50 hover:bg-muted/30 transition-colors cursor-pointer group">
+                  <Badge variant={index === 0 ? "destructive" : index === 1 ? "default" : "secondary"} className="text-xs px-1.5 sm:px-2">
+                    #{index + 1}
+                  </Badge>
+                  
+                  <Avatar className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
+                    <AvatarImage 
+                      src={getSafeImageUrl(suspect?.PhotoUrl)} 
+                      alt={suspect?.Alias || `Sospechoso`}
+                    />
+                    <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                  </Avatar>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <p className="text-xs sm:text-sm font-medium truncate group-hover:text-primary transition-colors">
+                        {suspect?.Alias || `SIN ALIAS`}
+                      </p>
+                      <code className="text-xs bg-muted px-1 sm:px-1.5 py-0.5 rounded shrink-0">
+                        {suspectStat.id.slice(-8)}
+                      </code>
+                    </div>
+                    {suspect?.PhysicalDescription && (
+                      <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                        {suspect.PhysicalDescription.length > 45 
+                          ? `${suspect.PhysicalDescription.slice(0, 45)}...` 
+                          : suspect.PhysicalDescription}
+                      </p>
+                    )}
                   </div>
-                  {suspect?.PhysicalDescription && (
-                    <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                      {suspect.PhysicalDescription.length > 45 
-                        ? `${suspect.PhysicalDescription.slice(0, 45)}...` 
-                        : suspect.PhysicalDescription}
+                  
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-base sm:text-lg font-bold text-primary">
+                      {suspectStat.count}
                     </p>
-                  )}
+                    <p className="text-xs text-muted-foreground">
+                      apariciones
+                    </p>
+                  </div>
                 </div>
-                
-                <div className="text-right flex-shrink-0">
-                  <p className="text-base sm:text-lg font-bold text-primary">
-                    {suspectStat.count}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    apariciones
-                  </p>
-                </div>
-              </div>
+              </Link>
             );
           })}
         </div>

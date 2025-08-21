@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Image from 'next/image';
 import jsPDF from 'jspdf';
-import { Download, Edit, User } from 'lucide-react';
+import { Download, Edit, User, FileImage } from 'lucide-react';
 import { useEffect, useState, use } from 'react';
 import { getOffice } from '@/services/office-service';
 import { getIncidentTypeWithCache } from '@/services/incident-type-service';
@@ -23,10 +23,11 @@ import { getCompanyById } from '@/services/company-service';
 import { Office } from '@/types/office';
 import { Company } from '@/types/company';
 import { IncidentType as IncidentTypeDetails } from '@/types/incident';
-import { default as UIMap } from '@/components/ui/map';
+import UIMap from '@/components/ui/map';
 import { getSuspect } from '@/services/suspect-service';
 import { Suspect } from '@/types/suspect';
 import { api } from '@/services/api';
+import { getSafeImageUrl } from '@/lib/utils';
 import Link from 'next/link';
 
 interface SuspectDetailPageProps {
@@ -46,16 +47,30 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
   const [incidentsLoading, setIncidentsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [officeDetails, setOfficeDetails] = useState<Map<number, Office>>(new Map());
-  const [mapLocations, setMapLocations] = useState<Array<{ 
-    id: string | number; 
-    lat: number; 
-    lng: number; 
-    title: string; 
+  // Define map location type compatible with ui/map component
+  type MapLocation = {
+    id: string | number;
+    lat: number;
+    lng: number;
+    title: string;
     description: string;
     address?: string;
     logoUrl?: string;
-    officeId?: number;
-  }>>([]);
+    officeId?: string | number;
+    popupContent?: string;
+    incidentData?: {
+      id: string;
+      date: string;
+      time: string;
+      incidentType?: string;
+      totalLoss?: string;
+      suspectCount?: number;
+      status?: string;
+      severity?: 'low' | 'medium' | 'high';
+    };
+  };
+
+  const [mapLocations, setMapLocations] = useState<MapLocation[]>([]);
   const [incidentTypeNames, setIncidentTypeNames] = useState<Map<number, string>>(new Map());
   const [relatedSuspects, setRelatedSuspects] = useState<Suspect[]>([]);
   const [relatedSuspectsLoading, setRelatedSuspectsLoading] = useState(true);
@@ -103,8 +118,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
             fetchedIncidents = incidentData.results || [];
             setIncidents(fetchedIncidents);
             setIncidentsLoading(false);
-          } catch (incidentError) {
-            console.error('Error fetching incidents:', incidentError);
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
             setIncidentsLoading(false);
             throw new Error('Failed to fetch incidents');
           }
@@ -128,16 +143,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
             const fetchedOffices = (await Promise.all(officePromises)).filter(Boolean) as Office[];
             
             const newOfficeDetails = new Map<number, Office>();
-            const newMapLocations: Array<{ 
-              id: string | number; 
-              lat: number; 
-              lng: number; 
-              title: string; 
-              description: string;
-              address?: string;
-              logoUrl?: string;
-              officeId?: number;
-            }> = [];
+            const newMapLocations: MapLocation[] = [];
 
             // Fetch company details for logos
             const companyIds = [...new Set(fetchedOffices.map(office => office.Company))];
@@ -160,8 +166,14 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                 if (!isNaN(lat) && !isNaN(lng)) {
                   // Get company logo if available
                   const company = newCompanyDetails.get(office.Company);
-                  const logoUrl = company?.image_url || '';
+                  const logoUrl = company?.image_url ? getSafeImageUrl(company.image_url) : '';
                   
+                  // Encontrar incidentes relacionados con esta oficina
+                  const officeIncidents = fetchedIncidents.filter(inc => inc.Office === office.id);
+                  const latestIncident = officeIncidents.sort((a, b) => 
+                    new Date(b.Date).getTime() - new Date(a.Date).getTime()
+                  )[0];
+
                   newMapLocations.push({
                     id: office.id,
                     lat,
@@ -169,8 +181,23 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     title: office.Name || office.Address || `Oficina ${office.id}`,
                     description: office.Address || 'Dirección no disponible',
                     address: office.Address,
-                    logoUrl,
-                    officeId: office.id
+                    logoUrl: logoUrl || undefined,
+                    officeId: office.id,
+                    incidentData: latestIncident ? {
+                      id: latestIncident.id,
+                      date: latestIncident.Date,
+                      time: latestIncident.Time || '',
+                      incidentType: newIncidentTypeNames.get(latestIncident.IncidentType || 0) || 'Tipo desconocido',
+                      totalLoss: latestIncident.TotalLoss || '0',
+                      suspectCount: latestIncident.Suspects?.length || 0,
+                      status: 'Reportado',
+                      severity: (() => {
+                        const totalLoss = parseFloat(latestIncident.TotalLoss || '0');
+                        if (totalLoss > 1000000) return 'high' as const;
+                        if (totalLoss > 100000) return 'medium' as const;
+                        return 'low' as const;
+                      })()
+                    } : undefined
                   });
                 }
               }
@@ -195,8 +222,9 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                     .filter(Boolean) as Suspect[];
                   setRelatedSuspects(fetchedSuspects);
                 }
-              } catch (error) {
-                console.error('Error loading related suspects:', error);
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+                // Failed to load related suspects
               }
               setRelatedSuspectsLoading(false);
             }
@@ -207,8 +235,8 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
         } else {
           setIncidentsLoading(false);
         }
-      } catch (error) {
-        console.error('Error loading suspect details:', error);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
         setError('Error al cargar los detalles del sospechoso');
         setLoading(false);
         setIncidentsLoading(false);
@@ -258,14 +286,67 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
       // Reset text color
       pdf.setTextColor(0, 0, 0);
       
-      // Document info box with better layout
+      // Document info box with better layout - now with space for image
       pdf.setFillColor(248, 249, 250);
-      pdf.rect(20, 45, pageWidth - 40, 35, 'F');
+      pdf.rect(20, 45, pageWidth - 40, 50, 'F'); // Increased height for image
       pdf.setDrawColor(200, 200, 200);
-      pdf.rect(20, 45, pageWidth - 40, 35, 'S');
+      pdf.rect(20, 45, pageWidth - 40, 50, 'S');
+      
+      // Add suspect image if available
+      if (suspect.PhotoUrl && suspect.PhotoUrl.trim() !== '') {
+        try {
+          // Load and add the suspect image
+          const imageResponse = await fetch(suspect.PhotoUrl);
+          const imageBlob = await imageResponse.blob();
+          const imageBase64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(imageBlob);
+          });
+          
+          // Add image to the right side of the info box
+          pdf.addImage(imageBase64, 'JPEG', 140, 47, 35, 45);
+          
+          // Add image border
+          pdf.setDrawColor(150, 150, 150);
+          pdf.setLineWidth(0.5);
+          pdf.rect(140, 47, 35, 45, 'S');
+          
+          // Add "Foto del Sospechoso" label
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(100, 100, 100);
+          pdf.text('FOTO DEL SOSPECHOSO', 140, 95, { align: 'center' });
+          
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+          // If image fails to load, add a placeholder
+          pdf.setFillColor(240, 240, 240);
+          pdf.rect(140, 47, 35, 45, 'F');
+          pdf.setDrawColor(200, 200, 200);
+          pdf.rect(140, 47, 35, 45, 'S');
+          
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(150, 150, 150);
+          pdf.text('Sin foto', 157.5, 69.5, { align: 'center' });
+        }
+      } else {
+        // Placeholder when no image
+        pdf.setFillColor(240, 240, 240);
+        pdf.rect(140, 47, 35, 45, 'F');
+        pdf.setDrawColor(200, 200, 200);
+        pdf.rect(140, 47, 35, 45, 'S');
+        
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(150, 150, 150);
+        pdf.text('Sin foto', 157.5, 69.5, { align: 'center' });
+      }
       
       pdf.setFontSize(10);
       pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(0, 0, 0);
       
       // ID del sospechoso en su propia línea con más espacio
       pdf.text(`ID del Sospechoso:`, 25, 53);
@@ -286,12 +367,30 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
       pdf.text(`${suspect.Status === 1 ? 'ACTIVO' : 'INACTIVO'}`, 45, 72);
       
       pdf.setFont('helvetica', 'bold');
-      pdf.text(`Incidentes: `, 120, 65);
+      pdf.text(`Incidentes: `, 25, 79);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`${incidents.length} registrado${incidents.length !== 1 ? 's' : ''}`, 150, 65);
+      pdf.text(`${incidents.length} registrado${incidents.length !== 1 ? 's' : ''}`, 55, 79);
+      
+      // Información personal adicional
+      if (suspect.CI || suspect.Name || suspect.LastName) {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`CI: `, 25, 86);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`${suspect.CI || 'No registrado'}`, 40, 86);
+        
+        if (suspect.Name || suspect.LastName) {
+          const nombreCompleto = `${suspect.Name || ''} ${suspect.LastName || ''}`.trim();
+          if (nombreCompleto) {
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(`Nombre: `, 25, 93);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(`${nombreCompleto}`, 55, 93);
+          }
+        }
+      }
       
       // Suspect details section
-      let yPos = 90;
+      let yPos = 105; // Moved down to accommodate the larger info box with image
       pdf.setFontSize(14);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(50, 50, 50);
@@ -318,6 +417,21 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
         const splitDescription = pdf.splitTextToSize(description, 170);
         pdf.text(splitDescription, 20, yPos);
         yPos += splitDescription.length * 5 + 10;
+      }
+      
+      // Tags information if available
+      if (suspect.Tags && Object.keys(suspect.Tags).length > 0) {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Características Físicas:', 20, yPos);
+        yPos += 7;
+        
+        pdf.setFont('helvetica', 'normal');
+        const tagsText = Object.entries(suspect.Tags)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join(', ');
+        const splitTags = pdf.splitTextToSize(tagsText, 170);
+        pdf.text(splitTags, 20, yPos);
+        yPos += splitTags.length * 5 + 10;
       }
       
       // Incidents section
@@ -413,8 +527,9 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
       pdf.text(`Generado el: ${new Date().toLocaleDateString('es-PY')} a las ${new Date().toLocaleTimeString('es-PY')}`, 105, pageHeight - 5, { align: 'center' });
       
       pdf.save(`Expediente-${suspect.Alias || suspectId}.pdf`);
-    } catch (error) {
-      console.error('Error al generar PDF:', error);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+      // Error generating PDF
     }
   };
 
@@ -467,7 +582,7 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                 <div className="relative w-40 h-40 overflow-hidden border-4 border-muted">
                   {suspect.PhotoUrl ? (
                     <Image
-                      src={suspect.PhotoUrl}
+                      src={getSafeImageUrl(suspect.PhotoUrl)}
                       alt={suspect.Alias || 'Sospechoso'}
                       fill
                       className="object-cover"
@@ -540,153 +655,198 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
         {/* Características */}
         <Card>
           <CardHeader>
-            <CardTitle>Características</CardTitle>
+            <CardTitle>Información Personal</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {/* Descripción física */}
-              {suspect.PhysicalDescription && (
+              {/* Información básica */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <h3 className="font-medium mb-2">Descripción física</h3>
-                  <p className="text-muted-foreground">{suspect.PhysicalDescription}</p>
+                  <h3 className="font-bold text-primary mb-2">Nombre</h3>
+                  <p className="text-secondary-foreground">
+                    {suspect.Name || 'Sin información'}
+                  </p>
                 </div>
-              )}
+                
+                <div>
+                  <h3 className="font-bold text-primary mb-2">Apellido</h3>
+                  <p className="text-secondary-foreground">
+                    {suspect.LastName || 'Sin información'}
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-bold text-primary mb-2">CI</h3>
+                  <p className="text-secondary-foreground">
+                    {suspect.CI || 'Sin información'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Descripción física */}
+              <div>
+                <h3 className="font-bold text-primary mb-2">Descripción física</h3>
+                <p className="text-secondary-foreground">
+                  {suspect.PhysicalDescription || 'Sin información'}
+                </p>
+              </div>
 
               {/* Tags/Características */}
-              {suspect.Tags && suspect.Tags.length > 0 && (
-                <div>
-                  <h3 className="font-medium mb-4">Características distintivas</h3>
-                  <div className="bg-card border rounded-lg p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Género */}
-                      {suspect.Tags.some(tag => ['male', 'female'].includes(tag.toLowerCase())) && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Género</h4>
-                          <p className="text-sm">
-                            {suspect.Tags.find(tag => ['male', 'female'].includes(tag.toLowerCase())) === 'male' ? 'Hombre' : 'Mujer'}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Contextura */}
-                      {suspect.Tags.some(tag => ['flaco', 'normal', 'musculoso', 'sobrepeso'].includes(tag.toLowerCase())) && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Contextura</h4>
-                          <p className="text-sm">
-                            {(() => {
-                              const contextura = suspect.Tags.find(tag => ['flaco', 'normal', 'musculoso', 'sobrepeso'].includes(tag.toLowerCase()));
-                              return contextura ? contextura.charAt(0).toUpperCase() + contextura.slice(1).toLowerCase() : '';
-                            })()}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Estatura */}
-                      {suspect.Tags.some(tag => ['bajo', 'normal', 'alto', 'muy_alto'].includes(tag.toLowerCase())) && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Estatura</h4>
-                          <p className="text-sm">
-                            {(() => {
-                              const altura = suspect.Tags.find(tag => ['bajo', 'normal', 'alto', 'muy_alto'].includes(tag.toLowerCase()));
-                              switch(altura?.toLowerCase()) {
-                                case 'bajo': return 'Bajo (<1.60m)';
-                                case 'normal': return 'Normal (1.60m-1.75m)';
-                                case 'alto': return 'Alto (1.76m-1.85m)';
-                                case 'muy_alto': return 'Muy Alto (>1.85m)';
-                                default: return altura;
-                              }
-                            })()}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Tono de piel */}
-                      {suspect.Tags.some(tag => ['clara', 'triguena', 'oscura', 'negra'].includes(tag.toLowerCase())) && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Tono de piel</h4>
-                          <p className="text-sm">
-                            {(() => {
-                              const piel = suspect.Tags.find(tag => ['clara', 'triguena', 'oscura', 'negra'].includes(tag.toLowerCase()));
-                              return piel ? piel.charAt(0).toUpperCase() + piel.slice(1).toLowerCase() : '';
-                            })()}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Piercings */}
-                      {suspect.Tags.some(tag => ['nariz', 'oreja', 'cejas', 'lengua', 'labios'].includes(tag.toLowerCase())) && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Piercings</h4>
-                          <p className="text-sm">
-                            {suspect.Tags
-                              .filter(tag => ['nariz', 'oreja', 'cejas', 'lengua', 'labios'].includes(tag.toLowerCase()))
-                              .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase())
-                              .join(', ')}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Tatuajes */}
-                      {suspect.Tags.some(tag => ['brazos', 'cara', 'cuello', 'piernas', 'mano'].includes(tag.toLowerCase())) && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Tatuajes</h4>
-                          <p className="text-sm">
-                            {suspect.Tags
-                              .filter(tag => ['brazos', 'cara', 'cuello', 'piernas', 'mano'].includes(tag.toLowerCase()))
-                              .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase())
-                              .join(', ')}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Accesorios */}
-                      {suspect.Tags.some(tag => ['lentes_sol', 'bolsa', 'lentes', 'casco', 'mochila'].includes(tag.toLowerCase())) && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Accesorios</h4>
-                          <p className="text-sm">
-                            {suspect.Tags
-                              .filter(tag => ['lentes_sol', 'bolsa', 'lentes', 'casco', 'mochila'].includes(tag.toLowerCase()))
-                              .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase().replace('_', ' '))
-                              .join(', ')}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Comportamiento */}
-                      {suspect.Tags.some(tag => ['agresivo', 'nervioso', 'calmado', 'sospechoso'].includes(tag.toLowerCase())) && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Comportamiento</h4>
-                          <p className="text-sm">
-                            {suspect.Tags
-                              .filter(tag => ['agresivo', 'nervioso', 'calmado', 'sospechoso'].includes(tag.toLowerCase()))
-                              .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase())
-                              .join(', ')}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Elementos que dificultan identificación */}
-                      {suspect.Tags.some(tag => ['gorra', 'bufanda', 'mascara', 'gafas'].includes(tag.toLowerCase())) && (
-                        <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Dificulta identificación</h4>
-                          <p className="text-sm">
-                            {suspect.Tags
-                              .filter(tag => ['gorra', 'bufanda', 'mascara', 'gafas'].includes(tag.toLowerCase()))
-                              .map(tag => tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase())
-                              .join(', ')}
-                          </p>
-                        </div>
-                      )}
+              <div>
+                <h3 className="font-bold mb-4">Características distintivas</h3>
+                <div className="bg-card border rounded-lg p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Género */}
+                    <div>
+                      <h4 className="text-sm font-bold text-primary mb-1">Género</h4>
+                      <p className="text-sm text-secondary-foreground">
+                        {suspect.Tags?.sexo ? 
+                          (suspect.Tags.sexo === 'masculino' ? 'Hombre' : 
+                           suspect.Tags.sexo === 'femenino' ? 'Mujer' : 
+                           suspect.Tags.sexo === 'desconocido' ? 'Desconocido' : suspect.Tags.sexo)
+                          : 'Sin información'
+                        }
+                      </p>
+                    </div>
+                    
+                    {/* Contextura */}
+                    <div>
+                      <h4 className="text-sm font-bold text-primary mb-1">Contextura</h4>
+                      <p className="text-sm text-secondary-foreground">
+                        {suspect.Tags?.contextura ? 
+                          suspect.Tags.contextura.charAt(0).toUpperCase() + suspect.Tags.contextura.slice(1).toLowerCase()
+                          : 'Sin información'
+                        }
+                      </p>
+                    </div>
+                    
+                    {/* Estatura */}
+                    <div>
+                      <h4 className="text-sm font-bold text-primary mb-1">Estatura</h4>
+                      <p className="text-sm text-secondary-foreground">
+                        {suspect.Tags?.altura ? 
+                          (() => {
+                            switch(suspect.Tags.altura) {
+                              case 'bajo': return 'Bajo (<1.60m)';
+                              case 'normal': return 'Normal (1.60m-1.75m)';
+                              case 'alto': return 'Alto (1.76m-1.85m)';
+                              case 'muy_alto': return 'Muy Alto (>1.85m)';
+                              default: return suspect.Tags.altura;
+                            }
+                          })()
+                          : 'Sin información'
+                        }
+                      </p>
+                    </div>
+                    
+                    {/* Tono de piel */}
+                    <div>
+                      <h4 className="text-sm font-bold text-primary mb-1">Tono de piel</h4>
+                      <p className="text-sm text-secondary-foreground">
+                        {suspect.Tags?.piel ? 
+                          suspect.Tags.piel.charAt(0).toUpperCase() + suspect.Tags.piel.slice(1).toLowerCase()
+                          : 'Sin información'
+                        }
+                      </p>
+                    </div>
+                    
+                    {/* Piercings */}
+                    <div>
+                      <h4 className="text-sm font-bold text-primary mb-1">Piercings</h4>
+                      <p className="text-sm text-secondary-foreground">
+                        {suspect.Tags?.piercings ? 
+                          suspect.Tags.piercings.split(',').map(p => p.trim().charAt(0).toUpperCase() + p.trim().slice(1).toLowerCase()).join(', ')
+                          : 'Sin información'
+                        }
+                      </p>
+                    </div>
+                    
+                    {/* Tatuajes */}
+                    <div>
+                      <h4 className="text-sm font-bold text-primary mb-1">Tatuajes</h4>
+                      <p className="text-sm text-secondary-foreground">
+                        {suspect.Tags?.tatuajes ? 
+                          suspect.Tags.tatuajes.split(',').map(t => t.trim().charAt(0).toUpperCase() + t.trim().slice(1).toLowerCase()).join(', ')
+                          : 'Sin información'
+                        }
+                      </p>
+                    </div>
+                    
+                    {/* Accesorios */}
+                    <div>
+                      <h4 className="text-sm font-bold text-primary mb-1">Accesorios</h4>
+                      <p className="text-sm text-secondary-foreground">
+                        {suspect.Tags?.accesorios ? 
+                          suspect.Tags.accesorios.split(',').map(a => a.trim().charAt(0).toUpperCase() + a.trim().slice(1).toLowerCase().replace('_', ' ')).join(', ')
+                          : 'Sin información'
+                        }
+                      </p>
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
+
+              {/* Comportamiento - Nueva sección separada */}
+              <div>
+                <h3 className="font-medium mb-4">Comportamiento</h3>
+                <div className="bg-card border rounded-lg p-4">
+                  <div className="flex flex-wrap gap-2">
+                    {suspect.Tags?.comportamiento ? (
+                      suspect.Tags.comportamiento.split(',').map(behavior => {
+                        const behaviorLabels: Record<string, string> = {
+                          'nervioso': 'Nervioso',
+                          'agresivo': 'Agresivo',
+                          'portaba_armas': 'Portaba Armas',
+                          'abuso_fisico': 'Abuso Físico',
+                          'alcohol_droga': 'Alcoholizado/Drogado'
+                        };
+                        const trimmedBehavior = behavior.trim().toLowerCase();
+                        return (
+                          <Badge key={trimmedBehavior} variant="destructive" className="text-xs">
+                            {behaviorLabels[trimmedBehavior] || trimmedBehavior}
+                          </Badge>
+                        );
+                      })
+                    ) : (
+                      <span className="text-sm text-muted-foreground">Sin información</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Elementos que dificultan identificación */}
+              <div>
+                <h3 className="font-medium mb-4">Elementos que dificultan identificación</h3>
+                <div className="bg-card border rounded-lg p-4">
+                  <div className="flex flex-wrap gap-2">
+                    {suspect.Tags?.dificulta_identificacion ? (
+                      suspect.Tags.dificulta_identificacion.split(',').map(difficultyItem => {
+                        const elementLabels: Record<string, string> = {
+                          'mascarilla': 'Mascarilla',
+                          'casco': 'Casco',
+                          'pasamontanas': 'Pasamontañas',
+                          'capucha': 'Capucha',
+                          'lentes_oscuros': 'Lentes Oscuros'
+                        };
+                        const trimmedDifficultyItem = difficultyItem.trim().toLowerCase();
+                        return (
+                          <Badge key={trimmedDifficultyItem} variant="secondary" className="text-xs">
+                            {elementLabels[trimmedDifficultyItem] || trimmedDifficultyItem}
+                          </Badge>
+                        );
+                      })
+                    ) : (
+                      <span className="text-sm text-muted-foreground">Sin información</span>
+                    )}
+                  </div>
+                </div>
+              </div>
 
               {/* Última vez visto */}
               {suspect.LastSeen && (
                 <div>
-                  <h3 className="font-medium mb-2">Última vez visto</h3>
-                  <p className="text-muted-foreground">
+                  <h3 className="font-bold text-primary mb-2">Última vez visto</h3>
+                  <p className="text-secondary-foreground">
                     {format(new Date(suspect.LastSeen), "d 'de' MMMM 'de' yyyy", { locale: es })}
                   </p>
                 </div>
@@ -695,68 +855,157 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
           </CardContent>
         </Card>
 
-        {/* Sospechosos relacionados */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Sospechosos relacionados</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Otros sospechosos involucrados en los mismos incidentes
-            </p>
-          </CardHeader>
-          <CardContent>
-            {relatedSuspectsLoading ? (
-              <div className="flex justify-center items-center h-32">
-                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-              </div>
-            ) : relatedSuspects.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {relatedSuspects.map((rs) => (
-                  <Link 
-                    key={rs.id} 
-                    href={`/dashboard/sospechosos/${rs.id}`}
-                    className="group"
-                  >
-                    <Card className="hover:bg-muted/50 transition-colors">
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="relative w-12 h-12 overflow-hidden border-2 border-muted">
-                            {rs.PhotoUrl ? (
-                              <Image
-                                src={rs.PhotoUrl}
-                                alt={rs.Alias || 'Sospechoso'}
-                                fill
-                                className="object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-muted flex items-center justify-center">
-                                <User className="w-6 h-6 text-muted-foreground" />
+        {/* Grid para sospechosos relacionados e imágenes lado a lado */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Sospechosos relacionados */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Sospechosos relacionados</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Otros sospechosos involucrados en los mismos incidentes
+              </p>
+            </CardHeader>
+            <CardContent>
+              {relatedSuspectsLoading ? (
+                <div className="flex justify-center items-center h-32">
+                  <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+                </div>
+              ) : relatedSuspects.length > 0 ? (
+                <div className="grid grid-cols-1 gap-4">
+                  {relatedSuspects.map((rs) => (
+                    <Link 
+                      key={rs.id} 
+                      href={`/dashboard/sospechosos/${rs.id}`}
+                      className="group"
+                    >
+                      <Card className="hover:bg-muted/50 transition-colors">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="relative w-12 h-12 overflow-hidden border-2 border-muted">
+                              {rs.PhotoUrl ? (
+                                <Image
+                                  src={getSafeImageUrl(rs.PhotoUrl)}
+                                  alt={rs.Alias || 'Sospechoso'}
+                                  fill
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-muted flex items-center justify-center">
+                                  <User className="w-6 h-6 text-muted-foreground" />
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-medium group-hover:text-primary transition-colors">
+                                {rs.Alias}
+                              </p>
+                              <Badge 
+                                variant={rs.Status === 1 ? "destructive" : "secondary"}
+                                className="mt-1 text-xs"
+                              >
+                                {rs.Status === 1 ? "Detenido" : "Libre"}
+                              </Badge>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No se encontraron sospechosos relacionados
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Imágenes de incidentes relacionados */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Imágenes de Incidentes Relacionados</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {incidents.filter(inc => {
+                  const incWithImages = inc as { Images?: Array<{ url?: string; name?: string; }> };
+                  return incWithImages.Images && incWithImages.Images.length > 0;
+                }).length > 0 
+                  ? `Imágenes de los ${incidents.filter(inc => {
+                      const incWithImages = inc as { Images?: Array<{ url?: string; name?: string; }> };
+                      return incWithImages.Images && incWithImages.Images.length > 0;
+                    }).length} incidentes con fotografías`
+                  : 'Fotografías de incidentes relacionados'
+                }
+              </p>
+            </CardHeader>
+            <CardContent>
+              {incidents.some(incident => {
+                const incWithImages = incident as { Images?: Array<{ url?: string; name?: string; }> };
+                return incWithImages.Images && incWithImages.Images.length > 0;
+              }) ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {incidents.flatMap((incident) => {
+                    const incWithImages = incident as { Images?: Array<{ url?: string; name?: string; }> };
+                    return incWithImages.Images ? incWithImages.Images.map((image: { url?: string; name?: string; }, imageIndex: number) => {
+                      const office = incident.Office ? officeDetails.get(incident.Office) : null;
+                      const incidentType = incident.IncidentType ? incidentTypeNames.get(incident.IncidentType) : 'Desconocido';
+                      
+                      return (
+                        <div key={`${incident.id}-${imageIndex}`} className="group">
+                          <Link href={`/dashboard/incidentes/${incident.id}`}>
+                            <Card className="overflow-hidden hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
+                              <div className="relative aspect-video bg-muted">
+                                <Image 
+                                  src={getSafeImageUrl(image.url) || image.url || '/placeholder-image.jpg'}
+                                  alt={image.name || `Imagen del incidente ${incident.id}`}
+                                  fill
+                                  className="object-cover group-hover:scale-105 transition-transform duration-200"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    target.nextElementSibling?.classList.remove('hidden');
+                                  }}
+                                />
+                                <div className="hidden absolute inset-0 flex items-center justify-center bg-muted">
+                                  <FileImage className="h-12 w-12 text-muted-foreground" />
+                                </div>
+                                {/* Overlay con información del incidente */}
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-end">
+                                  <div className="p-3 text-white w-full">
+                                    <p className="text-sm font-medium truncate">{incidentType}</p>
+                                    <p className="text-xs opacity-90">
+                                      {format(new Date(incident.Date), "d MMM yyyy", { locale: es })}
+                                    </p>
+                                    {office && (
+                                      <p className="text-xs opacity-75 truncate">{office.Name}</p>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-medium group-hover:text-primary transition-colors">
-                              {rs.Alias}
-                            </p>
-                            <Badge 
-                              variant={rs.Status === 1 ? "destructive" : "secondary"}
-                              className="mt-1 text-xs"
-                            >
-                              {rs.Status === 1 ? "Detenido" : "Libre"}
-                            </Badge>
-                          </div>
+                              <CardContent className="p-3">
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {image.name || `Imagen ${imageIndex + 1}`}
+                                </p>
+                                <Badge variant="outline" className="mt-1 text-xs">
+                                  Incidente {incident.id}
+                                </Badge>
+                              </CardContent>
+                            </Card>
+                          </Link>
                         </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                No se encontraron sospechosos relacionados
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      );
+                    }) : [];
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-32 text-center bg-muted/30 rounded-lg">
+                  <FileImage className="h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-foreground font-bold">No hay imágenes</p>
+                  <p className="text-sm text-muted-foreground">en los incidentes relacionados</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Grid para mapa e historial */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -818,39 +1067,41 @@ export default function SuspectDetailPage(props: SuspectDetailPageProps) {
                   <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
                 </div>
               ) : incidents.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {incidents.map((incident) => {
                     const office = incident.Office ? officeDetails.get(incident.Office) : null;
                     const incidentType = incident.IncidentType ? incidentTypeNames.get(incident.IncidentType) : 'Desconocido';
                     
                     return (
-                      <Card key={incident.id}>
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <h3 className="font-medium">{incidentType}</h3>
-                              <p className="text-sm text-muted-foreground">
-                                {format(new Date(incident.Date), "d 'de' MMMM 'de' yyyy", { locale: es })}
-                                {incident.Time && ` - ${incident.Time}`}
-                              </p>
+                      <Link key={incident.id} href={`/dashboard/incidentes/${incident.id}`}>
+                        <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <h3 className="font-medium hover:text-primary transition-colors">{incidentType}</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {format(new Date(incident.Date), "d 'de' MMMM 'de' yyyy", { locale: es })}
+                                  {incident.Time && ` - ${incident.Time}`}
+                                </p>
+                              </div>
+                              <Badge variant="outline">
+                                {parseFloat(incident.TotalLoss || '0').toLocaleString('es-PY', { 
+                                  style: 'currency', 
+                                  currency: 'PYG' 
+                                })}
+                              </Badge>
                             </div>
-                            <Badge variant="outline">
-                              {parseFloat(incident.TotalLoss || '0').toLocaleString('es-PY', { 
-                                style: 'currency', 
-                                currency: 'PYG' 
-                              })}
-                            </Badge>
-                          </div>
-                          {office && (
-                            <div className="text-sm text-muted-foreground mb-2">
-                              {office.Name} - {office.Address}
-                            </div>
-                          )}
-                          {incident.Description && (
-                            <p className="text-sm mt-2">{incident.Description}</p>
-                          )}
-                        </CardContent>
-                      </Card>
+                            {office && (
+                              <div className="text-sm text-muted-foreground mb-2">
+                                {office.Name} - {office.Address}
+                              </div>
+                            )}
+                            {incident.Description && (
+                              <p className="text-sm mt-2">{incident.Description}</p>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </Link>
                     );
                   })}
                 </div>

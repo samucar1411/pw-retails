@@ -15,7 +15,6 @@ import { IdCell } from "@/components/ui/id-cell";
 import { withErrorBoundary } from "@/components/error-boundary";
 
 // Import extracted components
-import { SuspectInfo } from "./suspect-info";
 import { IncidentTypeInfo } from "./incident-type-info";
 import { OfficeInfo } from "./office-info";
 import { LossesInfo } from "./losses-info";
@@ -56,12 +55,12 @@ function IncidentsTableComponent({
           className="group hover:bg-muted/30 transition-colors border-t border-border/50"
         >
           {/* ID */}
-          <TableCell className="py-3">
+          <TableCell className="py-6">
             <IdCell id={inc.id} basePath="incidentes" />
           </TableCell>
           
           {/* Date */}
-          <TableCell className="py-3">
+          <TableCell className="py-6">
             <div className="font-medium">
               {inc.Date ? new Date(inc.Date).toLocaleDateString('es-PY', { 
                 day: '2-digit', 
@@ -72,35 +71,24 @@ function IncidentsTableComponent({
           </TableCell>
           
           {/* Type */}
-          <TableCell className="py-3">
+          <TableCell className="py-6">
             <IncidentTypeInfo typeId={incidentTypeId} />
           </TableCell>
           
           {/* Office */}
-          <TableCell className="py-3">
+          <TableCell className="py-6">
             {officeId ? <OfficeInfo officeId={officeId} /> : '-'}
           </TableCell>
           
           {/* Description */}
-          <TableCell className="py-3">
-            <div className="space-y-1.5">
-              <div className="text-sm line-clamp-2">
-                {inc.Description || "Sin descripción"}
-              </div>
-              {inc.Suspects?.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {inc.Suspects.map((suspectId) => (
-                    <div key={suspectId} className="bg-muted/50 rounded-full px-2 py-0.5 text-xs">
-                      <SuspectInfo suspectId={suspectId} />
-                    </div>
-                  ))}
-                </div>
-              )}
+          <TableCell className="py-6">
+            <div className="text-sm line-clamp-2">
+              {inc.Description || "Sin descripción"}
             </div>
           </TableCell>
           
           {/* Total Loss */}
-          <TableCell className="py-3">
+          <TableCell className="py-6">
             <LossesInfo incident={inc} />
           </TableCell>
         </TableRow>

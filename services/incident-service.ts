@@ -1,6 +1,7 @@
 import { Incident, IncidentType } from '@/types/incident';
 import { PaginatedResponse, ListParams } from '@/types/api';
 import { api } from '@/services/api';
+import { getIncidentItemLosses, IncidentItemLoss } from './incident-item-losses-service';
 
 
 export async function getIncidents(
@@ -40,8 +41,8 @@ export async function getIncidents(
         // Si es un ID, usarlo directamente
         params.id = value;
       } else if (key === 'IncidentType') {
-        // Asegurarse de que el tipo de incidente se envía como número
-        params[key] = Number(value);
+        // Enviar el tipo de incidente como string (nombre del tipo)
+        params[key] = value;
       } else {
         // For all other parameters, use them directly (including Office)
         params[key] = value;
@@ -54,8 +55,6 @@ export async function getIncidents(
     
     return data;
   } catch (error) {
-    console.error("Error fetching incidents:", error);
-    console.error("Request params were:", params);
     throw error;
   }
 }
@@ -82,9 +81,6 @@ export async function updateIncident(id: string, incident: Partial<Incident>): P
   return data;
 }
 
-export async function deleteIncident(id: string): Promise<void> {
-  await api.delete(`/api/incidents/${id}/`);
-}
 
 /**
  * Get incident type by ID
@@ -98,7 +94,6 @@ export async function getIncidentType(id: number): Promise<IncidentType | null> 
     });
     return data;
   } catch (error) {
-    console.error(`Error fetching incident type ${id}:`, error);
     return null;
   }
 }
@@ -111,9 +106,33 @@ export async function getIncidentById(id: string | number): Promise<Incident> {
     const { data } = await api.get<Incident>(`/api/incidents/${id}/`, {
       params: { format: 'json' }
     });
+    
+    // Load incident item losses separately
+    try {
+      const allIncidentItemLosses = await getIncidentItemLosses();
+      const incidentItemLosses = allIncidentItemLosses.filter(item => 
+        String(item.Incident) === String(id)
+      );
+      
+      // Add the incident item losses to the incident data
+      data.IncidentItemLosses = incidentItemLosses;
+    } catch (itemLossError) {
+      data.IncidentItemLosses = [];
+    }
+    
     return data;
   } catch (error) {
-    console.error(`Error fetching incident ${id}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Delete an incident by ID
+ */
+export async function deleteIncident(id: string | number): Promise<void> {
+  try {
+    await api.delete(`/api/incidents/${id}/`);
+  } catch (error) {
     throw error;
   }
 }

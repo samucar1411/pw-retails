@@ -1,0 +1,65 @@
+'use client';
+
+import Image from 'next/image';
+import { useState } from 'react';
+import { User } from 'lucide-react';
+
+interface SafeImageProps {
+  src: string;
+  alt: string;
+  width?: number;
+  height?: number;
+  className?: string;
+  fallbackIcon?: React.ReactNode;
+}
+
+export function SafeImage({ 
+  src, 
+  alt, 
+  width = 40, 
+  height = 40, 
+  className = '',
+  fallbackIcon = <User className="h-4 w-4 text-muted-foreground" />
+}: SafeImageProps) {
+  const [hasError, setHasError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const handleError = () => {
+    setHasError(true);
+    setIsLoading(false);
+  };
+
+  const handleLoad = () => {
+    setIsLoading(false);
+  };
+
+  if (hasError || !src) {
+    return (
+      <div 
+        className={`bg-muted flex items-center justify-center rounded ${className}`}
+        style={{ width, height }}
+      >
+        {fallbackIcon}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative ${className}`} style={{ width, height }}>
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        className={`object-cover rounded ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200`}
+        onLoad={handleLoad}
+        onError={handleError}
+        unoptimized={true} // Permitir carga de imágenes sin SSL válido
+      />
+      {isLoading && (
+        <div className="absolute inset-0 bg-muted flex items-center justify-center rounded">
+          <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+        </div>
+      )}
+    </div>
+  );
+} 

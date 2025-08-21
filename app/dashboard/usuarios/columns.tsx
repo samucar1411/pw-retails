@@ -177,8 +177,8 @@ export function UserActions() {
       await userService.deleteUser(userId);
       toast.success("Usuario eliminado exitosamente");
       router.refresh();
-    } catch (error) {
-      console.error("Error deleting user:", error);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
       toast.error("Error al eliminar el usuario");
     }
   };

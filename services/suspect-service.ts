@@ -9,7 +9,7 @@ const DEFAULT_SUSPECT: Suspect = {
   PhysicalDescription: 'Información no disponible',
   PhotoUrl: '',
   Status: 0,
-  Tags: []  // Changed to empty array to match the type
+  Tags: {}  // Changed to empty object to match the type
 };
 
 // API ENDPOINTS
@@ -22,7 +22,6 @@ export async function getSuspectStatuses(): Promise<SuspectStatus[]> {
     const { data } = await api.get<{ results: SuspectStatus[] }>(SUSPECT_STATUS_ENDPOINT);
     return data.results;
   } catch (error) {
-    console.error('Error fetching suspect statuses:', error);
     return [];
   }
 }
@@ -33,6 +32,8 @@ export async function getAllSuspects(
   filters: ListParams & {
     created_at_after?: string;
     created_at_before?: string;
+    fromDate?: string;
+    toDate?: string;
     ordering?: string;
     page?: number;
     page_size?: number;
@@ -53,14 +54,24 @@ export async function getAllSuspects(
       if (key === 'tags' || key === 'suspects_tags') {
         cleanParams[key] = Array.isArray(value) ? value.join(',') : value;
       } else if (key === 'Status') {
-        // Asegurarse de que el estado se envía como número
-        cleanParams[key] = Number(value);
+        // Asegurarse de que el estado se envía como número y con el nombre correcto
+        const statusValue = Number(value);
+        // Solo enviar status válidos (1 = Detenido, 2 = Libre, 3 = Preso)
+        if (statusValue >= 1 && statusValue <= 3) {
+          cleanParams['status'] = statusValue;
+        }
       } else if (key === 'id') {
         // Buscar por ID exacto
         cleanParams[key] = value;
       } else if (key === 'alias') {
         // Buscar por alias exacto o parcial
         cleanParams.alias__icontains = value;
+      } else if (key === 'fromDate') {
+        // Map fromDate to created_at_after
+        cleanParams.created_at_after = value;
+      } else if (key === 'toDate') {
+        // Map toDate to created_at_before
+        cleanParams.created_at_before = value;
       } else {
         cleanParams[key] = value as string | number;
       }
@@ -71,7 +82,6 @@ export async function getAllSuspects(
     const { data } = await api.get<PaginatedResponse<Suspect>>('/api/suspects/', { params: cleanParams });
     return data;
   } catch (error) {
-    console.error("Error fetching suspects:", error);
     throw error;
   }
 }
@@ -100,7 +110,6 @@ export async function createSuspect(suspect: Partial<Suspect> | FormData): Promi
     const { data } = await api.post<Suspect>(SUSPECTS_ENDPOINT, suspect, config);
     return data;
   } catch (error) {
-    console.error('Error creating suspect:', error);
     return null;
   }
 }
@@ -114,7 +123,6 @@ export async function getSuspect(id: string): Promise<Suspect | null> {
     
     return data;
   } catch (error) {
-    console.error(`Error fetching suspect ${id}:`, error);
     // Consider re-throwing or handling specific error statuses (e.g., 404)
     return null;
   }
@@ -125,7 +133,6 @@ export async function updateSuspect(id: string, suspect: Partial<Suspect>): Prom
     const { data } = await api.put<Suspect>(`${SUSPECTS_ENDPOINT}${id}/`, suspect);
     return data;
   } catch (error) {
-    console.error(`Error updating suspect ${id}:`, error);
     return null;
   }
 }
@@ -135,7 +142,6 @@ export async function deleteSuspect(id: string): Promise<boolean> {
     await api.delete(`${SUSPECTS_ENDPOINT}${id}/`);
     return true;
   } catch (error) {
-    console.error(`Error deleting suspect ${id}:`, error);
     return false;
   }
 }
@@ -162,7 +168,6 @@ export async function uploadSuspectPhoto(id: string, file: File): Promise<{ Phot
     
     return { PhotoUrl: data.PhotoUrl };
   } catch (error) {
-    console.error(`Error uploading photo for suspect ${id}:`, error);
     throw error; // Re-throw to handle in the component
   }
 }
@@ -174,7 +179,6 @@ export async function deleteSuspectPhoto(id: string): Promise<boolean> {
     await updateSuspect(id, { PhotoUrl: '' });
     return true;
   } catch (error) {
-    console.error(`Error deleting photo for suspect ${id}:`, error);
     return false;
   }
 }
@@ -188,10 +192,9 @@ export async function getSuspectById(id: string): Promise<Suspect> {
     if (error && typeof error === 'object' && 'response' in error && 
         error.response && typeof error.response === 'object' && 
         'status' in error.response && error.response.status === 404) {
-      console.warn(`Suspect with ID ${id} not found`);
+      // Suspect not found
     } else {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`Error fetching suspect ${id}:`, errorMessage);
+      // Error fetching suspect
     }
     return { ...DEFAULT_SUSPECT, id };
   }
@@ -203,8 +206,6 @@ export async function getSuspectTableItemById(id: string): Promise<SuspectTableI
     const suspect = await getSuspectById(id);
     return suspect || { ...DEFAULT_SUSPECT, id };
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`Error fetching suspect table item ${id}:`, errorMessage);
     return { ...DEFAULT_SUSPECT, id };
   }
 }
@@ -247,7 +248,6 @@ export async function getSuspectPartnerRelations(params: ListParams = {}): Promi
     });
     return data;
   } catch (error) {
-    console.error('Error fetching suspect partner relations:', error);
     throw error;
   }
 }
@@ -265,7 +265,6 @@ export async function createSuspectPartnerRelation(relation: Partial<SuspectPart
     );
     return data;
   } catch (error) {
-    console.error('Error creating suspect partner relation:', error);
     throw error;
   }
 }
@@ -281,7 +280,6 @@ export async function updateSuspectPartnerRelation(
     );
     return data;
   } catch (error) {
-    console.error(`Error updating suspect partner relation ${id}:`, error);
     throw error;
   }
 }
@@ -291,7 +289,6 @@ export async function deleteSuspectPartnerRelation(id: string): Promise<boolean>
     await api.delete(`${SUSPECT_PARTNER_RELATIONS_ENDPOINT}${id}/`);
     return true;
   } catch (error) {
-    console.error(`Error deleting suspect partner relation ${id}:`, error);
     return false;
   }
 }
@@ -303,7 +300,6 @@ export async function getSuspectPartnerRelationById(id: string): Promise<Suspect
     );
     return data;
   } catch (error) {
-    console.error(`Error fetching suspect partner relation ${id}:`, error);
     return null;
   }
 }

@@ -1,11 +1,12 @@
 "use client";
 
-import { Plus, Search } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { Plus, Search, X } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useIncidentsWithFilters } from '@/hooks/useIncidentsWithFilters';
 import { IncidentFilters } from "@/components/incidents/incident-filters";
 import { ErrorDisplay } from "@/components/ui/error-display";
@@ -20,11 +21,13 @@ interface IncidentFiltersState {
   suspect_alias?: string;
   fromDate?: string;
   toDate?: string;
-  search?: string;
+  Search?: string;
 }
 
-function IncidentesPage() {
+function IncidentesPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
   const { 
     incidents, 
     loading, 
@@ -41,10 +44,44 @@ function IncidentesPage() {
   const [filters, setFilters] = useState<IncidentFiltersState>({});
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Read URL parameters on component mount
+  useEffect(() => {
+    const urlFilters: IncidentFiltersState = {};
+    
+    // Read date filters
+    const dateAfter = searchParams.get('Date_after');
+    const dateBefore = searchParams.get('Date_before');
+    if (dateAfter) urlFilters.fromDate = dateAfter;
+    if (dateBefore) urlFilters.toDate = dateBefore;
+    
+    // Read office filter
+    const office = searchParams.get('Office');
+    if (office) urlFilters.Office = office;
+    
+    // Read other filters
+    const incidentType = searchParams.get('IncidentType');
+    if (incidentType) urlFilters.IncidentType = incidentType;
+    
+    const suspectAlias = searchParams.get('suspect_alias');
+    if (suspectAlias) urlFilters.suspect_alias = suspectAlias;
+    
+    const search = searchParams.get('Search');
+    if (search) {
+      urlFilters.Search = search;
+      setSearchTerm(search);
+    }
+    
+    // Always apply URL filters, even if empty (this will trigger a fresh load)
+    setFilters(urlFilters);
+    applyFilters(urlFilters);
+    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   const handleFiltersChange = (newFilters: IncidentFiltersState) => {
     const updatedFilters = { 
       ...newFilters, 
-      search: searchTerm
+      Search: searchTerm
     };
     setFilters(updatedFilters);
     applyFilters(updatedFilters);
@@ -54,8 +91,44 @@ function IncidentesPage() {
     setSearchTerm(value);
     const updatedFilters = { 
       ...filters, 
-      search: value
+      Search: value
     };
+    setFilters(updatedFilters);
+    applyFilters(updatedFilters);
+  };
+
+  const getFilterDisplayText = (key: string, value: string) => {
+    if (key === 'fromDate') {
+      return `Desde: ${new Date(value).toLocaleDateString('es-ES')}`;
+    }
+    if (key === 'toDate') {
+      return `Hasta: ${new Date(value).toLocaleDateString('es-ES')}`;
+    }
+    if (key === 'Office') {
+      const office = filterOptions.offices.find(o => o.id === value);
+      return `Sucursal: ${office?.name || value}`;
+    }
+    if (key === 'IncidentType') {
+      const type = filterOptions.incidentTypes.find(t => t.id === value);
+      return `Tipo: ${type?.Name || value}`;
+    }
+    if (key === 'suspect_alias') {
+      return `Sospechoso: ${value}`;
+    }
+    if (key === 'Search') {
+      return `Búsqueda: ${value}`;
+    }
+    return `${key}: ${value}`;
+  };
+
+  const handleRemoveFilter = (key: string) => {
+    const updatedFilters = { ...filters };
+    delete updatedFilters[key as keyof IncidentFiltersState];
+    
+    if (key === 'Search') {
+      setSearchTerm('');
+    }
+    
     setFilters(updatedFilters);
     applyFilters(updatedFilters);
   };
@@ -122,18 +195,27 @@ function IncidentesPage() {
         </div>
       </div>
 
-      {/* Active Filters Row */}
-      <div className="w-full flex flex-wrap gap-2">
-        {Object.entries(filters).map(([key, value]) => {
-          if (!value) return null;
-          return (
-            <div key={key} className="inline-flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">{key}:</span>
-              <span className="text-sm font-medium">{value}</span>
-            </div>
-          );
-        })}
+      {/* Active Filters */}
+      {Object.keys(filters).some(key => filters[key as keyof IncidentFiltersState]) && (
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(filters).map(([key, value]) => {
+            if (!value || value === '') return null;
+            return (
+              <Badge
+                key={key}
+                variant="secondary"
+                className="px-2 py-1 text-xs"
+              >
+                {getFilterDisplayText(key, value)}
+                <X
+                  className="ml-1 h-3 w-3 cursor-pointer"
+                  onClick={() => handleRemoveFilter(key)}
+                />
+              </Badge>
+            );
+          })}
         </div>
+      )}
       
       {/* Incidents Table */}
       {loading ? (
@@ -153,6 +235,14 @@ function IncidentesPage() {
         />
       )}
     </div>
+  );
+}
+
+function IncidentesPage() {
+  return (
+    <Suspense fallback={<LoadingState variant="skeleton" count={5} height="h-12" />}>
+      <IncidentesPageContent />
+    </Suspense>
   );
 }
 

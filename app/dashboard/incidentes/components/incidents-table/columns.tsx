@@ -1,10 +1,10 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Incident } from "@/types/incident";
 import { IdCell } from "@/components/ui/id-cell";
-import { SuspectInfo } from "../suspect-info";
 import { IncidentTypeInfo } from "../incident-type-info";
 import { OfficeInfo } from "../office-info";
 import { LossesInfo } from "../losses-info";
+import { IncidentActions } from "../incident-actions";
 
 export const columns: ColumnDef<Incident>[] = [
   {
@@ -47,19 +47,8 @@ export const columns: ColumnDef<Incident>[] = [
     cell: ({ row }) => {
       const incident = row.original;
       return (
-        <div className="space-y-1.5">
-          <div className="text-sm line-clamp-2">
-            {incident.Description || "Sin descripción"}
-          </div>
-          {incident.Suspects?.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {incident.Suspects.map((suspectId) => (
-                <div key={suspectId} className="bg-muted/50 rounded-full px-2 py-0.5 text-xs">
-                  <SuspectInfo suspectId={suspectId} />
-                </div>
-              ))}
-            </div>
-          )}
+        <div className="text-sm line-clamp-2">
+          {incident.Description || "Sin descripción"}
         </div>
       );
     }
@@ -68,5 +57,10 @@ export const columns: ColumnDef<Incident>[] = [
     accessorKey: "TotalLoss",
     header: "Pérdida",
     cell: ({ row }) => <LossesInfo incident={row.original} />
+  },
+  {
+    id: "actions",
+    header: "Acciones",
+    cell: ({ row }) => <IncidentActions incident={row.original} />
   }
 ]; 

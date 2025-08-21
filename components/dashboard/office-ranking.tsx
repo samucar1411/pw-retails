@@ -8,22 +8,19 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { 
   Building2, 
-  TrendingUp, 
   Loader2, 
-  Eye,
-  EyeOff,
   BarChart3,
-  DollarSign,
-  ExternalLink
+  DollarSign
 } from "lucide-react";
 import { useAllIncidents } from "@/hooks/useAllIncidents";
 import { getAllOfficesComplete } from "@/services/office-service";
+import { cityService } from "@/services/city-service";
 import { Office } from "@/types/office";
-import { useRouter } from "next/navigation";
+
 
 interface OfficeRankingProps {
   fromDate: string;
@@ -36,6 +33,7 @@ interface OfficeStats {
   name: string;
   code: string;
   address: string;
+  cityName: string;
   incidentCount: number;
   totalLoss: number;
   avgLossPerIncident: number;
@@ -59,12 +57,15 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+type RankingMode = 'incidents' | 'losses';
+
 export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps) {
-  const [showAll, setShowAll] = React.useState(false);
   const [offices, setOffices] = React.useState<Office[]>([]);
+  const [cities, setCities] = React.useState<Map<number, string>>(new Map());
   const [isLoadingOffices, setIsLoadingOffices] = React.useState(true);
   const [officesError, setOfficesError] = React.useState<Error | null>(null);
-  const router = useRouter();
+  const [rankingMode, setRankingMode] = React.useState<RankingMode>('incidents');
+
 
   // Get all incidents for the period
   const { 
@@ -73,9 +74,9 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
     error: incidentsError 
   } = useAllIncidents(fromDate, toDate, officeId);
   
-  // Fetch ALL offices directly from service (like incident-type-info.tsx does)
+  // Fetch offices first
   React.useEffect(() => {
-    const fetchAllOffices = async () => {
+    const fetchOffices = async () => {
       setIsLoadingOffices(true);
       setOfficesError(null);
       
@@ -83,24 +84,24 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
         const allOffices = await getAllOfficesComplete();
         setOffices(allOffices);
       } catch (error) {
-        console.error("Error fetching all offices:", error);
-        setOfficesError(error instanceof Error ? error : new Error("Error fetching offices"));
+        if (error instanceof Error) {
+          setOfficesError(error);
+        }
       } finally {
         setIsLoadingOffices(false);
       }
     };
     
-    fetchAllOffices();
+    fetchOffices();
   }, []);
 
-  // Handle office click
-  const handleOfficeClick = (office: OfficeStats) => {
-    router.push(`/dashboard/sucursales/${office.id}`);
-  };
+
 
   // Calculate stats for ALL offices
   const allOfficeStats = React.useMemo(() => {
-    if (!offices.length) return [];
+    if (!offices.length) {
+      return [];
+    }
     
     // Initialize stats for ALL offices
     const statsMap = new Map<number, OfficeStats>();
@@ -108,11 +109,25 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
     // First, create entries for ALL offices with zero incidents
     offices.forEach((office: Office) => {
       if (office.id) {
+        // Get city name from the cities map
+        let cityName = cities.get(office.City);
+        
+        // If not found in cities map, try fallbacks
+        if (!cityName) {
+          if (office.Province) {
+            cityName = office.Province;
+          } else {
+            cityName = `Ciudad ${office.City}`;
+          }
+        }
+        
+        
         statsMap.set(office.id, {
           id: office.id,
           name: office.Name || 'Sin nombre',
           code: office.Code || 'N/A',
           address: office.Address || 'Sin dirección',
+          cityName: cityName,
           incidentCount: 0,
           totalLoss: 0,
           avgLossPerIncident: 0,
@@ -156,31 +171,87 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
     
     const officeStatsArray = Array.from(statsMap.values());
     
-    // Sort by incidents (descending)
-    const sortedByIncidents = [...officeStatsArray].sort((a, b) => b.incidentCount - a.incidentCount);
-    
-    return sortedByIncidents; // Return sorted by incidents by default
-  }, [incidentsData?.incidents, offices, fromDate, toDate]);
+    return officeStatsArray;
+  }, [incidentsData?.incidents, offices, cities]);
 
-  // Get offices to display (top 3 by default, offices with incidents if showAll is true)
-  const displayedOffices = React.useMemo(() => {
-    if (showAll) {
-      // Show only offices with incidents, sorted by incident count
-      return allOfficeStats.filter(office => office.incidentCount > 0);
+  // Sort offices based on ranking mode
+  const sortedOfficeStats = React.useMemo(() => {
+    if (rankingMode === 'incidents') {
+      return [...allOfficeStats].sort((a, b) => b.incidentCount - a.incidentCount);
+    } else {
+      return [...allOfficeStats].sort((a, b) => b.totalLoss - a.totalLoss);
     }
-    // Show top 3 regardless of incident count
-    return allOfficeStats.slice(0, 3);
-  }, [allOfficeStats, showAll]);
+  }, [allOfficeStats, rankingMode]);
 
-  const officesWithIncidents = allOfficeStats.filter(o => o.incidentCount > 0);
+  // Always show top 3 offices based on current ranking mode
+  const displayedOffices = React.useMemo(() => {
+    const top3 = sortedOfficeStats.slice(0, 3);
+    return top3;
+  }, [sortedOfficeStats]);
 
-  // Loading state
+  // Fetch cities only for the top 3 offices (memoized to prevent excessive calls)
+  React.useEffect(() => {
+    const fetchCitiesForTop3 = async () => {
+      if (displayedOffices.length === 0) return;
+      
+      try {
+        // Get unique city IDs from top 3 offices only
+        const top3Offices = displayedOffices.map(stats => 
+          offices.find(office => office.id === stats.id)
+        ).filter(Boolean);
+        
+        const cityIds = [...new Set(top3Offices.map(office => office?.City).filter(Boolean))] as number[];
+        
+        // Only fetch cities that we don't already have cached
+        const newCityIds = cityIds.filter(cityId => !cities.has(cityId));
+        
+        if (newCityIds.length > 0) {
+          const cityMap = new Map(cities); // Start with existing cities
+          
+          // Limit concurrent requests to prevent overwhelming the API
+          const BATCH_SIZE = 3;
+          for (let i = 0; i < newCityIds.length; i += BATCH_SIZE) {
+            const batch = newCityIds.slice(i, i + BATCH_SIZE);
+            
+            const cityPromises = batch.map(async (cityId) => {
+              try {
+                const city = await cityService.getCity(cityId);
+                if (city && city.Name) {
+                  cityMap.set(cityId, city.Name);
+                } else {
+                  cityMap.set(cityId, `Ciudad ${cityId}`);
+                }
+              } catch {
+                cityMap.set(cityId, `Ciudad ${cityId}`);
+              }
+            });
+            
+            await Promise.all(cityPromises);
+            
+            // Small delay between batches to prevent rate limiting
+            if (i + BATCH_SIZE < newCityIds.length) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+          }
+          
+          setCities(cityMap);
+        }
+      } catch {
+        // Silent fail - cities will show as fallback names
+      }
+    };
+    
+    fetchCitiesForTop3();
+  }, [displayedOffices, offices, cities]);
+
+
+  // Loading state - only block on critical data
   if (isLoadingIncidents || isLoadingOffices) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Building2 className="h-5 w-5 text-primary" />
             Ranking de Sucursales
           </CardTitle>
           <CardDescription>Comparación de todas las sucursales</CardDescription>
@@ -202,8 +273,8 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Building2 className="h-5 w-5 text-primary" />
             Ranking de Sucursales
           </CardTitle>
           <CardDescription>Comparación de todas las sucursales</CardDescription>
@@ -220,24 +291,41 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Building2 className="h-5 w-5" />
-          Ranking de Sucursales
-        </CardTitle>
-        <CardDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <span>Top 3 sucursales por número de incidentes</span>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs">
-              {allOfficeStats.length} sucursales
-            </Badge>
-            <Badge variant="secondary" className="text-xs">
-              {officesWithIncidents.length} con incidentes
-            </Badge>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Building2 className="h-5 w-5 text-primary" />
+            Ranking de Sucursales
+          </CardTitle>
+          
+          {/* Toggle buttons */}
+          <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+            <Button
+              variant={rankingMode === 'incidents' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setRankingMode('incidents')}
+              className="text-xs h-8 px-3"
+            >
+              <BarChart3 className="h-3 w-3 mr-1" />
+              Incidentes
+            </Button>
+            <Button
+              variant={rankingMode === 'losses' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setRankingMode('losses')}
+              className="text-xs h-8 px-3"
+            >
+              <DollarSign className="h-3 w-3 mr-1" />
+              Pérdidas
+            </Button>
           </div>
+        </div>
+        
+        <CardDescription>
+          Top 3 sucursales por {rankingMode === 'incidents' ? 'número de incidentes' : 'mayores pérdidas económicas'}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className={`space-y-3 ${showAll ? 'max-h-96 overflow-y-auto pr-2' : ''}`}>
+        <div className="space-y-4">
           {displayedOffices.length === 0 ? (
             <div className="text-center text-sm text-muted-foreground py-8">
               No hay sucursales disponibles
@@ -246,60 +334,54 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
             displayedOffices.map((office, index) => (
               <div 
                 key={office.id} 
-                className="flex items-center gap-3 p-4 rounded-lg border bg-card/50 hover:bg-muted/50 cursor-pointer transition-all duration-200 hover:shadow-md group"
-                onClick={() => handleOfficeClick(office)}
+                className="flex items-center gap-4 p-4 rounded-lg border bg-card/50 hover:bg-muted/50 transition-all duration-200 hover:shadow-md group"
               >
-                {/* Ranking number */}
-                <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white ${
-                  index === 0 ? 'bg-yellow-500' : 
-                  index === 1 ? 'bg-gray-400' : 
-                  index === 2 ? 'bg-amber-600' : 
-                  'bg-gray-500'
-                }`}>
+                {/* Ranking badge with unified color */}
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-sm font-bold text-primary-foreground">
                   {index + 1}
                 </div>
                 
                 {/* Office info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{office.name}</h4>
-                    <Badge variant="outline" className="text-xs">
+                <div className="flex-1 min-w-0 space-y-2">
+                  {/* Header with name and code */}
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-base font-semibold truncate group-hover:text-primary transition-colors">
+                      {office.name}
+                    </h4>
+                    <Badge variant="outline" className="text-xs font-medium">
                       {office.code}
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate mb-2">{office.address}</p>
                   
-                  {/* Stats */}
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div className="flex items-center gap-1">
-                      <BarChart3 className="h-3 w-3 text-blue-500" />
-                      <span className="text-muted-foreground">Incidentes:</span>
-                      <span className="font-medium">{office.incidentCount}</span>
+                  {/* City */}
+                  <p className="text-sm text-muted-foreground font-medium">
+                    📍 {office.cityName}
+                  </p>
+                  
+                  {/* Address */}
+                  <p className="text-xs text-muted-foreground truncate">
+                    {office.address}
+                  </p>
+                  
+                  {/* Stats row */}
+                  <div className="flex items-center gap-6 pt-2">
+                    <div className={`flex items-center gap-2 ${rankingMode === 'incidents' ? 'opacity-100' : 'opacity-70'}`}>
+                      <div className="flex items-center gap-1">
+                        <BarChart3 className={`h-4 w-4 ${rankingMode === 'incidents' ? 'text-primary' : 'text-blue-600'}`} />
+                        <span className="text-sm text-muted-foreground">Incidentes:</span>
+                      </div>
+                      <span className={`text-sm font-semibold ${rankingMode === 'incidents' ? 'text-primary text-base' : 'text-blue-600'}`}>
+                        {office.incidentCount}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <DollarSign className="h-3 w-3 text-red-500" />
-                      <span className="text-muted-foreground">Pérdidas:</span>
-                      <span className="font-medium">{formatCurrency(office.totalLoss)}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Main metric and click indicator */}
-                <div className="text-right">
-                  <div className="flex items-center gap-2">
-                    <div className="text-right">
-                      <div className="text-2xl font-bold">{office.incidentCount}</div>
-                      <div className="text-xs text-muted-foreground">incidentes</div>
-                    </div>
-                    <div className="flex flex-col items-center gap-1">
-                      {office.incidentCount > 0 ? (
-                        <TrendingUp className="h-5 w-5 text-red-500" />
-                      ) : (
-                        <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center">
-                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                        </div>
-                      )}
-                      <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <div className={`flex items-center gap-2 ${rankingMode === 'losses' ? 'opacity-100' : 'opacity-70'}`}>
+                      <div className="flex items-center gap-1">
+                        <DollarSign className={`h-4 w-4 ${rankingMode === 'losses' ? 'text-primary' : 'text-red-600'}`} />
+                        <span className="text-sm text-muted-foreground">Pérdidas:</span>
+                      </div>
+                      <span className={`text-sm font-semibold ${rankingMode === 'losses' ? 'text-primary text-base' : 'text-red-600'}`}>
+                        {formatCurrency(office.totalLoss)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -307,24 +389,6 @@ export function OfficeRanking({ fromDate, toDate, officeId }: OfficeRankingProps
             ))
           )}
         </div>
-
-        {/* Show more/less button */}
-        {officesWithIncidents.length > 3 && (
-          <div className="mt-4 pt-4 border-t flex items-center justify-between">
-            <Button
-              variant="outline"
-              onClick={() => setShowAll(!showAll)}
-              className="flex items-center gap-2"
-            >
-              {showAll ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              {showAll ? 'Mostrar menos' : `Ver todas con incidentes (${officesWithIncidents.length})`}
-            </Button>
-            
-            <Badge variant="secondary" className="text-xs">
-              Mostrando {displayedOffices.length} de {officesWithIncidents.length} con incidentes
-            </Badge>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

@@ -82,8 +82,8 @@ export function TrendLineChart({ fromDate, toDate, officeId }: TrendLineChartPro
     return (
       <Card className="lg:col-span-2">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <TrendingUp className="h-5 w-5 text-primary" />
             Tendencia de incidentes
           </CardTitle>
           <CardDescription>Evolución diaria en el período seleccionado</CardDescription>
@@ -101,8 +101,8 @@ export function TrendLineChart({ fromDate, toDate, officeId }: TrendLineChartPro
     return (
       <Card className="lg:col-span-2">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <TrendingUp className="h-5 w-5 text-primary" />
             Tendencia de incidentes
           </CardTitle>
           <CardDescription>Evolución diaria en el período seleccionado</CardDescription>
@@ -118,8 +118,8 @@ export function TrendLineChart({ fromDate, toDate, officeId }: TrendLineChartPro
     return (
       <Card className="lg:col-span-2">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <TrendingUp className="h-5 w-5 text-primary" />
             Tendencia de incidentes
           </CardTitle>
           <CardDescription>Evolución diaria en el período seleccionado</CardDescription>

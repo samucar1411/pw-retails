@@ -16,10 +16,12 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { PieChartIcon, Loader2 } from "lucide-react";
+import { PieChartIcon, Loader2, ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getIncidentTypes } from "@/services/incident-service";
-import { useAllIncidents } from "@/hooks/useAllIncidents";
+import { api } from "@/services/api";
+import { useRouter } from "next/navigation";
+import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
 /* -------------------------------- helpers ------------------------------- */
 // 1. Colores fijos para no perder consistencia entre renders
@@ -40,6 +42,7 @@ interface IncidentDistributionChartProps {
 
 /* -------------------------- componente principal ------------------------- */
 export function IncidentDistributionChart({ fromDate, toDate, officeId }: IncidentDistributionChartProps) {
+  const router = useRouter();
   // Fetch incident types
   const { data: incidentTypesResponse, isLoading: isLoadingTypes } = useQuery({
     queryKey: ['incident-types'],
@@ -49,39 +52,53 @@ export function IncidentDistributionChart({ fromDate, toDate, officeId }: Incide
 
   const incidentTypes = incidentTypesResponse?.results || [];
 
-  // Use ALL incidents with filters - same as other dashboard components
-  const { 
-    data: incidentsData, 
-    isLoading: isLoadingIncidents,
-    error: incidentsError
-  } = useAllIncidents(fromDate, toDate, officeId);
+  // Fetch incident counts by type using individual API calls
+  const { data: distributionCounts, isLoading: isLoadingCounts, error: countsError } = useQuery({
+    queryKey: ['incident-distribution', fromDate, toDate, officeId, incidentTypes.map(t => t.id)],
+    queryFn: async () => {
+      if (!incidentTypes.length) return [];
+      
+      const countPromises = incidentTypes.map(async (type) => {
+        try {
+          // Build query parameters
+          const params: Record<string, string> = {
+            IncidentType: type.Name,
+            page_size: '1' // We only need the count, not the actual data
+          };
+          
+          // Add date filters if provided
+          if (fromDate) params.Date_after = fromDate;
+          if (toDate) params.Date_before = toDate;
+          if (officeId) params.Office = officeId;
+          
+          const response = await api.get('/api/incidents/', { params });
+          
+          return {
+            id: type.id,
+            name: type.Name,
+            value: response.data.count || 0,
+            color: COLORS[incidentTypes.indexOf(type) % COLORS.length],
+          };
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (error) {
+          return {
+            id: type.id,
+            name: type.Name,
+            value: 0,
+            color: COLORS[incidentTypes.indexOf(type) % COLORS.length],
+          };
+        }
+      });
+      
+      const results = await Promise.all(countPromises);
+      return results.filter(result => result.value > 0);
+    },
+    enabled: !!incidentTypes.length,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-  // Get incidents array from the data structure
-  const incidents = incidentsData?.incidents || [];
-
-  const distributionData = React.useMemo(() => {
-    if (!incidentTypes.length || !incidents.length) return [];
-
-    // Count incidents by type
-    const counts: Record<number, number> = {};
-    
-    incidents.forEach((incident) => {
-      const typeId = incident.IncidentType;
-      if (typeId) {
-        counts[typeId] = (counts[typeId] || 0) + 1;
-      }
-    });
-
-    return incidentTypes
-      .map((type, idx) => ({
-        id: type.id,
-        name: type.Name, // siempre el nombre legible
-        value: counts[type.id] ?? 0,
-        color: COLORS[idx % COLORS.length],
-      }))
-      .filter((d) => d.value > 0);
-  }, [incidentTypes, incidents]);
-
+  const distributionData = React.useMemo(() => distributionCounts || [], [distributionCounts]);
+  
   const totalIncidents = React.useMemo(
     () => distributionData.reduce((sum, i) => sum + i.value, 0),
     [distributionData],
@@ -90,25 +107,24 @@ export function IncidentDistributionChart({ fromDate, toDate, officeId }: Incide
   /* -----------------------------------------------------------------------
    * 5. Estados de carga / error
    * --------------------------------------------------------------------- */
-  const isLoading = isLoadingTypes || isLoadingIncidents;
-  const hasError = incidentsError;
+  const isLoading = isLoadingTypes || isLoadingCounts;
+  const hasError = countsError;
   const isEmpty = !isLoading && !hasError && distributionData.length === 0;
 
-  /* -----------------------------------------------------------------------
-   * 6. Render UI
-   * --------------------------------------------------------------------- */
   return (
-    <Card className="lg:col-span-3 flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader>
-        <CardTitle>Distribución de incidentes</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <PieChartIcon className="h-5 w-5 text-primary" />
+          Distribución de incidentes
+        </CardTitle>
         <CardDescription>
           Por tipo de incidente en el período seleccionado
-          {incidentsData?.total ? ` (${incidentsData.total} incidentes analizados)` : ''}
+          {totalIncidents > 0 ? ` (${totalIncidents} incidentes analizados)` : ''}
         </CardDescription>
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col items-center justify-center pb-4">
-        {/* ------------------- Loading / Error / Empty states ------------------ */}
         {isLoading && (
           <LoadingState />
         )}
@@ -118,12 +134,14 @@ export function IncidentDistributionChart({ fromDate, toDate, officeId }: Incide
         {isEmpty && !isLoading && !hasError && (
           <EmptyState />
         )}
-
-        {/* ----------------------- Gráfico + tabla ---------------------------- */}
         {!isLoading && !hasError && !isEmpty && (
           <ChartAndTable
             data={distributionData}
             total={totalIncidents}
+            router={router}
+            fromDate={fromDate}
+            toDate={toDate}
+            officeId={officeId}
           />
         )}
       </CardContent>
@@ -169,13 +187,33 @@ type ChartAndTableProps = {
     color: string;
   }[];
   total: number;
+  router: AppRouterInstance;
+  fromDate: string;
+  toDate: string;
+  officeId: string;
 };
 
-function ChartAndTable({ data, total }: ChartAndTableProps) {
+function ChartAndTable({ data, total, router, fromDate, toDate, officeId }: ChartAndTableProps) {
+  
+  const handleRowClick = (incidentTypeName: string) => {
+    // Build the URL with filters
+    const params = new URLSearchParams();
+    
+    // Add incident type filter
+    params.set('IncidentType', incidentTypeName);
+    
+    // Add existing filters if they exist
+    if (fromDate) params.set('Date_after', fromDate);
+    if (toDate) params.set('Date_before', toDate);
+    if (officeId) params.set('Office', officeId);
+    
+    // Navigate to incidents page with filters
+    router.push(`/dashboard/incidentes?${params.toString()}`);
+  };
   return (
     <div className="flex flex-col w-full">
       {/* ---------------------------- PieChart ---------------------------- */}
-      <div className="h-[250px] mb-4">
+      <div className="h-[300px] mb-4">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Tooltip
@@ -234,20 +272,28 @@ function ChartAndTable({ data, total }: ChartAndTableProps) {
             {data.map((d) => {
               const pct = total ? Math.round((d.value / total) * 100) : 0;
               return (
-                <tr key={d.id} className="border-t border-border">
-                  <td className="px-4 py-2 text-sm">
+                <tr 
+                  key={d.id} 
+                  className="border-t border-border hover:bg-muted/50 cursor-pointer transition-colors group"
+                  onClick={() => handleRowClick(d.name)}
+                  title={`Ver incidentes de tipo "${d.name}"`}
+                >
+                  <td className="px-4 py-3 text-sm">
                     <div className="flex items-center gap-2">
                       <span
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: d.color }}
                       />
-                      {d.name}
+                      <span className="group-hover:text-primary transition-colors">
+                        {d.name}
+                      </span>
+                      <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </td>
-                  <td className="px-4 py-2 text-sm text-right font-medium">
+                  <td className="px-4 py-3 text-sm text-right font-medium group-hover:text-primary transition-colors">
                     {d.value}
                   </td>
-                  <td className="px-4 py-2 text-sm text-right">{pct}%</td>
+                  <td className="px-4 py-3 text-sm text-right">{pct}%</td>
                 </tr>
               );
             })}
@@ -259,7 +305,6 @@ function ChartAndTable({ data, total }: ChartAndTableProps) {
 }
 
 // Using a pragmatic approach for Recharts tooltip types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TooltipProps = {
   active?: boolean;
   // Using any here is intentional due to the complexity of Recharts types

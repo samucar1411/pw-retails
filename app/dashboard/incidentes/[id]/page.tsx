@@ -6,10 +6,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import jsPDF from 'jspdf';
+import { generatePoliceReportPDF } from '@/utils/pdf-generator';
 import {
   DollarSign, Users, MapPin, FileText, AlertTriangle,
-  Calendar, Building, FileImage, Download, Printer, User
+  Calendar, Building, FileImage, Download, User, ExternalLink, Edit
 } from 'lucide-react';
 
 // UI Components
@@ -34,6 +34,9 @@ import { getIncidentTypeWithCache } from '@/services/incident-type-service';
 import { getOffice } from '@/services/office-service';
 import { getSuspectById } from '@/services/suspect-service';
 import { getCompanyById } from '@/services/company-service';
+
+// Utils
+import { getSafeImageUrl } from '@/lib/utils';
 
 // Types
 import { Incident } from '@/types/incident';
@@ -81,7 +84,9 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
           // Fetch company logo if office has company
           if (officeData?.Company) {
             const company = await getCompanyById(officeData.Company.toString());
-            setCompanyLogo(company?.image_url || null);
+            if (company?.image_url) {
+              setCompanyLogo(getSafeImageUrl(company.image_url));
+            }
           }
         }
         
@@ -121,6 +126,38 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
     if (isNaN(numValue)) return 'Gs. 0';
     return 'Gs. ' + new Intl.NumberFormat('es-PY').format(numValue);
   };
+
+  const handleDownloadFile = async (url: string, filename: string) => {
+    try {
+      // Use the safe image URL function to handle CORS
+      const safeUrl = getSafeImageUrl(url);
+      
+      const response = await fetch(safeUrl);
+      if (!response.ok) {
+        throw new Error('Error al descargar el archivo');
+      }
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      window.URL.revokeObjectURL(downloadUrl);
+      toast({ title: "Descarga completada", description: `${filename} se ha descargado correctamente` });
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast({ 
+        title: "Error al descargar", 
+        description: "No se pudo descargar el archivo", 
+        variant: "destructive" 
+      });
+    }
+  };
   
   const getTotalLoss = (): string => {
     if (!incident) return 'Gs. 0';
@@ -153,66 +190,18 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
     router.back();
   };
 
-  // Generate PDF function
+  // Generate PDF function using the comprehensive utility
   const generatePDF = async () => {
     if (!incident) return;
     try {
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pageWidth = pdf.internal.pageSize.width;
-      
-      // Header with better styling (no logo at top)
-      pdf.setFontSize(24);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('REPORTE DE INCIDENTE', 105, 25, { align: 'center' });
-      
-      // Subtitle
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(100, 100, 100);
-      pdf.text('Informe detallado de incidente registrado', 105, 32, { align: 'center' });
-      
-      // Header line
-      pdf.setDrawColor(50, 50, 50);
-      pdf.setLineWidth(0.5);
-      pdf.line(20, 40, pageWidth - 20, 40);
-      
-      // Reset text color
-      pdf.setTextColor(0, 0, 0);
-      
-      // Document info box with better layout
-      pdf.setFillColor(248, 249, 250);
-      pdf.rect(20, 45, pageWidth - 40, 35, 'F');
-      pdf.setDrawColor(200, 200, 200);
-      pdf.rect(20, 45, pageWidth - 40, 35, 'S');
-      
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'bold');
-      
-      // ID del incidente en su propia línea con más espacio
-      pdf.text(`ID del Incidente:`, 25, 53);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(incident.id.toString(), 70, 53);
-      
-      // Fecha y hora
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(`Fecha y Hora:`, 25, 60);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`${format(new Date(incident.Date), 'dd/MM/yyyy')} ${incident.Time ? `• ${incident.Time}` : ''}`, 70, 60);
-      
-      // Tipo de incidente
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(`Tipo:`, 25, 67);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(incidentType || 'No especificado', 70, 67);
-      
-      // Sucursal
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(`Sucursal:`, 25, 74);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(office?.Name || 'No especificada', 70, 74);
-      
-      // Save the PDF
-      pdf.save(`incidente-${incident.id}.pdf`);
+      await generatePoliceReportPDF({
+        incidentData: incident,
+        suspects: suspects,
+        incidentTypes: [{ id: incident.IncidentType, name: incidentType }],
+        office: office,
+        companyLogo: companyLogo,
+        companyName: office?.Company ? 'Powervision' : 'Powervision'
+      });
       toast({ title: "PDF generado", description: "El PDF se ha descargado correctamente" });
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -220,7 +209,7 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
     }
   };
   
-  // Map location with better coordinates handling
+  // Map location with better coordinates handling and incident data
   const mapLocations = office ? [
     {
       id: `incident-${incident?.id}`,
@@ -231,17 +220,20 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
       address: office.Address || 'Dirección no disponible',
       logoUrl: companyLogo || undefined,
       officeId: office.id,
-      popupContent: `
-        <div class="mapbox-popup-content-inner">
-          ${companyLogo ? `<img src="${companyLogo}" alt="Logo" class="h-8 mb-2 object-contain" />` : ''}
-          <h3 class="mapbox-popup-title">${office.Name}</h3>
-          <p class="mapbox-popup-address">${office.Address || 'Dirección no disponible'}</p>
-          ${office.Phone ? `<p class="mapbox-popup-address">Tel: ${office.Phone}</p>` : ''}
-          ${incident?.Date ? `<p class="mapbox-popup-address">Incidente: ${format(new Date(incident.Date), 'dd/MM/yyyy', { locale: es })}</p>` : ''}
-        </div>
-      `
+      incidentData: {
+        id: incident?.id || '',
+        date: incident?.Date || '',
+        time: incident?.Time || '',
+        incidentType: incidentType || 'No especificado',
+        totalLoss: incident?.TotalLoss || '0',
+        suspectCount: suspects.length,
+        status: 'Registrado',
+        severity: parseFloat(incident?.TotalLoss || '0') > 1000000 ? 'high' as const : 
+                 parseFloat(incident?.TotalLoss || '0') > 500000 ? 'medium' as const : 'low' as const
+      }
     }
   ] : [];
+
   
   if (loading) {
     return (
@@ -329,9 +321,9 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                     </Button>
                     <Button asChild className="h-9 px-3 sm:h-10 sm:px-4">
                       <Link href={`/dashboard/incidentes/${id}/edit`}>
-                        <Printer className="h-4 w-4 mr-2" />
-                        <span className="hidden sm:inline">Imprimir</span>
-                        <span className="sm:hidden">Imprimir</span>
+                        <Edit className="h-4 w-4 mr-2" />
+                        <span className="hidden sm:inline">Editar</span>
+                        <span className="sm:hidden">Editar</span>
                       </Link>
                     </Button>
                 </div>
@@ -477,46 +469,81 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                 Desglose de Pérdidas
               </h3>
                   <div className="bg-destructive/5 border border-destructive/20 p-4 rounded-lg space-y-3">
-                    {/* Efectivo */}
-                    <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Efectivo</span>
-                      <span className="font-medium text-foreground">
-                        {formatCurrency(incident.CashLoss || 0)}
-                      </span>
-                </div>
+                    {/* Efectivo con desglose */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground font-medium">Efectivo</span>
+                        <span className="font-medium text-foreground">
+                          {formatCurrency(incident.CashLoss || 0)}
+                        </span>
+                      </div>
+                      
+                      {/* Desglose de efectivo */}
+                      <div className="ml-4 space-y-1 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">• Fondo de caja</span>
+                          <span className="font-medium text-foreground">
+                            {formatCurrency(incident.Tags?.cashFondo || 0)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">• Recaudación</span>
+                          <span className="font-medium text-foreground">
+                            {formatCurrency(incident.Tags?.cashRecaudacion || 0)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
-                    {/* Items detallados si existen */}
-                    {incident.incidentLossItem && incident.incidentLossItem.length > 0 && (
+                    {/* Items detallados si existen - revisar IncidentItemLosses o incidentLossItem */}
+                    {((incident.IncidentItemLosses && incident.IncidentItemLosses.length > 0) || 
+                      (incident.incidentLossItem && incident.incidentLossItem.length > 0)) && (
                       <>
                         <div className="pt-2">
                           <span className="text-sm font-medium text-muted-foreground">Detalle de Mercadería</span>
                           <div className="mt-2 space-y-2">
-                            {incident.incidentLossItem.map((item, index) => (
-                              <div key={item.id || index} className="bg-background/50 p-3 rounded-md">
-                                <div className="flex justify-between items-start">
-                                  <div className="space-y-1">
-                                    <p className="text-sm font-medium text-foreground">{item.description}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {item.quantity} unidades x {formatCurrency(item.unitPrice)}
-                                    </p>
+                            {/* Usar IncidentItemLosses si está disponible, sino usar incidentLossItem */}
+                            {(incident.IncidentItemLosses || incident.incidentLossItem || []).map((item, index) => {
+                              // Manejar diferencias entre API y formato de form
+                              const apiItem = item as { Description?: string; Quantity?: number; UnitPrice?: number; TotalValue?: number; };
+                              const formItem = item as { description?: string; quantity?: number; unitPrice?: number; total?: number; };
+                              const description = apiItem.Description || formItem.description || '';
+                              const quantity = apiItem.Quantity || formItem.quantity || 0;
+                              const unitPrice = apiItem.UnitPrice || formItem.unitPrice || 0;
+                              const total = apiItem.TotalValue || formItem.total || 0;
+                              
+                              return (
+                                <div key={item.id || index} className="bg-background/50 p-3 rounded-md">
+                                  <div className="flex justify-between items-start">
+                                    <div className="space-y-1">
+                                      <p className="text-sm font-medium text-foreground">{description}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {quantity} unidades x {formatCurrency(unitPrice)}
+                                      </p>
+                                    </div>
+                                    <span className="font-medium text-foreground">
+                                      {formatCurrency(total)}
+                                    </span>
                                   </div>
-                                  <span className="font-medium text-foreground">
-                                    {formatCurrency(item.total)}
-                                  </span>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                         <div className="border-t border-destructive/20 pt-2">
-                    <div className="flex justify-between items-center">
+                          <div className="flex justify-between items-center">
                             <span className="text-sm font-medium text-muted-foreground">Total Mercadería</span>
-                      <span className="font-medium text-foreground">
+                            <span className="font-medium text-foreground">
                               {formatCurrency(
-                                incident.incidentLossItem.reduce((sum, item) => sum + item.total, 0)
+                                (incident.IncidentItemLosses || incident.incidentLossItem || []).reduce((sum, item) => {
+                                  const apiItem = item as { TotalValue?: number; };
+                                  const formItem = item as { total?: number; };
+                                  const total = apiItem.TotalValue || formItem.total || 0;
+                                  return sum + total;
+                                }, 0)
                               )}
-                      </span>
-                </div>
+                            </span>
+                          </div>
                         </div>
                       </>
                     )}
@@ -631,23 +658,21 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="h-80 relative">
-                  {office ? (
-                    <div className="absolute inset-0 rounded-b-lg overflow-hidden">
-                      <Map locations={mapLocations} />
+                {office && mapLocations.length > 0 ? (
+                  <div className="h-80 w-full">
+                    <Map locations={mapLocations} />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-80 bg-muted/30">
+                    <div className="text-center p-6">
+                      <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-foreground font-medium">Ubicación no disponible</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        No se encontraron coordenadas para esta oficina
+                      </p>
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-full bg-muted/30 rounded-b-lg">
-                      <div className="text-center p-6">
-                        <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                        <p className="text-foreground font-medium">Ubicación no disponible</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          No se encontraron coordenadas para esta oficina
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
                 {office && (
                   <div className="p-4 border-t border-border bg-muted/30">
                     <div className="flex items-start gap-3">
@@ -685,9 +710,26 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                           <p className="font-medium text-foreground truncate">{file.name}</p>
                           <p className="text-sm text-muted-foreground">Archivo adjunto</p>
                     </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                      <Download className="h-4 w-4" />
-                    </Button>
+                        <div className="flex gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleDownloadFile(file.url, file.name)}
+                            title="Descargar archivo"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() => window.open(getSafeImageUrl(file.url), '_blank')}
+                            title="Abrir en nueva pestaña"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                 ))}
                   </div>
@@ -700,6 +742,67 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
             )}
           </CardContent>
         </Card>
+        
+            {/* Images Card */}
+            <Card className="bg-card border-border">
+              <CardHeader className="bg-muted/30 border-b border-border">
+                <CardTitle className="flex items-center text-lg text-foreground">
+                  <FileImage className="h-5 w-5 mr-2 text-primary" />
+                  Imágenes del Incidente
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {incident.Images && incident.Images.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {incident.Images.map((image, index) => (
+                      <div key={index} className="group relative border border-border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                        <div className="aspect-video relative bg-muted/30 flex items-center justify-center">
+                          {image.url ? (
+                            <Image
+                              src={image.url}
+                              alt={image.name || `Imagen ${index + 1}`}
+                              fill
+                              className="object-cover"
+                              onError={(e) => {
+                                // Fallback si la imagen no carga
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <FileImage className="h-12 w-12 text-muted-foreground" />
+                          )}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                            <Button 
+                              variant="secondary" 
+                              size="sm" 
+                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => image.url && window.open(image.url, '_blank')}
+                            >
+                              Ver completa
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="p-3 bg-background">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {image.name || `Imagen ${index + 1}`}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Evidencia del incidente
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-32 text-center bg-muted/30 rounded-lg">
+                    <FileImage className="h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-foreground font-medium">No hay imágenes</p>
+                    <p className="text-sm text-muted-foreground">para este incidente</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

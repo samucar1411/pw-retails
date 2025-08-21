@@ -1,6 +1,23 @@
 import { z } from "zod";
 import { baseEntitySchema } from './common';
 
+// Custom validation function for monetary fields
+const monetaryFieldSchema = () => z.union([z.string(), z.number()])
+  .optional()
+  .transform((val) => {
+    if (typeof val === 'string') return Number(val) || 0;
+    if (typeof val === 'number') return val;
+    return 0;
+  })
+  .refine((val) => {
+    // Check that there are no more than 10 digits before the decimal point
+    const numStr = val.toString();
+    const [integerPart] = numStr.split('.');
+    return integerPart.length <= 10;
+  }, {
+    message: "Ensure that there are no more than 10 digits before the decimal point."
+  });
+
 // Esquema para un solo sospechoso en el formulario de incidentes (incluye estado temporal)
 export const selectedSuspectSchema = z.object({
   apiId: z.string().uuid().optional().nullable(), // ID del sospechoso existente en la BD as UUID string
@@ -44,17 +61,9 @@ export const incidentLossItemSchema = z.object({
     const num = typeof val === 'string' ? Number(val) : val;
     return num;
   }),
-  unitPrice: z.union([z.string(), z.number()]).optional().transform((val) => {
-    if (!val) return 0;
-    const num = typeof val === 'string' ? Number(val) : val;
-    return num;
-  }),
+  unitPrice: monetaryFieldSchema(),
   type: z.enum(['mercaderia', 'material']),
-  total: z.union([z.string(), z.number()]).optional().transform((val) => {
-    if (!val) return 0;
-    const num = typeof val === 'string' ? Number(val) : val;
-    return num;
-  }),
+  total: monetaryFieldSchema(),
 });
 
 export type IncidentLossItem = z.infer<typeof incidentLossItemSchema>;
@@ -70,28 +79,15 @@ export const incidentFormSchema = z.object({
     invalid_type_error: "Debe seleccionar un tipo de incidente válido"
   }).int().positive("Debe seleccionar un tipo de incidente"),
   description: z.string().min(10, "La descripción debe tener al menos 10 caracteres"),
-  cashLoss: z.union([z.string(), z.number()]).optional().transform((val) => {
-    if (typeof val === 'string') return Number(val) || 0;
-    if (typeof val === 'number') return val;
-    return 0;
-  }),
-  merchandiseLoss: z.union([z.string(), z.number()]).optional().transform((val) => {
-    if (typeof val === 'string') return Number(val) || 0;
-    if (typeof val === 'number') return val;
-    return 0;
-  }),
-  otherLosses: z.union([z.string(), z.number()]).optional().transform((val) => {
-    if (typeof val === 'string') return Number(val) || 0;
-    if (typeof val === 'number') return val;
-    return 0;
-  }),
-  totalLoss: z.union([z.string(), z.number()]).optional().transform((val) => {
-    if (typeof val === 'string') return Number(val) || 0;
-    if (typeof val === 'number') return val;
-    return 0;
-  }),
+  cashLoss: monetaryFieldSchema(),
+  cashFondo: monetaryFieldSchema(),
+  cashRecaudacion: monetaryFieldSchema(),
+  merchandiseLoss: monetaryFieldSchema(),
+  otherLosses: monetaryFieldSchema(),
+  totalLoss: monetaryFieldSchema(),
   notes: z.string().optional(),
   attachments: z.array(attachmentSchema).optional(),
+  incidentImages: z.array(attachmentSchema).optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   suspects: z.array(z.string().uuid()).optional(),
@@ -103,6 +99,8 @@ export const incidentFormSchema = z.object({
 export const incidentSchema = incidentFormSchema.transform((data) => ({
   ...data,
   cashLoss: data.cashLoss ? Number(data.cashLoss) : 0,
+  cashFondo: data.cashFondo ? Number(data.cashFondo) : 0,
+  cashRecaudacion: data.cashRecaudacion ? Number(data.cashRecaudacion) : 0,
   merchandiseLoss: data.merchandiseLoss ? Number(data.merchandiseLoss) : 0,
   otherLosses: data.otherLosses ? Number(data.otherLosses) : 0,
   totalLoss: data.totalLoss ? Number(data.totalLoss) : 0,
@@ -114,6 +112,8 @@ export type IncidentFormValues = z.infer<typeof incidentFormSchema>;
 export const incidentPayloadSchema = incidentFormSchema.omit({ selectedSuspects: true }).transform((data) => ({
   ...data,
   cashLoss: data.cashLoss ? Number(data.cashLoss) : 0,
+  cashFondo: data.cashFondo ? Number(data.cashFondo) : 0,
+  cashRecaudacion: data.cashRecaudacion ? Number(data.cashRecaudacion) : 0,
   merchandiseLoss: data.merchandiseLoss ? Number(data.merchandiseLoss) : 0,
   otherLosses: data.otherLosses ? Number(data.otherLosses) : 0,
   totalLoss: data.totalLoss ? Number(data.totalLoss) : 0,
@@ -130,6 +130,8 @@ export interface Incident {
   incidentTypeId: number;
   description?: string;
   cashLoss?: string;
+  cashFondo?: string;
+  cashRecaudacion?: string;
   merchandiseLoss?: string;
   otherLosses?: string;
   totalLoss?: string;

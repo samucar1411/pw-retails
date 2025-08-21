@@ -31,7 +31,6 @@ export const SuspectInfo = React.memo(function SuspectInfo({ suspectId }: Suspec
         const data = await getSuspectById(suspectId);
         setSuspect(data);
       } catch (error) {
-        console.error("Error fetching suspect:", error);
         setError(error instanceof Error ? error : new Error("Error fetching suspect"));
       } finally {
         setIsLoading(false);

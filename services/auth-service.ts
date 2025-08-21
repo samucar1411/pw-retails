@@ -2,67 +2,81 @@ import { api } from './api';
 
 interface AuthResponse {
   token: string;
-  user_id?: number;
-  email?: string;
-  firts_name?: string;
-  last_name?: string;
+  user_id: number;
+  email: string;
+  firts_name: string; // API typo - should be "first_name"
+  last_name: string;
 }
 
 const TOKEN_KEY = 'auth_token';
+const USER_INFO_KEY = 'user_info';
 
 const getToken = (): string | null => {
-  try {
+  if (typeof window !== 'undefined') {
     return localStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
   }
+  return null;
 };
 
 const setToken = (token: string) => {
-  try {
-    const cleanToken = token.replace(/^(Bearer|Token)\s+/i, '').trim();
-    localStorage.setItem(TOKEN_KEY, cleanToken);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error('[Auth] Error setting token:', error.message);
-    }
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(TOKEN_KEY, token);
+  }
+};
+
+const getUserInfo = (): AuthResponse | null => {
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem(USER_INFO_KEY);
+    return stored ? JSON.parse(stored) : null;
+  }
+  return null;
+};
+
+const setUserInfo = (userInfo: AuthResponse) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(USER_INFO_KEY, JSON.stringify(userInfo));
   }
 };
 
 const clearAuthData = () => {
-  try {
+  if (typeof window !== 'undefined') {
     localStorage.removeItem(TOKEN_KEY);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error('[Auth] Error clearing auth data:', error.message);
-    }
+    localStorage.removeItem(USER_INFO_KEY);
   }
 };
 
 const authenticateUser = async (username: string, password: string): Promise<AuthResponse> => {
   try {
-    const response = await api.post('auth/token/', { username, password }, {
-      baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://sys.adminpy.com:18001',
+    const response = await fetch('/api-token-auth2', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
     });
 
-    if (!response.data?.token) {
-      throw new Error('Invalid response format - no token found');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Authentication failed' }));
+      throw new Error(errorData.error || 'Authentication failed');
     }
 
-    return response.data;
+    const userData = await response.json();
+    // Save the real token and user info
+    if (userData.token) {
+      setToken(userData.token);
+      setUserInfo(userData); // Guardar info del usuario
+    }
+    return userData;
   } catch (error) {
-    console.error('[Auth] Authentication error:', error);
     throw error;
   }
 };
 
 const login = async (username: string, password: string): Promise<boolean> => {
   try {
-    const data = await authenticateUser(username, password);
-    setToken(data.token);
+    await authenticateUser(username, password);
     return true;
   } catch {
-    clearAuthData();
     return false;
   }
 };
@@ -70,15 +84,19 @@ const login = async (username: string, password: string): Promise<boolean> => {
 const loginWithUserInfo = async (username: string, password: string): Promise<AuthResponse> => {
   try {
     const data = await authenticateUser(username, password);
-    setToken(data.token);
     return data;
   } catch (error) {
-    clearAuthData();
     throw error;
   }
 };
 
-const logout = () => {
+const logout = async () => {
+  try {
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+    });
+  } catch (error) {
+  }
   clearAuthData();
 };
 
@@ -87,10 +105,12 @@ const isAuthenticated = (): boolean => {
   return !!token;
 };
 
+
 export const authService = {
   getToken,
+  getUserInfo,
   login,
   loginWithUserInfo,
   logout,
-  isAuthenticated
+  isAuthenticated,
 };

@@ -21,9 +21,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 // Opciones para los tags
 const genderOptions = [
-  { label: 'Hombre', value: 'male' },
-  { label: 'Mujer', value: 'female' },
-  { label: 'Desconocido', value: 'unknown' },
+  { label: 'Hombre', value: 'masculino' },
+  { label: 'Mujer', value: 'femenino' },
+  { label: 'Desconocido', value: 'desconocido' },
 ];
 
 const contexturaOptions = [
@@ -38,7 +38,7 @@ const alturaOptions = [
   { label: 'Bajo (<1.60m)', value: 'bajo' },
   { label: 'Normal (1.60m-1.75m)', value: 'normal' },
   { label: 'Alto (1.76m-1.85m)', value: 'alto' },
-  { label: 'Muy Alto (>1.85m)', value: 'muy_alto' },
+  { label: 'Muy Alto (>1.85m)', value: 'muy alto' },
   { label: 'Desconocido', value: 'desconocido' },
 ];
 
@@ -69,7 +69,7 @@ const tatuajesOptions = [
 ];
 
 const accesoriosOptions = [
-  { label: 'Lentes de sol', value: 'lentes_sol' },
+  { label: 'Lentes de sol', value: 'lentes sol' },
   { label: 'Bolsa', value: 'bolsa' },
   { label: 'Lentes', value: 'lentes' },
   { label: 'Casco', value: 'casco' },
@@ -80,9 +80,9 @@ const accesoriosOptions = [
 const comportamientoOptions = [
   { label: 'Nervioso', value: 'nervioso' },
   { label: 'Agresivo', value: 'agresivo' },
-  { label: 'Portaba Armas', value: 'portaba_armas' },
-  { label: 'Abuso Físico', value: 'abuso_fisico' },
-  { label: 'Alcoholizado/Drogado', value: 'alcohol_droga' },
+  { label: 'Portaba Armas', value: 'portaba armas' },
+  { label: 'Abuso Físico', value: 'abuso fisico' },
+  { label: 'Alcoholizado/Drogado', value: 'alcohol droga' },
 ];
 
 const dificultanIdOptions = [
@@ -90,7 +90,7 @@ const dificultanIdOptions = [
   { label: 'Casco', value: 'casco' },
   { label: 'Pasamontañas', value: 'pasamontanas' },
   { label: 'Capucha', value: 'capucha' },
-  { label: 'Lentes Oscuros', value: 'lentes_oscuros' },
+  { label: 'Lentes Oscuros', value: 'lentes oscuros' },
 ];
 
 // Custom square select group
@@ -132,6 +132,12 @@ const suspectFormSchema = z.object({
   PhysicalDescription: z.string().min(1, 'La descripción física es requerida'),
   PhotoUrl: z.string().min(1, 'La foto es requerida'),
   Status: z.number(),
+  // Campos de identificación
+  CI: z.string().optional(),
+  Name: z.string().optional(),
+  LastName: z.string().optional(),
+  LastName2: z.string().optional(),
+  Nationality: z.string().optional(),
 });
 
 type SuspectFormValues = z.infer<typeof suspectFormSchema>;
@@ -147,7 +153,7 @@ export function SuspectForm() {
   const [statuses, setStatuses] = useState<SuspectStatus[]>([]);
   const [loadingStatuses, setLoadingStatuses] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [tags, setTags] = useState<Record<string, unknown>>({});
+  const [tags, setTags] = useState<Record<string, string>>({});
 
   // Fetch statuses on mount
   useEffect(() => {
@@ -176,15 +182,21 @@ export function SuspectForm() {
       PhysicalDescription: '',
       PhotoUrl: '',
       Status: 1,
+      // Campos de identificación
+      CI: '',
+      Name: '',
+      LastName: '',
+      LastName2: '',
+      Nationality: '',
     },
   });
 
-  // Functions to handle tags
+  // Functions to handle tags as JSON object
   function getTagValue(key: string): string {
     return (tags[key] as string) || '';
   }
 
-  function setTagValue(key: string, value: unknown) {
+  function setTagValue(key: string, value: string) {
     setTags(prev => ({
       ...prev,
       [key]: value
@@ -192,7 +204,11 @@ export function SuspectForm() {
   }
 
   function getTagArray(key: string): string[] {
-    return Array.isArray(tags[key]) ? tags[key] as string[] : [];
+    const value = tags[key];
+    if (typeof value === 'string') {
+      return value.split(',').map(item => item.trim()).filter(item => item !== '');
+    }
+    return Array.isArray(value) ? value as string[] : [];
   }
 
   const onSubmit = useCallback(async (values: SuspectFormValues) => {
@@ -205,7 +221,13 @@ export function SuspectForm() {
         PhysicalDescription: values.PhysicalDescription,
         Status: Number(values.Status),
         PhotoUrl: values.PhotoUrl,
-        Tags: Object.values(tags).filter(value => typeof value === 'string') as string[],
+        // Campos de identificación
+        CI: values.CI,
+        Name: values.Name,
+        LastName: values.LastName,
+        LastName2: values.LastName2,
+        Nationality: values.Nationality,
+        Tags: tags as Record<string, string>,
       };
 
       // Create the suspect
@@ -272,12 +294,82 @@ export function SuspectForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
+                  name="Name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Nombre del sospechoso" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="LastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Apellido Paterno</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Apellido paterno del sospechoso" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="LastName2"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Apellido Materno</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Apellido materno del sospechoso" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="Nationality"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nacionalidad</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Nacionalidad del sospechoso" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="Alias"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Alias</FormLabel>
                       <FormControl>
                         <Input {...field} placeholder="Alias del sospechoso" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="CI"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cédula de Identidad</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Número de CI" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -326,13 +418,13 @@ export function SuspectForm() {
                 </div>
               </div>
 
-              {/* Gender */}
+              {/* Sexo */}
               <div>
-                <FormLabel>Género</FormLabel>
+                <FormLabel>Sexo</FormLabel>
                 <SquareSelectGroup
                   options={genderOptions}
-                  value={getTagValue('gender')}
-                  onChange={(value) => setTagValue('gender', value)}
+                  value={getTagValue('sexo')}
+                  onChange={(value) => setTagValue('sexo', value)}
                 />
               </div>
 
@@ -381,7 +473,7 @@ export function SuspectForm() {
                             const newPiercings = checked
                               ? [...piercings, opt.value]
                               : piercings.filter(v => v !== opt.value);
-                            setTagValue('piercings', newPiercings);
+                            setTagValue('piercings', newPiercings.join(', '));
                           }}
                         />
                         <label htmlFor={`piercings-${opt.value}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -408,7 +500,7 @@ export function SuspectForm() {
                             const newTatuajes = checked
                               ? [...tatuajes, opt.value]
                               : tatuajes.filter(v => v !== opt.value);
-                            setTagValue('tatuajes', newTatuajes);
+                            setTagValue('tatuajes', newTatuajes.join(', '));
                           }}
                         />
                         <label htmlFor={`tatuajes-${opt.value}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -435,7 +527,7 @@ export function SuspectForm() {
                             const newAccesorios = checked
                               ? [...accesorios, opt.value]
                               : accesorios.filter(v => v !== opt.value);
-                            setTagValue('accesorios', newAccesorios);
+                            setTagValue('accesorios', newAccesorios.join(', '));
                           }}
                         />
                         <label htmlFor={`accesorios-${opt.value}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -462,7 +554,7 @@ export function SuspectForm() {
                             const newComportamiento = checked
                               ? [...comportamiento, opt.value]
                               : comportamiento.filter(v => v !== opt.value);
-                            setTagValue('comportamiento', newComportamiento);
+                            setTagValue('comportamiento', newComportamiento.join(', '));
                           }}
                         />
                         <label htmlFor={`comportamiento-${opt.value}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -479,7 +571,7 @@ export function SuspectForm() {
                 <FormLabel>Elementos que dificultan identificación</FormLabel>
                 <div className="grid grid-cols-3 gap-y-2 gap-x-6 mt-2">
                   {dificultanIdOptions.map(opt => {
-                    const dificultanId = getTagArray('dificultan_id');
+                    const dificultanId = getTagArray('dificulta_identificacion');
                     return (
                       <div key={opt.value} className="flex items-center space-x-2">
                         <Checkbox
@@ -489,7 +581,7 @@ export function SuspectForm() {
                             const newDificultanId = checked
                               ? [...dificultanId, opt.value]
                               : dificultanId.filter(v => v !== opt.value);
-                            setTagValue('dificultan_id', newDificultanId);
+                            setTagValue('dificulta_identificacion', newDificultanId.join(', '));
                           }}
                         />
                         <label htmlFor={`dificultan-${opt.value}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">

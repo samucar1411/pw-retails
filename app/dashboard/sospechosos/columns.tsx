@@ -1,5 +1,6 @@
 import { ColumnDef } from '@tanstack/react-table';
-import { MoreVertical } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -54,8 +55,27 @@ export const columns: ColumnDef<Suspect>[] = [
     header: 'Estado',
     cell: ({ row }) => {
       const status = row.getValue('Status') as number;
-      const statusText = status === 1 ? 'Detenido' : 'Libre';
-      const variant = status === 1 ? 'destructive' : 'secondary';
+      
+      let statusText: string;
+      let variant: 'destructive' | 'secondary' | 'default';
+      
+      switch (status) {
+        case 1:
+          statusText = 'Detenido';
+          variant = 'destructive';
+          break;
+        case 2:
+          statusText = 'Libre';
+          variant = 'secondary';
+          break;
+        case 3:
+          statusText = 'Preso';
+          variant = 'default';
+          break;
+        default:
+          statusText = 'Desconocido';
+          variant = 'secondary';
+      }
       
       return (
         <Badge variant={variant}>
@@ -65,23 +85,13 @@ export const columns: ColumnDef<Suspect>[] = [
     },
   },
   {
-    accessorKey: 'IncidentsCount',
-    header: 'Incidentes',
-    cell: ({ row }) => {
-      const suspect = row.original;
-      return (
-        <Badge variant="secondary">
-          {suspect.IncidentsCount ?? 0}
-        </Badge>
-      );
-    },
-  },
-  {
     accessorKey: 'Tags',
     header: 'Características',
     cell: ({ row }) => {
-      const tags = row.getValue('Tags') as string[];
-      if (!tags || tags.length === 0) {
+      const tags = row.getValue('Tags');
+      
+      // Verificar que tags sea un array válido
+      if (!Array.isArray(tags) || tags.length === 0) {
         return <span className="text-muted-foreground text-sm">Sin características</span>;
       }
       
@@ -93,7 +103,7 @@ export const columns: ColumnDef<Suspect>[] = [
                 •
               </span>
               <span className="text-foreground font-medium truncate">
-                {tag}
+                {String(tag)}
               </span>
             </div>
           ))}
@@ -108,28 +118,30 @@ export const columns: ColumnDef<Suspect>[] = [
   },
   {
     id: 'actions',
+    header: 'Acciones',
     cell: ({ row }) => {
       const suspect = row.original;
       
       return (
-        <div className="flex justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger className="cursor-pointer">
-              <MoreVertical className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => window.location.href = `/dashboard/sospechosos/${suspect.id}`}>
-                Ver detalles
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => window.location.href = `/dashboard/sospechosos/${suspect.id}/edit`}>
-                Editar
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">
-                Eliminar
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Abrir menú</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => window.location.href = `/dashboard/sospechosos/${suspect.id}`}>
+              Ver detalles
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => window.location.href = `/dashboard/sospechosos/${suspect.id}/edit`}>
+              Editar
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-destructive">
+              Eliminar
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       );
     },
   },

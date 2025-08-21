@@ -7,6 +7,7 @@ import { authService } from '@/services/auth-service';
 interface AuthContextType {
   isAuthenticated: boolean;
   userInfo: {
+    user_id?: number;
     first_name?: string;
     last_name?: string;
     email?: string;
@@ -20,47 +21,70 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userInfo, setUserInfo] = useState<AuthContextType['userInfo']>(null);
+  const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
   const router = useRouter();
   const pathname = usePathname();
 
+  // Initial auth check and user info restoration
   useEffect(() => {
-    // Verificar autenticación inicial
-    const checkAuth = () => {
-      const isAuth = authService.isAuthenticated();
-      setIsAuthenticated(isAuth);
-
-      // Si no está autenticado y no estamos en login, redirigir
-      if (!isAuth && pathname !== '/login') {
-        router.push('/login');
+    console.log('AuthContext: Initializing auth check');
+    const isAuth = authService.isAuthenticated();
+    console.log('AuthContext: isAuthenticated =', isAuth);
+    setIsAuthenticated(isAuth);
+    
+    // If authenticated, try to restore user info from localStorage
+    if (isAuth) {
+      console.log('AuthContext: Attempting to restore user info from localStorage');
+      const storedUserInfo = authService.getUserInfo();
+      console.log('AuthContext: Stored userInfo:', storedUserInfo);
+      if (storedUserInfo) {
+        const userInfo = {
+          user_id: storedUserInfo.user_id,
+          first_name: storedUserInfo.firts_name,
+          last_name: storedUserInfo.last_name,
+          email: storedUserInfo.email
+        };
+        console.log('AuthContext: Setting userInfo from storage:', userInfo);
+        setUserInfo(userInfo);
       }
-    };
-
-    checkAuth();
-  }, [pathname, router]);
+      
+      // If on login page, redirect to dashboard
+      if (pathname === '/login') {
+        window.location.href = '/dashboard';
+      }
+    } else {
+      console.log('AuthContext: Not authenticated, clearing userInfo');
+      setUserInfo(null);
+    }
+  }, [pathname]);
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       const data = await authService.loginWithUserInfo(username, password);
+      
       if (data.token) {
         setIsAuthenticated(true);
         setUserInfo({
-          first_name: data.firts_name, // Note: API has a typo in the field name
+          user_id: data.user_id,
+          first_name: data.firts_name,
           last_name: data.last_name,
           email: data.email
         });
-        router.push('/dashboard');
+        
+        // Direct redirect
+        window.location.href = '/dashboard';
         return true;
       }
       return false;
-    } catch {
+    } catch (error) {
       setIsAuthenticated(false);
       setUserInfo(null);
       return false;
     }
   };
 
-  const logout = () => {
-    authService.logout();
+  const logout = async () => {
+    await authService.logout();
     setIsAuthenticated(false);
     setUserInfo(null);
     router.push('/login');

@@ -7,7 +7,8 @@ import {
   FileText, 
   Printer,
   CheckCircle2,
-  Info
+  Info,
+  Download
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 
@@ -28,8 +29,8 @@ export default function IncidentPreviewPage() {
     if (storedData) {
       try {
         setIncidentData(JSON.parse(storedData));
-      } catch (e) {
-        console.error('Error parsing stored incident data:', e);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
         setIncidentData(loadMockData());
         toast({ title: "Usando datos de ejemplo", description: "Error al cargar datos, mostrando demo." });
       }
@@ -59,8 +60,9 @@ export default function IncidentPreviewPage() {
         
         // Add logo (positioned top-left)
         pdf.addImage(logoBase64, 'PNG', 20, 15, 40, 15);
-      } catch (error) {
-        console.warn('Could not load logo:', error);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+        // Logo loading failed, continue without logo
       }
       
       // Header with better styling
@@ -278,8 +280,8 @@ export default function IncidentPreviewPage() {
       
       pdf.save(`Denuncia-${incidentData.id}.pdf`);
       toast({ title: "PDF generado", description: "Descarga iniciada." });
-    } catch (error) {
-      console.error('Error al generar PDF:', error);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
       toast({ title: "Error PDF", description: "No se pudo generar el PDF.", variant: "destructive" });
     } finally {
       setGeneratingPdf(false);
@@ -292,6 +294,24 @@ export default function IncidentPreviewPage() {
     toast({ title: "Denuncia registrada", description: "Guardado simulado." });
     localStorage.removeItem('current_incident');
     router.push('/dashboard/incidentes');
+  };
+
+  const handlePrint = () => {
+    // Ocultar elementos que no queremos imprimir
+    const printElements = document.querySelectorAll('.print\\:hidden');
+    printElements.forEach(el => {
+      (el as HTMLElement).style.display = 'none';
+    });
+
+    // Imprimir la página
+    window.print();
+
+    // Restaurar elementos después de imprimir
+    setTimeout(() => {
+      printElements.forEach(el => {
+        (el as HTMLElement).style.display = '';
+      });
+    }, 1000);
   };
 
   if (loading) {
@@ -322,16 +342,25 @@ export default function IncidentPreviewPage() {
               {generatingPdf ? (
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
               ) : (
-                <Printer className="h-4 w-4 mr-1" />
+                <Download className="h-4 w-4 mr-1" />
               )}
-              Imprimir PDF
+              Descargar PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={handlePrint}>
+                <Printer className="h-4 w-4 mr-1" />
+              Imprimir
             </Button>
             <Button onClick={handleApprove}><CheckCircle2 className="h-4 w-4 mr-1" />Registrar denuncia</Button>
           </div>
         </div>
       </div>
       
-      <PoliceReportPreview incidentData={incidentData} incidentTypes={[]} />
+      <PoliceReportPreview 
+        incidentData={incidentData} 
+        incidentTypes={[]} 
+        office={null}
+        companyLogo={null}
+      />
       
     </div>
   );

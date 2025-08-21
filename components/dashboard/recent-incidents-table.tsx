@@ -63,8 +63,8 @@ const OfficeInfo = React.memo(function OfficeInfo({ officeId }: { officeId: numb
       try {
         const officeData = await getOffice(officeId);
         setOffice(officeData);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
-        console.error("Error fetching office:", error);
       } finally {
         setLoading(false);
       }
@@ -102,8 +102,8 @@ const IncidentTypeInfo = React.memo(function IncidentTypeInfo({ typeId }: { type
       try {
         const type = await getIncidentType(typeId);
         setIncidentType(type);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
-        console.error("Error fetching incident type:", error);
       } finally {
         setLoading(false);
       }
@@ -210,7 +210,10 @@ export function RecentIncidentsTable({ fromDate, toDate, officeId }: RecentIncid
       <Card className="lg:col-span-3">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Incidentes recientes</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <FileText className="h-5 w-5 text-primary" />
+              Incidentes recientes
+            </CardTitle>
             <CardDescription>Últimos 5 incidentes reportados</CardDescription>
           </div>
           <Link href={allIncidentsLink}>
@@ -231,7 +234,10 @@ export function RecentIncidentsTable({ fromDate, toDate, officeId }: RecentIncid
       <Card className="lg:col-span-3">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Incidentes recientes</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <FileText className="h-5 w-5 text-primary" />
+              Incidentes recientes
+            </CardTitle>
             <CardDescription>Últimos 5 incidentes reportados</CardDescription>
           </div>
           <Link href={allIncidentsLink}>
