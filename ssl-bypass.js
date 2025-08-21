@@ -34,5 +34,4 @@ if (process.env.NODE_ENV === 'development') {
     return originalRequest.call(this, options, callback);
   };
   
-  console.log('SSL bypass enabled for development');
 }

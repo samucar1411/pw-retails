@@ -48,7 +48,6 @@ export function LegalRepForm({
   });
 
   const handleSubmit = (data: z.infer<typeof formSchema>) => {
-    console.log("Form submitted with data:", data);
     onSubmit({
       legal_names: data.legal_names,
       legal_last_names: data.legal_last_names,

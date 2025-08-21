@@ -50,7 +50,6 @@ export function useDashboardSafe(
       config.maxIncidents
     ],
     queryFn: async () => {
-      console.log(`🔒 Dashboard Safe: Loading max ${config.maxIncidents} incidents from ${safeDateRange.safeFromDate}`);
       
       const response = await getIncidents({
         page: 1,
@@ -62,7 +61,6 @@ export function useDashboardSafe(
         ordering: '-Date',
       });
       
-      console.log(`✅ Dashboard Safe: Loaded ${response?.results?.length || 0} incidents (${(JSON.stringify(response).length / 1024 / 1024).toFixed(2)}MB)`);
       
       return response;
     },

@@ -153,6 +153,14 @@ export async function getIncidentById(id: string | number): Promise<Incident> {
               imageUrl = img!.file_path || '';
             }
             
+            console.log('Processing image:', {
+              id: img!.id,
+              filename: img!.filename,
+              img_file: img!.img_file,
+              file_path: img!.file_path,
+              finalUrl: imageUrl
+            });
+            
             return {
               id: img!.id!,
               name: img!.filename,

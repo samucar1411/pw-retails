@@ -9,7 +9,7 @@ import { es } from 'date-fns/locale';
 import { generatePoliceReportPDF } from '@/utils/pdf-generator';
 import {
   DollarSign, Users, MapPin, FileText, AlertTriangle,
-  Calendar, Building, FileImage, Download, User, ExternalLink, Edit
+  Calendar, Building, FileImage, Download, User, Edit
 } from 'lucide-react';
 
 // UI Components
@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import Map from '@/components/ui/map';
 import {
   Breadcrumb,
@@ -703,33 +704,20 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                   <div className="space-y-3">
                 {incident.Attachments.map((file, index) => (
                       <div key={index} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors">
-                        <div className="h-10 w-10 rounded bg-accent/20 flex items-center justify-center">
-                          <FileImage className="h-5 w-5 text-accent-foreground" />
-                    </div>
                     <div className="flex-1 min-w-0">
                           <p className="font-medium text-foreground truncate">{file.name}</p>
                           <p className="text-sm text-muted-foreground">Archivo adjunto</p>
                     </div>
-                        <div className="flex gap-1">
                           <Button 
                             variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            size="sm" 
+                            className="text-muted-foreground hover:text-foreground"
                             onClick={() => handleDownloadFile(file.url, file.name)}
                             title="Descargar archivo"
                           >
-                            <Download className="h-4 w-4" />
+                            <Download className="h-4 w-4 mr-2" />
+                            Descargar
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                            onClick={() => window.open(getSafeImageUrl(file.url), '_blank')}
-                            title="Abrir en nueva pestaña"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        </div>
                       </div>
                 ))}
                   </div>
@@ -756,33 +744,61 @@ export default function IncidentDetailPage(props: IncidentDetailPageProps) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {incident.Images.map((image, index) => (
                       <div key={index} className="group relative border border-border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                        <div className="aspect-video relative bg-muted/30 flex items-center justify-center">
-                          {image.url ? (
-                            <Image
-                              src={image.url}
-                              alt={image.name || `Imagen ${index + 1}`}
-                              fill
-                              className="object-cover"
-                              onError={(e) => {
-                                // Fallback si la imagen no carga
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                              }}
-                            />
-                          ) : (
-                            <FileImage className="h-12 w-12 text-muted-foreground" />
-                          )}
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                            <Button 
-                              variant="secondary" 
-                              size="sm" 
-                              className="opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => image.url && window.open(image.url, '_blank')}
-                            >
-                              Ver completa
-                            </Button>
-                          </div>
-                        </div>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <div className="aspect-video relative bg-muted/30 flex items-center justify-center cursor-pointer">
+                              {image.url ? (
+                                <Image
+                                  src={image.url}
+                                  alt={image.name || `Imagen ${index + 1}`}
+                                  fill
+                                  className="object-cover"
+                                  onError={(e) => {
+                                    console.error('Error loading image:', image.url, e);
+                                    // Fallback si la imagen no carga
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                  }}
+                                  onLoad={() => {
+                                    console.log('Image loaded successfully:', image.url);
+                                  }}
+                                />
+                              ) : (
+                                <FileImage className="h-12 w-12 text-muted-foreground" />
+                              )}
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                <Button 
+                                  variant="secondary" 
+                                  size="sm" 
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  Ver completa
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+                            <div className="relative w-full h-full flex items-center justify-center bg-black">
+                              {image.url && (
+                                <Image
+                                  src={image.url}
+                                  alt={image.name || `Imagen ${index + 1}`}
+                                  width={800}
+                                  height={600}
+                                  className="max-w-full max-h-[80vh] object-contain"
+                                />
+                              )}
+                            </div>
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/75 text-white p-4">
+                              <p className="text-sm font-medium">
+                                {image.name || `Imagen ${index + 1}`}
+                              </p>
+                              <p className="text-xs opacity-75">
+                                Evidencia del incidente
+                              </p>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                         <div className="p-3 bg-background">
                           <p className="text-sm font-medium text-foreground truncate">
                             {image.name || `Imagen ${index + 1}`}

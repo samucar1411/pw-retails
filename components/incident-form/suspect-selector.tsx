@@ -161,7 +161,6 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
       return;
     }
 
-    console.log('🔍 Buscando sospechosos con query:', query);
     setIsSearching(true);
     
     try {
@@ -175,15 +174,9 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
         }
       };
       
-      console.log('📡 Enviando parámetros:', searchParams);
       
       const response = await getAllSuspects(searchParams);
       
-      console.log('✅ Respuesta recibida:', {
-        count: response?.count,
-        results: response?.results?.length,
-        firstResult: response?.results?.[0]
-      });
       
       const results = response?.results || [];
       const count = response?.count || 0;
@@ -197,7 +190,6 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
       
       // Fallback: try simple search with tags parameter
       try {
-        console.log('🔄 Intentando fallback con búsqueda simple...');
         const fallbackResponse = await getAllSuspects({
           tags: query,
           page: 1,
@@ -206,7 +198,6 @@ export function SuspectSelector({ control }: SuspectSelectorProps) {
         });
         
         const results = fallbackResponse?.results || [];
-        console.log('✅ Fallback exitoso:', results.length, 'resultados');
         
         setSearchResults(results);
         setTotalResults(fallbackResponse?.count || 0);

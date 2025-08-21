@@ -700,8 +700,6 @@ export function IncidentForm() {
           [key]: value
         }
       };
-      console.log(`Sospechoso ${idx} - ${key}:`, value);
-      console.log('JSON completo:', newTags[idx]);
       return newTags;
     });
   }
@@ -1630,12 +1628,10 @@ export function IncidentForm() {
   }, [form, lossFields, appendLoss, removeLoss]);
 
   async function onSubmit(data: IncidentFormValues) {
-    console.log('onSubmit called with data:', data);
     
     // Validar todo el formulario antes de enviar
     const isValid = await form.trigger();
     if (!isValid) {
-      console.log('Form validation failed');
       toast.error('Por favor, complete todos los campos requeridos');
       return;
     }
@@ -1644,7 +1640,6 @@ export function IncidentForm() {
     try {
       // 0. Process incident image metadata first (separate from attachments)
       if (incidentImageMetadata.length > 0) {
-        console.log('Processing incident image metadata...');
         for (const image of incidentImageMetadata) {
           if (!image.uploadedData) {
             await handleUploadIncidentImageMetadata(image.id);
@@ -1659,7 +1654,6 @@ export function IncidentForm() {
         
         // Si es un sospechoso existente, usar su ID directamente
         if (!suspectData.isNew && suspectData.apiId) {
-          console.log('Using existing suspect ID:', suspectData.apiId);
           suspectIds.push(suspectData.apiId);
           continue;
         }
@@ -1690,7 +1684,6 @@ export function IncidentForm() {
           suspectObj.Tags = tagValues;
         }
         
-        console.log('Creating new suspect with data:', suspectObj);
         try {
           const created = await createSuspect(suspectObj);
           if (!created?.id) {
@@ -1764,25 +1757,17 @@ export function IncidentForm() {
       // 5. Primero crear el incidente
       const { api } = await import('@/services/api');
       
-      // Debug: verificar token
-      const token = localStorage.getItem('auth_token');
-      console.log('Token disponible:', !!token);
-      console.log('Payload del incidente:', incidentPayload);
       
       let createdIncident: { id: number; [key: string]: unknown } | null = null;
       
       try {
-        console.log('Step 1: Sending POST request to /api/incidents/ with payload:', incidentPayload);
         const incidentResponse = await api.post('/api/incidents/', incidentPayload);
-        console.log('Incident response received:', incidentResponse);
         
         if (incidentResponse.status === 201 || incidentResponse.status === 200) {
           createdIncident = incidentResponse.data;
-          console.log('Incident created successfully with ID:', createdIncident?.id);
           
           // 6. Crear los items de pérdida individualmente
           if (lossItems.length > 0 && createdIncident?.id) {
-            console.log(`Step 2: Creating ${lossItems.length} loss items for incident ${createdIncident.id}`);
             
             for (let i = 0; i < lossItems.length; i++) {
               const item = lossItems[i];
@@ -1795,11 +1780,9 @@ export function IncidentForm() {
                 Incident: createdIncident.id
               };
               
-              console.log(`Creating loss item ${i + 1}/${lossItems.length}:`, lossItemPayload);
               
               try {
-                const lossItemResponse = await createIncidentItemLoss(lossItemPayload);
-                console.log(`Loss item ${i + 1} created successfully:`, lossItemResponse);
+                await createIncidentItemLoss(lossItemPayload);
               } catch (lossItemError) {
                 console.error(`Error creating loss item ${i + 1}:`, lossItemError);
                 toast.error(`Error al crear el item de pérdida ${i + 1}: ${item.Description}`);
@@ -2204,9 +2187,7 @@ export function IncidentForm() {
               type="button" 
               disabled={isSubmitting}
               onClick={async () => {
-                console.log('Submit button clicked');
                 const formData = form.getValues();
-                console.log('Form data:', formData);
                 await onSubmit(formData);
               }}
             >

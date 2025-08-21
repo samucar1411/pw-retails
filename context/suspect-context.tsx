@@ -70,8 +70,6 @@ export function SuspectProvider({ children }: { children: ReactNode }) {
       const pageSizeToFetch = params?.pageSize || pagination.pageSize;
       const effectiveSearchTerm = params?.search !== undefined ? params.search : searchTerm;
 
-      console.log(`[SuspectContext] fetchSuspects: Called with params:`, params, 
-        `Effective API Call: page=${pageToFetch}, pageSize=${pageSizeToFetch}, search=${effectiveSearchTerm}`);
 
       const response = await suspectService.getAllSuspects({
         page: pageToFetch,
@@ -92,7 +90,6 @@ export function SuspectProvider({ children }: { children: ReactNode }) {
           totalCount: response.count,
           totalPages: Math.ceil(response.count / pageSizeToFetch) || 1,
         };
-        console.log('[SuspectContext] fetchSuspects: setPaginationState. Prev:', prev, 'New:', newState);
         return newState;
       });
     } catch (err) {
@@ -220,10 +217,8 @@ export function SuspectProvider({ children }: { children: ReactNode }) {
   }, []); // Empty dependency array ensures this runs only on mount
 
   const updatePaginationContextState = useCallback((newPaginationPartial: Partial<PaginationState>) => {
-    console.log('[SuspectContext] updatePaginationContextState (exposed as setPagination) called with:', newPaginationPartial);
     setPaginationState(prev => {
       const updated = { ...prev, ...newPaginationPartial };
-      console.log('[SuspectContext] updatePaginationContextState: prev state:', prev, 'new state:', updated);
       return updated;
     });
   }, [setPaginationState]);

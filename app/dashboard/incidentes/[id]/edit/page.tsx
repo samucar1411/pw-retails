@@ -38,7 +38,6 @@ import { getIncidentTypes } from '@/services/incident-service';
 import { getAllOfficesComplete } from '@/services/office-service';
 import { trackMultipleChanges } from '@/services/change-history-service';
 import { getSuspectById } from '@/services/suspect-service';
-import { authService } from '@/services/auth-service';
 import { createIncidentImageMetadata, IncidentImageMetadataCreateInput } from '@/services/incident-image-metadata-service';
 
 // Hooks
@@ -107,12 +106,6 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
           getAllOfficesComplete()
         ]);
 
-        console.log('fetchData - Incident data loaded:', {
-          incidentData: !!incidentData,
-          incidentId: incidentData?.id,
-          typesCount: typesResponse.results?.length || 0,
-          officesCount: officesData?.length || 0
-        });
 
         if (!incidentData) {
           throw new Error('No se pudieron cargar los datos del incidente');
@@ -245,18 +238,8 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
   };
 
   const onSubmit = async (values: IncidentFormValues) => {
-    // Debug logging to identify what's missing
-    console.log('onSubmit - Starting submit. Debug info:', {
-      incident: !!incident,
-      originalIncident: !!originalIncident,
-      hasToken: !!authService.getToken(),
-      saving: saving,
-      formValues: values
-    });
-    
     // Check if already saving to prevent double submission
     if (saving) {
-      console.log('onSubmit - Already saving, aborting');
       return;
     }
 
@@ -466,7 +449,6 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
         description: 'Incidente actualizado correctamente',
       });
 
-      console.log('onSubmit - Success, navigating to details page');
       
       // Navigate to details page without fetching data again
       router.push(`/dashboard/incidentes/${id}`);
@@ -509,7 +491,6 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
         variant: 'destructive',
       });
     } finally {
-      console.log('onSubmit - Resetting saving state');
       setSaving(false);
     }
   };

@@ -27,16 +27,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Initial auth check and user info restoration
   useEffect(() => {
-    console.log('AuthContext: Initializing auth check');
     const isAuth = authService.isAuthenticated();
-    console.log('AuthContext: isAuthenticated =', isAuth);
     setIsAuthenticated(isAuth);
     
     // If authenticated, try to restore user info from localStorage
     if (isAuth) {
-      console.log('AuthContext: Attempting to restore user info from localStorage');
       const storedUserInfo = authService.getUserInfo();
-      console.log('AuthContext: Stored userInfo:', storedUserInfo);
       if (storedUserInfo) {
         const userInfo = {
           user_id: storedUserInfo.user_id,
@@ -44,7 +40,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           last_name: storedUserInfo.last_name,
           email: storedUserInfo.email
         };
-        console.log('AuthContext: Setting userInfo from storage:', userInfo);
         setUserInfo(userInfo);
       }
       
@@ -53,7 +48,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         window.location.href = '/dashboard';
       }
     } else {
-      console.log('AuthContext: Not authenticated, clearing userInfo');
       setUserInfo(null);
     }
   }, [pathname]);
