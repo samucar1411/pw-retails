@@ -27,28 +27,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Initial auth check and user info restoration
   useEffect(() => {
+    console.log('AuthContext: Initializing auth check');
     const isAuth = authService.isAuthenticated();
+    console.log('AuthContext: isAuthenticated =', isAuth);
     setIsAuthenticated(isAuth);
     
-    // If authenticated, try to get current user info
+    // If authenticated, try to restore user info from localStorage
     if (isAuth) {
-      authService.getCurrentUser().then((userData) => {
-        if (userData) {
-          setUserInfo({
-            user_id: userData.user_id,
-            first_name: userData.firts_name,
-            last_name: userData.last_name,
-            email: userData.email
-          });
-        }
-      }).catch((error) => {
-        console.error('Failed to get current user:', error);
-      });
+      console.log('AuthContext: Attempting to restore user info from localStorage');
+      const storedUserInfo = authService.getUserInfo();
+      console.log('AuthContext: Stored userInfo:', storedUserInfo);
+      if (storedUserInfo) {
+        const userInfo = {
+          user_id: storedUserInfo.user_id,
+          first_name: storedUserInfo.firts_name,
+          last_name: storedUserInfo.last_name,
+          email: storedUserInfo.email
+        };
+        console.log('AuthContext: Setting userInfo from storage:', userInfo);
+        setUserInfo(userInfo);
+      }
       
       // If on login page, redirect to dashboard
       if (pathname === '/login') {
         window.location.href = '/dashboard';
       }
+    } else {
+      console.log('AuthContext: Not authenticated, clearing userInfo');
+      setUserInfo(null);
     }
   }, [pathname]);
 

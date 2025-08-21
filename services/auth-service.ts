@@ -9,6 +9,7 @@ interface AuthResponse {
 }
 
 const TOKEN_KEY = 'auth_token';
+const USER_INFO_KEY = 'user_info';
 
 const getToken = (): string | null => {
   if (typeof window !== 'undefined') {
@@ -23,9 +24,24 @@ const setToken = (token: string) => {
   }
 };
 
+const getUserInfo = (): AuthResponse | null => {
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem(USER_INFO_KEY);
+    return stored ? JSON.parse(stored) : null;
+  }
+  return null;
+};
+
+const setUserInfo = (userInfo: AuthResponse) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(USER_INFO_KEY, JSON.stringify(userInfo));
+  }
+};
+
 const clearAuthData = () => {
   if (typeof window !== 'undefined') {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_INFO_KEY);
   }
 };
 
@@ -45,9 +61,10 @@ const authenticateUser = async (username: string, password: string): Promise<Aut
     }
 
     const userData = await response.json();
-    // Save the real token and return the data
+    // Save the real token and user info
     if (userData.token) {
       setToken(userData.token);
+      setUserInfo(userData); // Guardar info del usuario
     }
     return userData;
   } catch (error) {
@@ -88,25 +105,12 @@ const isAuthenticated = (): boolean => {
   return !!token;
 };
 
-const getCurrentUser = async (): Promise<AuthResponse | null> => {
-  try {
-    const response = await fetch('/api/auth/me');
-    
-    if (!response.ok) {
-      return null;
-    }
-
-    return await response.json();
-  } catch (error) {
-    return null;
-  }
-};
 
 export const authService = {
   getToken,
+  getUserInfo,
   login,
   loginWithUserInfo,
   logout,
   isAuthenticated,
-  getCurrentUser
 };

@@ -38,6 +38,7 @@ import { getIncidentTypes } from '@/services/incident-service';
 import { getAllOfficesComplete } from '@/services/office-service';
 import { trackMultipleChanges } from '@/services/change-history-service';
 import { getSuspectById } from '@/services/suspect-service';
+import { authService } from '@/services/auth-service';
 
 // Hooks
 import { useAuth } from '@/context/auth-context';
@@ -247,16 +248,14 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
     console.log('onSubmit - Debug info:', {
       incident: !!incident,
       originalIncident: !!originalIncident,
-      userInfo: !!userInfo,
-      userId: userInfo?.user_id,
+      hasToken: !!authService.getToken(),
       formValues: values
     });
 
-    // Check what specific data is missing
+    // Check what specific data is missing (solo lo esencial)
     const missingData = [];
     if (!incident) missingData.push('datos del incidente');
     if (!originalIncident) missingData.push('datos originales del incidente');
-    if (!userInfo?.user_id) missingData.push('información del usuario');
     
     if (missingData.length > 0) {
       console.error('Missing data for incident update:', missingData);
@@ -378,31 +377,33 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
         }
       }
 
-      // Track changes in history
-      try {
-        await trackMultipleChanges(
-          'incident',
-          id,
-          {
-            Date: originalIncident!.Date,
-            Time: originalIncident!.Time,
-            IncidentType: originalIncident!.IncidentType,
-            Office: originalIncident!.Office,
-            Description: originalIncident!.Description,
-            Notes: originalIncident!.Notes,
-            CashLoss: originalIncident!.CashLoss,
-            MerchandiseLoss: originalIncident!.MerchandiseLoss,
-            OtherLosses: originalIncident!.OtherLosses,
-            TotalLoss: originalIncident!.TotalLoss,
-            Suspects: originalIncident!.Suspects,
-          },
-          updateData,
-          userInfo!.user_id!.toString(),
-          ['Date', 'Time', 'IncidentType', 'Office', 'Description', 'Notes', 'CashLoss', 'MerchandiseLoss', 'OtherLosses', 'TotalLoss', 'Suspects']
-        );
-      } catch (error) {
-        console.error('Error tracking changes:', error);
-        // Don't fail the update if change tracking fails
+      // Track changes in history (skip if no userInfo)
+      if (userInfo?.user_id) {
+        try {
+          await trackMultipleChanges(
+            'incident',
+            id,
+            {
+              Date: originalIncident!.Date,
+              Time: originalIncident!.Time,
+              IncidentType: originalIncident!.IncidentType,
+              Office: originalIncident!.Office,
+              Description: originalIncident!.Description,
+              Notes: originalIncident!.Notes,
+              CashLoss: originalIncident!.CashLoss,
+              MerchandiseLoss: originalIncident!.MerchandiseLoss,
+              OtherLosses: originalIncident!.OtherLosses,
+              TotalLoss: originalIncident!.TotalLoss,
+              Suspects: originalIncident!.Suspects,
+            },
+            updateData,
+            userInfo.user_id.toString(),
+            ['Date', 'Time', 'IncidentType', 'Office', 'Description', 'Notes', 'CashLoss', 'MerchandiseLoss', 'OtherLosses', 'TotalLoss', 'Suspects']
+          );
+        } catch (error) {
+          console.error('Error tracking changes:', error);
+          // Don't fail the update if change tracking fails
+        }
       }
 
       toast({
