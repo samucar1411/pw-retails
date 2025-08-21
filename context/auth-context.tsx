@@ -25,14 +25,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Simple initial auth check and redirect
+  // Initial auth check and user info restoration
   useEffect(() => {
     const isAuth = authService.isAuthenticated();
     setIsAuthenticated(isAuth);
     
-    // If authenticated and on login page, redirect to dashboard
-    if (isAuth && pathname === '/login') {
-      window.location.href = '/dashboard';
+    // If authenticated, try to get current user info
+    if (isAuth) {
+      authService.getCurrentUser().then((userData) => {
+        if (userData) {
+          setUserInfo({
+            user_id: userData.user_id,
+            first_name: userData.firts_name,
+            last_name: userData.last_name,
+            email: userData.email
+          });
+        }
+      }).catch((error) => {
+        console.error('Failed to get current user:', error);
+      });
+      
+      // If on login page, redirect to dashboard
+      if (pathname === '/login') {
+        window.location.href = '/dashboard';
+      }
     }
   }, [pathname]);
 

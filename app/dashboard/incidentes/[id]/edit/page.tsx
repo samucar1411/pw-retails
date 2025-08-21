@@ -37,6 +37,7 @@ import { createIncidentItemLoss, updateIncidentItemLoss, deleteIncidentItemLoss 
 import { getIncidentTypes } from '@/services/incident-service';
 import { getAllOfficesComplete } from '@/services/office-service';
 import { trackMultipleChanges } from '@/services/change-history-service';
+import { getSuspectById } from '@/services/suspect-service';
 
 // Hooks
 import { useAuth } from '@/context/auth-context';
@@ -135,14 +136,7 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
             merchandiseLoss: parseFloat(incidentData.MerchandiseLoss || '0'),
             otherLosses: parseFloat(incidentData.OtherLosses || '0'),
             totalLoss: parseFloat(incidentData.TotalLoss || '0'),
-            selectedSuspects: incidentData.Suspects?.map(suspectId => ({
-              apiId: suspectId,
-              alias: 'Cargando...',
-              statusId: 1,
-              description: '',
-              image: '',
-              isNew: false,
-            })) || [],
+            selectedSuspects: [], // Will be loaded separately below
             incidentLossItem: (incidentData.IncidentItemLosses || incidentData.incidentLossItem)?.map(item => {
               // Handle both API format (IncidentItemLosses) and form format (incidentLossItem)
               const isApiFormat = 'Description' in item;
@@ -170,6 +164,38 @@ export default function IncidentEditPage(props: IncidentEditPageProps) {
           };
           
           form.reset(formData);
+          
+          // Load suspect details separately
+          if (incidentData.Suspects && incidentData.Suspects.length > 0) {
+            const suspectPromises = incidentData.Suspects.map(async (suspectId: string) => {
+              try {
+                const suspect = await getSuspectById(suspectId);
+                return {
+                  apiId: suspectId,
+                  alias: suspect.Alias || 'Sin alias',
+                  statusId: 1,
+                  description: suspect.PhysicalDescription || '',
+                  image: suspect.PhotoUrl || '',
+                  isNew: false,
+                };
+              } catch (error) {
+                console.error(`Failed to load suspect ${suspectId}:`, error);
+                return {
+                  apiId: suspectId,
+                  alias: 'Error al cargar',
+                  statusId: 1,
+                  description: '',
+                  image: '',
+                  isNew: false,
+                };
+              }
+            });
+            
+            // Wait for all suspects to load and update form
+            Promise.all(suspectPromises).then((loadedSuspects) => {
+              form.setValue('selectedSuspects', loadedSuspects);
+            });
+          }
         }
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
