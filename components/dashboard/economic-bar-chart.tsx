@@ -51,14 +51,14 @@ export function EconomicBarChart({ fromDate, toDate, officeId }: EconomicBarChar
   const economicData = React.useMemo(() => {
     const incidents = incidentsData?.incidents || [];
     
-    // New separated cash fields
+    // New separated cash fields - read from Tags
     const sumCashBox = incidents.reduce((sum, incident) => {
-      const incidentWithCash = incident as { cashFondo?: string | number };
-      return sum + parseNumeric(incidentWithCash.cashFondo);
+      const cashFondo = incident.Tags?.cashFondo;
+      return sum + parseNumeric(cashFondo);
     }, 0);
     let sumCashCollection = incidents.reduce((sum, incident) => {
-      const incidentWithCash = incident as { cashRecaudacion?: string | number };
-      return sum + parseNumeric(incidentWithCash.cashRecaudacion);
+      const cashRecaudacion = incident.Tags?.cashRecaudacion;
+      return sum + parseNumeric(cashRecaudacion);
     }, 0);
     
     // Legacy cash field (for existing data that doesn't have separated cash)
