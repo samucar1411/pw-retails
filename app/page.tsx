@@ -1,6 +1,21 @@
-import { redirect } from "next/navigation";
+'use client';
+
+import { useAuth } from "@/context/auth-context";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { LoadingScreen } from "@/components/loading-screen";
 
 export default function Home() {
-  // Redirect to dashboard
-  redirect("/dashboard");
+  const { isAuthenticated } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/dashboard');
+    } else {
+      router.push('/login');
+    }
+  }, [isAuthenticated, router]);
+
+  return <LoadingScreen />;
 }
